@@ -11,10 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-accounts/index'
+import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as HelpCenterIndexRouteImport } from './routes/help-center/index'
 import { Route as ChatsIndexRouteImport } from './routes/chats/index'
+import { Route as AssetsIndexRouteImport } from './routes/assets/index'
 import { Route as AppsIndexRouteImport } from './routes/apps/index'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings/notifications'
 import { Route as SettingsDisplayRouteImport } from './routes/settings/display'
@@ -34,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkerConfigsIndexRoute = WorkerConfigsIndexRouteImport.update({
+  id: '/worker-configs/',
+  path: '/worker-configs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksIndexRoute = TasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
@@ -44,6 +54,21 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformAccountsIndexRoute = PlatformAccountsIndexRouteImport.update({
+  id: '/platform-accounts/',
+  path: '/platform-accounts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspirationsIndexRoute = InspirationsIndexRouteImport.update({
+  id: '/inspirations/',
+  path: '/inspirations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HelpCenterIndexRoute = HelpCenterIndexRouteImport.update({
   id: '/help-center/',
   path: '/help-center/',
@@ -52,6 +77,11 @@ const HelpCenterIndexRoute = HelpCenterIndexRouteImport.update({
 const ChatsIndexRoute = ChatsIndexRouteImport.update({
   id: '/chats/',
   path: '/chats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetsIndexRoute = AssetsIndexRouteImport.update({
+  id: '/assets/',
+  path: '/assets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppsIndexRoute = AppsIndexRouteImport.update({
@@ -106,10 +136,15 @@ export interface FileRoutesByFullPath {
   '/settings/display': typeof SettingsDisplayRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/apps': typeof AppsIndexRoute
+  '/assets': typeof AssetsIndexRoute
   '/chats': typeof ChatsIndexRoute
   '/help-center': typeof HelpCenterIndexRoute
+  '/inspirations': typeof InspirationsIndexRoute
+  '/platform-accounts': typeof PlatformAccountsIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/tasks': typeof TasksIndexRoute
+  '/worker-configs': typeof WorkerConfigsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,10 +156,15 @@ export interface FileRoutesByTo {
   '/settings/display': typeof SettingsDisplayRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/apps': typeof AppsIndexRoute
+  '/assets': typeof AssetsIndexRoute
   '/chats': typeof ChatsIndexRoute
   '/help-center': typeof HelpCenterIndexRoute
+  '/inspirations': typeof InspirationsIndexRoute
+  '/platform-accounts': typeof PlatformAccountsIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/tasks': typeof TasksIndexRoute
+  '/worker-configs': typeof WorkerConfigsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,10 +178,15 @@ export interface FileRoutesById {
   '/settings/display': typeof SettingsDisplayRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/apps/': typeof AppsIndexRoute
+  '/assets/': typeof AssetsIndexRoute
   '/chats/': typeof ChatsIndexRoute
   '/help-center/': typeof HelpCenterIndexRoute
+  '/inspirations/': typeof InspirationsIndexRoute
+  '/platform-accounts/': typeof PlatformAccountsIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/tasks/': typeof TasksIndexRoute
+  '/worker-configs/': typeof WorkerConfigsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,10 +201,15 @@ export interface FileRouteTypes {
     | '/settings/display'
     | '/settings/notifications'
     | '/apps'
+    | '/assets'
     | '/chats'
     | '/help-center'
+    | '/inspirations'
+    | '/platform-accounts'
+    | '/projects'
     | '/settings/'
     | '/tasks'
+    | '/worker-configs'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,10 +221,15 @@ export interface FileRouteTypes {
     | '/settings/display'
     | '/settings/notifications'
     | '/apps'
+    | '/assets'
     | '/chats'
     | '/help-center'
+    | '/inspirations'
+    | '/platform-accounts'
+    | '/projects'
     | '/settings'
     | '/tasks'
+    | '/worker-configs'
   id:
     | '__root__'
     | '/'
@@ -187,10 +242,15 @@ export interface FileRouteTypes {
     | '/settings/display'
     | '/settings/notifications'
     | '/apps/'
+    | '/assets/'
     | '/chats/'
     | '/help-center/'
+    | '/inspirations/'
+    | '/platform-accounts/'
+    | '/projects/'
     | '/settings/'
     | '/tasks/'
+    | '/worker-configs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -200,9 +260,14 @@ export interface RootRouteChildren {
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
   AppsIndexRoute: typeof AppsIndexRoute
+  AssetsIndexRoute: typeof AssetsIndexRoute
   ChatsIndexRoute: typeof ChatsIndexRoute
   HelpCenterIndexRoute: typeof HelpCenterIndexRoute
+  InspirationsIndexRoute: typeof InspirationsIndexRoute
+  PlatformAccountsIndexRoute: typeof PlatformAccountsIndexRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
+  WorkerConfigsIndexRoute: typeof WorkerConfigsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/worker-configs/': {
+      id: '/worker-configs/'
+      path: '/worker-configs'
+      fullPath: '/worker-configs'
+      preLoaderRoute: typeof WorkerConfigsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks/': {
       id: '/tasks/'
       path: '/tasks'
@@ -235,6 +307,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform-accounts/': {
+      id: '/platform-accounts/'
+      path: '/platform-accounts'
+      fullPath: '/platform-accounts'
+      preLoaderRoute: typeof PlatformAccountsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inspirations/': {
+      id: '/inspirations/'
+      path: '/inspirations'
+      fullPath: '/inspirations'
+      preLoaderRoute: typeof InspirationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/help-center/': {
       id: '/help-center/'
       path: '/help-center'
@@ -247,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/chats'
       fullPath: '/chats'
       preLoaderRoute: typeof ChatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assets/': {
+      id: '/assets/'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AssetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/apps/': {
@@ -335,9 +435,14 @@ const rootRouteChildren: RootRouteChildren = {
   errors500Route: errors500Route,
   errors503Route: errors503Route,
   AppsIndexRoute: AppsIndexRoute,
+  AssetsIndexRoute: AssetsIndexRoute,
   ChatsIndexRoute: ChatsIndexRoute,
   HelpCenterIndexRoute: HelpCenterIndexRoute,
+  InspirationsIndexRoute: InspirationsIndexRoute,
+  PlatformAccountsIndexRoute: PlatformAccountsIndexRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
+  WorkerConfigsIndexRoute: WorkerConfigsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

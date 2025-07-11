@@ -56,6 +56,13 @@ export function ProjectsDialogs() {
 
   const editForm = useForm<UpdateProjectFormData>({
     resolver: zodResolver(updateProjectSchema),
+    defaultValues: {
+      name: '',
+      status: undefined,
+      inspiration_id: null,
+      score: null,
+      review_notes: null,
+    },
   })
 
   useEffect(() => {

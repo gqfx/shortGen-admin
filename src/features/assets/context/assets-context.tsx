@@ -1,44 +1,43 @@
 import { createContext, useContext, ReactNode, useState } from 'react'
-import { Project } from '@/lib/api'
+import { Asset } from '@/lib/api'
 
-interface ProjectsContextType {
-  projects: Project[]
+interface AssetsContextType {
+  assets: Asset[]
   isLoading: boolean
-  selectedProject: Project | null
+  selectedAsset: Asset | null
   isCreateDialogOpen: boolean
   isEditDialogOpen: boolean
   isDeleteDialogOpen: boolean
   setIsCreateDialogOpen: (open: boolean) => void
   setIsEditDialogOpen: (open: boolean) => void
   setIsDeleteDialogOpen: (open: boolean) => void
-  setSelectedProject: (project: Project | null) => void
-  refreshProjects: () => void
+  setSelectedAsset: (asset: Asset | null) => void
+  refreshAssets: () => void
 }
 
-const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
+const AssetsContext = createContext<AssetsContextType | undefined>(undefined)
 
-export const useProjects = () => {
-  const context = useContext(ProjectsContext)
+export const useAssets = () => {
+  const context = useContext(AssetsContext)
   if (!context) {
-    throw new Error('useProjects must be used within a ProjectsProvider')
+    throw new Error('useAssets must be used within an AssetsProvider')
   }
   return context
 }
 
-interface ProjectsProviderProps {
+interface AssetsProviderProps {
   children: ReactNode
 }
 
-export default function ProjectsProvider({ children }: ProjectsProviderProps) {
-  const [projects] = useState<Project[]>([])
+export default function AssetsProvider({ children }: AssetsProviderProps) {
+  const [assets] = useState<Asset[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  const refreshProjects = () => {
-    // This will be implemented with actual API call
+  const refreshAssets = () => {
     setIsLoading(true)
     setTimeout(() => {
       setIsLoading(false)
@@ -46,22 +45,22 @@ export default function ProjectsProvider({ children }: ProjectsProviderProps) {
   }
 
   return (
-    <ProjectsContext.Provider
+    <AssetsContext.Provider
       value={{
-        projects,
+        assets,
         isLoading,
-        selectedProject,
+        selectedAsset,
         isCreateDialogOpen,
         isEditDialogOpen,
         isDeleteDialogOpen,
         setIsCreateDialogOpen,
         setIsEditDialogOpen,
         setIsDeleteDialogOpen,
-        setSelectedProject,
-        refreshProjects,
+        setSelectedAsset,
+        refreshAssets,
       }}
     >
       {children}
-    </ProjectsContext.Provider>
+    </AssetsContext.Provider>
   )
 }
