@@ -33,7 +33,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { IconCheckCircle, IconXCircle, IconToggleLeft, IconToggleRight } from '@tabler/icons-react'
+import { IconCheck, IconX, IconToggleLeft, IconToggleRight } from '@tabler/icons-react'
 
 const createWorkflowSchema = z.object({
   id: z.string().min(1, 'Workflow ID is required'),
@@ -472,12 +472,12 @@ export function WorkflowRegistryDialogs() {
               </Badge>
               {selectedWorkflow?.is_active ? (
                 <Badge variant="outline" className="text-green-600">
-                  <IconCheckCircle className="w-3 h-3 mr-1" />
+                  <IconCheck className="w-3 h-3 mr-1" />
                   Active
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-red-600">
-                  <IconXCircle className="w-3 h-3 mr-1" />
+                  <IconX className="w-3 h-3 mr-1" />
                   Inactive
                 </Badge>
               )}
