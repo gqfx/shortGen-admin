@@ -1,54 +1,72 @@
 import {
+  IconChecks,
+  IconClock,
+  IconLoader2,
+  IconX,
+  IconCirclePause,
+  IconVideo,
+  IconMusic,
+  IconPhoto,
+  IconFileText,
+  IconCube,
   IconArrowDown,
   IconArrowRight,
   IconArrowUp,
-  IconCircle,
-  IconCircleCheck,
-  IconCircleX,
-  IconExclamationCircle,
-  IconStopwatch,
 } from '@tabler/icons-react'
 
-export const labels = [
+export const taskTypes = [
   {
-    value: 'bug',
-    label: 'Bug',
+    value: 'video_generation',
+    label: 'Video Generation',
+    icon: IconVideo,
   },
   {
-    value: 'feature',
-    label: 'Feature',
+    value: 'audio_generation',
+    label: 'Audio Generation',
+    icon: IconMusic,
   },
   {
-    value: 'documentation',
-    label: 'Documentation',
+    value: 'image_generation',
+    label: 'Image Generation',
+    icon: IconPhoto,
+  },
+  {
+    value: 'text_generation',
+    label: 'Text Generation',
+    icon: IconFileText,
+  },
+  {
+    value: 'general',
+    label: 'General',
+    icon: IconCube,
   },
 ]
 
 export const statuses = [
   {
-    value: 'backlog',
-    label: 'Backlog',
-    icon: IconExclamationCircle,
+    value: 'waiting',
+    label: 'Waiting',
+    icon: IconCirclePause,
   },
   {
-    value: 'todo',
-    label: 'Todo',
-    icon: IconCircle,
+    value: 'pending',
+    label: 'Pending',
+    icon: IconClock,
   },
   {
-    value: 'in progress',
-    label: 'In Progress',
-    icon: IconStopwatch,
+    value: 'processing',
+    label: 'Processing',
+    icon: IconLoader2,
   },
   {
-    value: 'done',
-    label: 'Done',
-    icon: IconCircleCheck,
+    value: 'completed',
+    label: 'Completed',
+    icon: IconChecks,
   },
   {
-    value: 'canceled',
-    label: 'Canceled',
-    icon: IconCircleX,
+    value: 'failed',
+    label: 'Failed',
+    icon: IconX,
   },
 ]
 
@@ -69,3 +87,6 @@ export const priorities = [
     icon: IconArrowUp,
   },
 ]
+
+// Keep legacy exports for compatibility
+export const labels = taskTypes
