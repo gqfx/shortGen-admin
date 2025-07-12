@@ -50,7 +50,6 @@ const queryClient = new QueryClient({
       if (error instanceof AxiosError) {
         if (error.response?.status === 500) {
           toast.error('Internal Server Error!')
-          router.navigate({ to: '/500' })
         }
       }
     },
