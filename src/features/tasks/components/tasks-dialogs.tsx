@@ -1,11 +1,23 @@
-import { showSubmittedData } from '@/utils/show-submitted-data'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useTasks } from '../context/tasks-context'
 import { TasksImportDialog } from './tasks-import-dialog'
 import { TasksMutateDrawer } from './tasks-mutate-drawer'
 
 export function TasksDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useTasks()
+  const { open, setOpen, currentRow, setCurrentRow, deleteTask } = useTasks()
+
+  const handleDeleteConfirm = async () => {
+    if (!currentRow) return
+    
+    try {
+      await deleteTask(currentRow.id)
+      // The context will handle closing dialogs and resetting state
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+      // Error toast is handled in the context
+    }
+  }
+
   return (
     <>
       <TasksMutateDrawer
@@ -44,16 +56,7 @@ export function TasksDialogs() {
                 setCurrentRow(null)
               }, 500)
             }}
-            handleConfirm={() => {
-              setOpen(null)
-              setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
-              showSubmittedData(
-                currentRow,
-                'The following task has been deleted:'
-              )
-            }}
+            handleConfirm={handleDeleteConfirm}
             className='max-w-md'
             title={`Delete this task: ${currentRow.id} ?`}
             desc={

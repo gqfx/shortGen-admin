@@ -129,7 +129,7 @@ export function ProjectsDialogs() {
             </DialogDescription>
           </DialogHeader>
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateProject)} className='space-y-4'>
+            <form onSubmit={createForm.handleSubmit(handleCreateProject as any)} className='space-y-4'>
               <FormField
                 control={createForm.control}
                 name='name'

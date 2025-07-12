@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkflowRegistryIndexRouteImport } from './routes/workflow-registry/index'
 import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
@@ -20,6 +21,11 @@ import { Route as AssetsIndexRouteImport } from './routes/assets/index'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkflowRegistryIndexRoute = WorkflowRegistryIndexRouteImport.update({
+  id: '/workflow-registry/',
+  path: '/workflow-registry/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WorkerConfigsIndexRoute = WorkerConfigsIndexRouteImport.update({
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
+  '/workflow-registry': typeof WorkflowRegistryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
+  '/workflow-registry': typeof WorkflowRegistryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/tasks/': typeof TasksIndexRoute
   '/worker-configs/': typeof WorkerConfigsIndexRoute
+  '/workflow-registry/': typeof WorkflowRegistryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/tasks'
     | '/worker-configs'
+    | '/workflow-registry'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/tasks'
     | '/worker-configs'
+    | '/workflow-registry'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/tasks/'
     | '/worker-configs/'
+    | '/workflow-registry/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
   WorkerConfigsIndexRoute: typeof WorkerConfigsIndexRoute
+  WorkflowRegistryIndexRoute: typeof WorkflowRegistryIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workflow-registry/': {
+      id: '/workflow-registry/'
+      path: '/workflow-registry'
+      fullPath: '/workflow-registry'
+      preLoaderRoute: typeof WorkflowRegistryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/worker-configs/': {
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsIndexRoute: ProjectsIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
   WorkerConfigsIndexRoute: WorkerConfigsIndexRoute,
+  WorkflowRegistryIndexRoute: WorkflowRegistryIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

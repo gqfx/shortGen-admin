@@ -6,6 +6,11 @@
 - **描述**: 用于管理视频生成项目、资源和任务的API
 - **基础URL**: http://localhost:8000
 
+## 重要更新说明
+- **2024年最新**: 所有API端点都支持带或不带尾随斜杠的访问方式
+- **新增**: 工作流注册管理API (`/api/workflow-registry`)
+- **更新**: 平台账号查询响应现包含完整的凭证信息（包括代理配置）
+
 ## 通用响应格式
 所有API响应都使用统一的Response格式：
 ```json
@@ -26,10 +31,10 @@
 
 ## API 接口详情
 
-### 1. 项目管理 (/projects)
+### 1. 项目管理 (/api/projects)
 
 #### 1.1 创建项目
-- **POST** `/projects`
+- **POST** `/api/projects`
 - **功能**: 创建新项目并自动生成任务图
 
 **请求体:**
@@ -72,7 +77,7 @@
 ```
 
 #### 1.2 获取项目列表
-- **GET** `/projects?skip=0&limit=100`
+- **GET** `/api/projects?skip=0&limit=100`
 
 **查询参数:**
 - `skip`: 跳过记录数 (默认: 0)
@@ -100,7 +105,7 @@
 ```
 
 #### 1.3 获取项目详情
-- **GET** `/projects/{project_id}`
+- **GET** `/api/projects/{project_id}`
 
 **路径参数:**
 - `project_id`: 项目ID (整数)
@@ -108,7 +113,7 @@
 **响应**: 同创建项目响应格式
 
 #### 1.4 更新项目
-- **PUT** `/projects/{project_id}`
+- **PUT** `/api/projects/{project_id}`
 
 **请求体:**
 ```json
@@ -130,7 +135,7 @@
 - `failed` → `pending`, `processing`
 
 #### 1.5 删除项目
-- **DELETE** `/projects/{project_id}`
+- **DELETE** `/api/projects/{project_id}`
 
 **响应:**
 ```json
@@ -144,10 +149,10 @@
 ```
 
 #### 1.6 重算任务数量
-- **POST** `/projects/{project_id}/recalculate-tasks`
+- **POST** `/api/projects/{project_id}/recalculate-tasks`
 
 #### 1.7 重新生成项目
-- **POST** `/projects/{project_id}/regenerate`
+- **POST** `/api/projects/{project_id}/regenerate`
 
 **请求体 (可选):**
 ```json
@@ -987,6 +992,258 @@ curl -X PATCH "http://localhost:8000/api/tasks/update-by-commit-id" \
     "status": "completed",
     "task_output": {
       "video_url": "https://example.com/video.mp4"
+    }
+  }'
+```
+
+### 8. 工作流注册管理 (/api/workflow-registry)
+
+#### 8.1 创建工作流
+- **POST** `/api/workflow-registry`
+- **功能**: 注册新的工作流配置
+
+**请求体:**
+```json
+{
+  "id": "dreamina_video_gen_v1",
+  "name": "Dreamina视频生成工作流",
+  "description": "使用Dreamina平台生成视频的完整工作流",
+  "workflow_type": "execution",
+  "version": "1.0.0",
+  "config": {
+    "platform": "dreamina",
+    "model": "video_gen_model",
+    "parameters": {
+      "duration": 30,
+      "quality": "HD"
+    }
+  },
+  "is_active": true
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": "dreamina_video_gen_v1",
+    "name": "Dreamina视频生成工作流",
+    "description": "使用Dreamina平台生成视频的完整工作流",
+    "workflow_type": "execution",
+    "version": "1.0.0",
+    "config": {
+      "platform": "dreamina",
+      "model": "video_gen_model",
+      "parameters": {
+        "duration": 30,
+        "quality": "HD"
+      }
+    },
+    "is_active": true,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 8.2 获取工作流列表
+- **GET** `/api/workflow-registry?skip=0&limit=100&workflow_type=execution&is_active=true`
+- **功能**: 获取工作流注册列表，支持按类型和状态过滤
+
+**查询参数:**
+- `skip`: 跳过的记录数（分页）
+- `limit`: 返回的记录数限制
+- `workflow_type`: 工作流类型过滤 (inspiration, transform, execution)
+- `is_active`: 是否激活状态过滤 (true/false)
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    {
+      "id": "dreamina_video_gen_v1",
+      "name": "Dreamina视频生成工作流",
+      "description": "使用Dreamina平台生成视频的完整工作流",
+      "workflow_type": "execution",
+      "version": "1.0.0",
+      "is_active": true,
+      "created_at": "2023-01-01T00:00:00"
+    }
+  ]
+}
+```
+
+#### 8.3 获取工作流详情
+- **GET** `/api/workflow-registry/{workflow_id}`
+- **功能**: 获取指定工作流的详细配置信息
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": "dreamina_video_gen_v1",
+    "name": "Dreamina视频生成工作流",
+    "description": "使用Dreamina平台生成视频的完整工作流",
+    "workflow_type": "execution",
+    "version": "1.0.0",
+    "config": {
+      "platform": "dreamina",
+      "model": "video_gen_model",
+      "parameters": {
+        "duration": 30,
+        "quality": "HD"
+      }
+    },
+    "is_active": true,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 8.4 更新工作流
+- **PUT** `/api/workflow-registry/{workflow_id}`
+- **功能**: 更新工作流配置信息
+
+**请求体:** (所有字段都是可选的)
+```json
+{
+  "name": "更新后的工作流名称",
+  "description": "更新后的描述",
+  "workflow_type": "execution",
+  "version": "1.1.0",
+  "config": {
+    "platform": "dreamina",
+    "model": "video_gen_model_v2",
+    "parameters": {
+      "duration": 60,
+      "quality": "4K"
+    }
+  },
+  "is_active": true
+}
+```
+
+#### 8.5 删除工作流
+- **DELETE** `/api/workflow-registry/{workflow_id}`
+- **功能**: 软删除工作流（逻辑删除）
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "message": "Workflow deleted successfully"
+  }
+}
+```
+
+#### 8.6 激活工作流
+- **POST** `/api/workflow-registry/{workflow_id}/activate`
+- **功能**: 激活指定的工作流
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": "dreamina_video_gen_v1",
+    "name": "Dreamina视频生成工作流",
+    "is_active": true,
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 8.7 停用工作流
+- **POST** `/api/workflow-registry/{workflow_id}/deactivate`
+- **功能**: 停用指定的工作流
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": "dreamina_video_gen_v1",
+    "name": "Dreamina视频生成工作流",
+    "is_active": false,
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 8.8 获取工作流类型列表
+- **GET** `/api/workflow-registry/types/list`
+- **功能**: 获取系统中所有的工作流类型
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    "inspiration",
+    "transform", 
+    "execution"
+  ]
+}
+```
+
+### 工作流管理示例用法
+
+1. **注册新工作流**
+```bash
+curl -X POST "http://localhost:8000/api/workflow-registry" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "runway_video_gen_v1",
+    "name": "Runway视频生成工作流",
+    "description": "使用Runway平台生成视频",
+    "workflow_type": "execution",
+    "version": "1.0.0",
+    "config": {
+      "platform": "runway",
+      "model": "gen3_alpha",
+      "parameters": {
+        "duration": 10,
+        "quality": "1080p"
+      }
+    }
+  }'
+```
+
+2. **查询执行类型的工作流**
+```bash
+curl "http://localhost:8000/api/workflow-registry?workflow_type=execution&is_active=true"
+```
+
+3. **激活工作流**
+```bash
+curl -X POST "http://localhost:8000/api/workflow-registry/runway_video_gen_v1/activate"
+```
+
+4. **更新工作流配置**
+```bash
+curl -X PUT "http://localhost:8000/api/workflow-registry/runway_video_gen_v1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "version": "1.1.0",
+    "config": {
+      "platform": "runway",
+      "model": "gen3_alpha_turbo",
+      "parameters": {
+        "duration": 10,
+        "quality": "4K"
+      }
     }
   }'
 ```

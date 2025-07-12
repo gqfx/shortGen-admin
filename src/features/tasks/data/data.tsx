@@ -3,7 +3,7 @@ import {
   IconClock,
   IconLoader2,
   IconX,
-  IconCirclePause,
+  IconPlayerPause,
   IconVideo,
   IconMusic,
   IconPhoto,
@@ -46,7 +46,7 @@ export const statuses = [
   {
     value: 'waiting',
     label: 'Waiting',
-    icon: IconCirclePause,
+    icon: IconPlayerPause,
   },
   {
     value: 'pending',

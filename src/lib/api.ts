@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.DEV ? '' : 'http://localhost:8000'
 
 export interface ApiResponse<T> {
   code: number
@@ -268,30 +268,62 @@ export interface UpdateWorkerConfigRequest {
   is_active?: boolean
 }
 
+// WorkflowRegistry types
+export interface WorkflowRegistry {
+  id: string
+  name: string
+  description: string
+  workflow_type: 'inspiration' | 'transform' | 'execution'
+  version: string
+  config: Record<string, any>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateWorkflowRegistryRequest {
+  id: string
+  name: string
+  description: string
+  workflow_type: 'inspiration' | 'transform' | 'execution'
+  version: string
+  config: Record<string, any>
+  is_active: boolean
+}
+
+export interface UpdateWorkflowRegistryRequest {
+  name?: string
+  description?: string
+  workflow_type?: 'inspiration' | 'transform' | 'execution'
+  version?: string
+  config?: Record<string, any>
+  is_active?: boolean
+}
+
 // API Functions
 
 // Projects API
 export const projectsApi = {
   getAll: (skip = 0, limit = 100): Promise<AxiosResponse<ApiResponse<Project[]>>> =>
-    api.get(`/projects?skip=${skip}&limit=${limit}`),
+    api.get(`/api/projects?skip=${skip}&limit=${limit}`),
   
   getById: (id: number): Promise<AxiosResponse<ApiResponse<Project>>> =>
-    api.get(`/projects/${id}`),
+    api.get(`/api/projects/${id}`),
   
   create: (data: CreateProjectRequest): Promise<AxiosResponse<ApiResponse<Project>>> =>
-    api.post('/projects', data),
+    api.post('/api/projects', data),
   
   update: (id: number, data: UpdateProjectRequest): Promise<AxiosResponse<ApiResponse<Project>>> =>
-    api.put(`/projects/${id}`, data),
+    api.put(`/api/projects/${id}`, data),
   
   delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/projects/${id}`),
+    api.delete(`/api/projects/${id}`),
   
   recalculateTasks: (id: number): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/projects/${id}/recalculate-tasks`),
+    api.post(`/api/projects/${id}/recalculate-tasks`),
   
   regenerate: (id: number, data?: Record<string, any>): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/projects/${id}/regenerate`, data),
+    api.post(`/api/projects/${id}/regenerate`, data),
 }
 
 // Tasks API
@@ -428,6 +460,37 @@ export const workerConfigsApi = {
   
   getTaskConfigs: (taskId: number): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.get(`/api/worker-configs/tasks/${taskId}/configs`),
+}
+
+// WorkflowRegistry API
+export const workflowRegistryApi = {
+  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<AxiosResponse<ApiResponse<WorkflowRegistry[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (workflowType) params.append('workflow_type', workflowType)
+    if (isActive !== undefined) params.append('is_active', isActive.toString())
+    return api.get(`/api/workflow-registry?${params}`)
+  },
+  
+  getById: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+    api.get(`/api/workflow-registry/${id}`),
+  
+  create: (data: CreateWorkflowRegistryRequest): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+    api.post('/api/workflow-registry', data),
+  
+  update: (id: string, data: UpdateWorkflowRegistryRequest): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+    api.put(`/api/workflow-registry/${id}`, data),
+  
+  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+    api.delete(`/api/workflow-registry/${id}`),
+  
+  activate: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+    api.post(`/api/workflow-registry/${id}/activate`),
+  
+  deactivate: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+    api.post(`/api/workflow-registry/${id}/deactivate`),
+  
+  getTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+    api.get('/api/workflow-registry/types/list'),
 }
 
 export default api

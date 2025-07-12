@@ -6,25 +6,68 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconBulb, IconPlus, IconEdit, IconCheck, IconX } from '@tabler/icons-react'
-
-// No data available - API integration needed
-const mockInspirations: any[] = []
+import { IconBulb, IconPlus, IconEdit, IconCheck, IconX, IconEye } from '@tabler/icons-react'
+import InspirationsProvider, { useInspirations } from './context/inspirations-context'
+import { InspirationDialogs } from './components/inspiration-dialogs'
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'approved':
-      return 'bg-green-100 text-green-800'
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
     case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
     case 'rejected':
-      return 'bg-red-100 text-red-800'
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
     default:
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
   }
 }
 
-export default function Inspirations() {
+function InspirationsContent() {
+  const {
+    inspirations,
+    isLoading,
+    error,
+    setSelectedInspiration,
+    setIsCreateDialogOpen,
+    setIsEditDialogOpen,
+    setIsDeleteDialogOpen,
+    setIsDetailDialogOpen,
+    approveInspiration,
+    rejectInspiration,
+  } = useInspirations()
+
+  const handleEdit = (inspiration: any) => {
+    setSelectedInspiration(inspiration)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDelete = (inspiration: any) => {
+    setSelectedInspiration(inspiration)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleViewDetails = (inspiration: any) => {
+    setSelectedInspiration(inspiration)
+    setIsDetailDialogOpen(true)
+  }
+
+  const handleApprove = async (inspiration: any) => {
+    try {
+      await approveInspiration(inspiration.id, { score: 5 })
+    } catch (error) {
+      console.error('Failed to approve inspiration:', error)
+    }
+  }
+
+  const handleReject = async (inspiration: any) => {
+    try {
+      await rejectInspiration(inspiration.id, { review_notes: 'Rejected' })
+    } catch (error) {
+      console.error('Failed to reject inspiration:', error)
+    }
+  }
+
   return (
     <>
       <Header fixed>
@@ -36,75 +79,134 @@ export default function Inspirations() {
       </Header>
 
       <Main>
-        <div className='mb-6 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
+        <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Inspirations</h2>
             <p className='text-muted-foreground'>
-              Manage creative inspirations and project ideas for content generation.
+              Manage your creative inspirations and ideas for content generation.
             </p>
           </div>
-          <Button variant='default' size='sm' className='h-8 gap-1'>
-            <IconPlus className='h-3.5 w-3.5' />
-            <span className='sr-only sm:not-sr-only sm:whitespace-nowrap'>
-              Add Inspiration
-            </span>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <IconPlus className='mr-2 h-4 w-4' />
+            Add Inspiration
           </Button>
         </div>
 
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {mockInspirations.map((inspiration) => (
-            <Card key={inspiration.id} className='group hover:shadow-md transition-shadow'>
-              <CardHeader className='pb-3'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center space-x-2'>
-                    <IconBulb className='h-5 w-5 text-muted-foreground' />
-                    <Badge className={`text-xs ${getStatusColor(inspiration.status)}`}>
-                      {inspiration.status}
-                    </Badge>
-                  </div>
-                  <div className='flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity'>
-                    <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
-                      <IconEdit className='h-4 w-4' />
-                    </Button>
-                    <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-green-600'>
-                      <IconCheck className='h-4 w-4' />
-                    </Button>
-                    <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600'>
-                      <IconX className='h-4 w-4' />
-                    </Button>
-                  </div>
-                </div>
-                <CardTitle className='text-lg'>{inspiration.title}</CardTitle>
-                <CardDescription>{inspiration.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className='space-y-2'>
-                  <div className='flex justify-between text-sm'>
-                    <span className='text-muted-foreground'>Type:</span>
-                    <span className='font-medium'>{inspiration.project_type_code}</span>
-                  </div>
-                  <div className='flex justify-between text-sm'>
-                    <span className='text-muted-foreground'>Source:</span>
-                    <span className='font-medium'>{inspiration.source}</span>
-                  </div>
-                  {inspiration.score && (
-                    <div className='flex justify-between text-sm'>
-                      <span className='text-muted-foreground'>Score:</span>
-                      <Badge variant='outline'>{inspiration.score.toFixed(1)}</Badge>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="text-sm text-muted-foreground">Loading inspirations...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="text-sm text-red-600">Error loading inspirations: {error.message}</div>
+          </div>
+        ) : inspirations.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="text-sm text-muted-foreground">No inspirations found. Click "Add Inspiration" to create one.</div>
+          </div>
+        ) : (
+          <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+            {inspirations.map((inspiration) => (
+              <Card key={inspiration.id} className='hover:shadow-md transition-shadow'>
+                <CardHeader className='pb-3'>
+                  <div className='flex items-start justify-between'>
+                    <div className='flex items-center space-x-2'>
+                      <IconBulb className='h-5 w-5 text-muted-foreground' />
+                      <Badge 
+                        variant='secondary' 
+                        className={getStatusColor(inspiration.status)}
+                      >
+                        {inspiration.status}
+                      </Badge>
                     </div>
-                  )}
-                  <div className='flex justify-between text-sm'>
-                    <span className='text-muted-foreground'>Created:</span>
-                    <span className='font-medium'>
-                      {new Date(inspiration.created_at).toLocaleDateString()}
-                    </span>
+                    <div className='flex space-x-1'>
+                      <Button 
+                        variant='ghost' 
+                        size='sm'
+                        onClick={() => handleViewDetails(inspiration)}
+                        title='View Details'
+                      >
+                        <IconEye className='h-4 w-4' />
+                      </Button>
+                      <Button 
+                        variant='ghost' 
+                        size='sm'
+                        onClick={() => handleEdit(inspiration)}
+                        title='Edit Inspiration'
+                      >
+                        <IconEdit className='h-4 w-4' />
+                      </Button>
+                      {inspiration.status === 'pending' && (
+                        <>
+                          <Button 
+                            variant='ghost' 
+                            size='sm'
+                            onClick={() => handleApprove(inspiration)}
+                            title='Approve'
+                            className='text-green-600 hover:text-green-700'
+                          >
+                            <IconCheck className='h-4 w-4' />
+                          </Button>
+                          <Button 
+                            variant='ghost' 
+                            size='sm'
+                            onClick={() => handleReject(inspiration)}
+                            title='Reject'
+                            className='text-red-600 hover:text-red-700'
+                          >
+                            <IconX className='h-4 w-4' />
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        variant='ghost' 
+                        size='sm'
+                        onClick={() => handleDelete(inspiration)}
+                        title='Delete Inspiration'
+                        className='text-red-600 hover:text-red-700'
+                      >
+                        <IconX className='h-4 w-4' />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className='text-lg mb-2'>{inspiration.title}</CardTitle>
+                  <CardDescription className='mb-4'>
+                    {inspiration.description}
+                  </CardDescription>
+                  <div className='space-y-2 text-sm text-muted-foreground'>
+                    <div className='flex justify-between'>
+                      <span>Source:</span>
+                      <span>{inspiration.source}</span>
+                    </div>
+                    <div className='flex justify-between'>
+                      <span>Project Type:</span>
+                      <span>{inspiration.project_type_code}</span>
+                    </div>
+                    {inspiration.score && (
+                      <div className='flex justify-between'>
+                        <span>Score:</span>
+                        <span>{inspiration.score}/5</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </Main>
+
+      <InspirationDialogs />
     </>
+  )
+}
+
+export default function Inspirations() {
+  return (
+    <InspirationsProvider>
+      <InspirationsContent />
+    </InspirationsProvider>
   )
 }

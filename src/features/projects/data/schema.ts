@@ -23,7 +23,7 @@ export const projectSchema = z.object({
 export const createProjectSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   project_type: z.string().min(1, 'Project type is required'),
-  initial_parameters: z.record(z.any()).optional().default({}),
+  initial_parameters: z.record(z.any()).default({}),
 })
 
 export const updateProjectSchema = z.object({

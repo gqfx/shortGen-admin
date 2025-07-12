@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -8,30 +7,13 @@ import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
-import TasksProvider from './context/tasks-context'
-import { tasksApi } from '@/lib/api'
+import TasksProvider, { useTasks } from './context/tasks-context'
 
-export default function Tasks() {
-  const { data: apiResponse, isLoading, error } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: async () => {
-      console.log('🔄 Fetching tasks from API...')
-      try {
-        const response = await tasksApi.getAll(0, 100)
-        console.log('✅ Tasks API Response:', response.data)
-        return response
-      } catch (err) {
-        console.error('❌ Tasks API Error:', err)
-        throw err
-      }
-    },
-  })
-
-  const tasks = apiResponse?.data?.data || []
-  console.log('📊 Processed tasks:', tasks)
+function TasksContent() {
+  const { tasks, isLoading, error } = useTasks()
 
   return (
-    <TasksProvider>
+    <>
       <Header fixed>
         <Search />
         <div className='ml-auto flex items-center space-x-4'>
@@ -51,17 +33,17 @@ export default function Tasks() {
           <TasksPrimaryButtons />
         </div>
         <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
-          {isLoading ? (
+          {error ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-sm text-red-600">Error loading tasks: {error.message}</div>
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-sm text-muted-foreground">Loading tasks...</div>
             </div>
-          ) : error ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-sm text-red-500">Error loading tasks: {error.message}</div>
-            </div>
           ) : tasks.length === 0 ? (
             <div className="flex items-center justify-center h-32">
-              <div className="text-sm text-muted-foreground">No tasks found. API returned empty data.</div>
+              <div className="text-sm text-muted-foreground">No tasks found. Click "Add Task" to create one.</div>
             </div>
           ) : (
             <DataTable data={tasks} columns={columns} />
@@ -70,6 +52,14 @@ export default function Tasks() {
       </Main>
 
       <TasksDialogs />
+    </>
+  )
+}
+
+export default function Tasks() {
+  return (
+    <TasksProvider>
+      <TasksContent />
     </TasksProvider>
   )
 }
