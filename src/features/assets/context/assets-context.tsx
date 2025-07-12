@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useState } from 'react'
-import { Asset } from '@/lib/api'
+import { useQuery } from '@tanstack/react-query'
+import { Asset, assetsApi } from '@/lib/api'
 
 interface AssetsContextType {
   assets: Asset[]
@@ -30,18 +31,32 @@ interface AssetsProviderProps {
 }
 
 export default function AssetsProvider({ children }: AssetsProviderProps) {
-  const [assets] = useState<Asset[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
+  // Fetch assets
+  const { data: apiResponse, isLoading, refetch } = useQuery({
+    queryKey: ['assets'],
+    queryFn: async () => {
+      console.log('🔄 Fetching assets from API...')
+      try {
+        const response = await assetsApi.getAll(0, 100)
+        console.log('✅ Assets API Response:', response.data)
+        return response
+      } catch (err) {
+        console.error('❌ Assets API Error:', err)
+        throw err
+      }
+    },
+  })
+
+  const assets = apiResponse?.data?.data || []
+  console.log('📊 Processed assets:', assets)
+
   const refreshAssets = () => {
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
+    refetch()
   }
 
   return (

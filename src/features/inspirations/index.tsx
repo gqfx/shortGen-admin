@@ -8,37 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { IconBulb, IconPlus, IconEdit, IconCheck, IconX } from '@tabler/icons-react'
 
-// Mock data
-const mockInspirations = [
-  {
-    id: 1,
-    title: 'AI-Powered Short Video Series',
-    description: 'Create engaging short videos using AI technology for social media platforms',
-    project_type_code: 'video_generation',
-    source: 'user_input',
-    parameters: { style: 'modern', duration: 30 },
-    status: 'approved',
-    score: 4.5,
-    score_details: { creativity: 4.8, feasibility: 4.2 },
-    review_notes: 'Excellent concept with strong market potential',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T14:45:00Z',
-  },
-  {
-    id: 2,
-    title: 'Product Demo Animation',
-    description: 'Animated product demonstration for e-commerce platform',
-    project_type_code: 'animation',
-    source: 'ai_generated',
-    parameters: { style: 'corporate', duration: 60 },
-    status: 'pending',
-    score: null,
-    score_details: null,
-    review_notes: null,
-    created_at: '2024-01-12T08:15:00Z',
-    updated_at: '2024-01-12T08:15:00Z',
-  },
-]
+// No data available - API integration needed
+const mockInspirations: any[] = []
 
 const getStatusColor = (status: string) => {
   switch (status) {

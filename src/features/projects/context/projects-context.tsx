@@ -44,10 +44,21 @@ export default function ProjectsProvider({ children }: ProjectsProviderProps) {
   // Fetch projects
   const { data: apiResponse, isLoading, refetch } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => projectsApi.getAll(0, 100),
+    queryFn: async () => {
+      console.log('🔄 Fetching projects from API...')
+      try {
+        const response = await projectsApi.getAll(0, 100)
+        console.log('✅ Projects API Response:', response.data)
+        return response
+      } catch (err) {
+        console.error('❌ Projects API Error:', err)
+        throw err
+      }
+    },
   })
 
   const projects = apiResponse?.data?.data || []
+  console.log('📊 Processed projects:', projects)
 
   // Create project mutation
   const createMutation = useMutation({

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
@@ -10,15 +9,26 @@ import { DataTable } from './components/data-table'
 import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
 import TasksProvider from './context/tasks-context'
-import { tasksApi, Task } from '@/lib/api'
+import { tasksApi } from '@/lib/api'
 
 export default function Tasks() {
   const { data: apiResponse, isLoading, error } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => tasksApi.getAll(0, 100),
+    queryFn: async () => {
+      console.log('🔄 Fetching tasks from API...')
+      try {
+        const response = await tasksApi.getAll(0, 100)
+        console.log('✅ Tasks API Response:', response.data)
+        return response
+      } catch (err) {
+        console.error('❌ Tasks API Error:', err)
+        throw err
+      }
+    },
   })
 
   const tasks = apiResponse?.data?.data || []
+  console.log('📊 Processed tasks:', tasks)
 
   return (
     <TasksProvider>
@@ -48,6 +58,10 @@ export default function Tasks() {
           ) : error ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-sm text-red-500">Error loading tasks: {error.message}</div>
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-sm text-muted-foreground">No tasks found. API returned empty data.</div>
             </div>
           ) : (
             <DataTable data={tasks} columns={columns} />

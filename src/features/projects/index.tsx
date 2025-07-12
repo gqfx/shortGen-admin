@@ -37,6 +37,10 @@ function ProjectsContent() {
             <div className="flex items-center justify-center h-32">
               <div className="text-sm text-muted-foreground">Loading projects...</div>
             </div>
+          ) : projects.length === 0 ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-sm text-muted-foreground">No projects found. API returned empty data.</div>
+            </div>
           ) : (
             <DataTable data={projects} columns={columns} />
           )}
