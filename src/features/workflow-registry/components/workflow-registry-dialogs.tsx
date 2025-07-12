@@ -33,7 +33,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { useState } from 'react'
 import { IconCheckCircle, IconXCircle, IconToggleLeft, IconToggleRight } from '@tabler/icons-react'
 
 const createWorkflowSchema = z.object({
