@@ -6,7 +6,7 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconWorkflow, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye, IconCode } from '@tabler/icons-react'
+import { IconGitBranch, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye, IconCode } from '@tabler/icons-react'
 import WorkflowRegistryProvider, { useWorkflowRegistry } from './context/workflow-registry-context'
 import { WorkflowRegistryDialogs } from './components/workflow-registry-dialogs'
 
@@ -107,7 +107,7 @@ function WorkflowRegistryContent() {
                 <CardHeader className='pb-3'>
                   <div className='flex items-start justify-between'>
                     <div className='flex items-center space-x-2'>
-                      <IconWorkflow className='h-5 w-5 text-muted-foreground' />
+                      <IconGitBranch className='h-5 w-5 text-muted-foreground' />
                       <Badge 
                         variant='secondary' 
                         className={getWorkflowTypeColor(workflow.workflow_type)}

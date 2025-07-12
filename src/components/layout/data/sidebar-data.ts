@@ -6,7 +6,7 @@ import {
   IconBulb,
   IconCloud,
   IconAdjustments,
-  IconWorkflow,
+  IconGitBranch,
 } from '@tabler/icons-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -76,7 +76,7 @@ export const sidebarData: SidebarData = {
         {
           title: 'Workflow Registry',
           url: '/workflow-registry',
-          icon: IconWorkflow,
+          icon: IconGitBranch,
         },
       ],
     },
