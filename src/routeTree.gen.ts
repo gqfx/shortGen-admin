@@ -14,6 +14,7 @@ import { Route as WorkflowRegistryIndexRouteImport } from './routes/workflow-reg
 import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProjectTypesIndexRouteImport } from './routes/project-types/index'
 import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-accounts/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
@@ -43,6 +44,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectTypesIndexRoute = ProjectTypesIndexRouteImport.update({
+  id: '/project-types/',
+  path: '/project-types/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatformAccountsIndexRoute = PlatformAccountsIndexRouteImport.update({
   id: '/platform-accounts/',
   path: '/platform-accounts/',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
+  '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
+  '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/platform-accounts/': typeof PlatformAccountsIndexRoute
+  '/project-types/': typeof ProjectTypesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/tasks/': typeof TasksIndexRoute
   '/worker-configs/': typeof WorkerConfigsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/inspirations'
     | '/platform-accounts'
+    | '/project-types'
     | '/projects'
     | '/tasks'
     | '/worker-configs'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/inspirations'
     | '/platform-accounts'
+    | '/project-types'
     | '/projects'
     | '/tasks'
     | '/worker-configs'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/assets/'
     | '/inspirations/'
     | '/platform-accounts/'
+    | '/project-types/'
     | '/projects/'
     | '/tasks/'
     | '/worker-configs/'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   PlatformAccountsIndexRoute: typeof PlatformAccountsIndexRoute
+  ProjectTypesIndexRoute: typeof ProjectTypesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
   WorkerConfigsIndexRoute: typeof WorkerConfigsIndexRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/project-types/': {
+      id: '/project-types/'
+      path: '/project-types'
+      fullPath: '/project-types'
+      preLoaderRoute: typeof ProjectTypesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/platform-accounts/': {
       id: '/platform-accounts/'
       path: '/platform-accounts'
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   PlatformAccountsIndexRoute: PlatformAccountsIndexRoute,
+  ProjectTypesIndexRoute: ProjectTypesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
   WorkerConfigsIndexRoute: WorkerConfigsIndexRoute,

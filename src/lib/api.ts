@@ -300,6 +300,65 @@ export interface UpdateWorkflowRegistryRequest {
   is_active?: boolean
 }
 
+// ProjectType types
+export interface ProjectType {
+  code: string
+  name: string
+  description: string
+  inspiration_workflow_id: string | null
+  transform_workflow_id: string | null
+  execution_workflow_id: string | null
+  default_parameters: Record<string, any>
+  parameter_schema: Record<string, any>
+  category: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  inspiration_workflow?: {
+    id: string
+    name: string
+    workflow_type: string
+  }
+  transform_workflow?: {
+    id: string
+    name: string
+    workflow_type: string
+  }
+  execution_workflow?: {
+    id: string
+    name: string
+    workflow_type: string
+  }
+}
+
+export interface CreateProjectTypeRequest {
+  code: string
+  name: string
+  description: string
+  inspiration_workflow_id?: string
+  transform_workflow_id?: string
+  execution_workflow_id?: string
+  default_parameters: Record<string, any>
+  parameter_schema: Record<string, any>
+  category: string
+  sort_order: number
+  is_active: boolean
+}
+
+export interface UpdateProjectTypeRequest {
+  name?: string
+  description?: string
+  inspiration_workflow_id?: string
+  transform_workflow_id?: string
+  execution_workflow_id?: string
+  default_parameters?: Record<string, any>
+  parameter_schema?: Record<string, any>
+  category?: string
+  sort_order?: number
+  is_active?: boolean
+}
+
 // API Functions
 
 // Projects API
@@ -491,6 +550,40 @@ export const workflowRegistryApi = {
   
   getTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
     api.get('/api/workflow-registry/types/list'),
+}
+
+// ProjectType API
+export const projectTypesApi = {
+  getAll: (skip = 0, limit = 100, category?: string, isActive?: boolean): Promise<AxiosResponse<ApiResponse<ProjectType[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (category) params.append('category', category)
+    if (isActive !== undefined) params.append('is_active', isActive.toString())
+    return api.get(`/api/project-types?${params}`)
+  },
+  
+  getById: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.get(`/api/project-types/${code}`),
+  
+  create: (data: CreateProjectTypeRequest): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.post('/api/project-types', data),
+  
+  update: (code: string, data: UpdateProjectTypeRequest): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.put(`/api/project-types/${code}`, data),
+  
+  delete: (code: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+    api.delete(`/api/project-types/${code}`),
+  
+  activate: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.post(`/api/project-types/${code}/activate`),
+  
+  deactivate: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.post(`/api/project-types/${code}/deactivate`),
+  
+  getCategories: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+    api.get('/api/project-types/categories/list'),
+  
+  updateSortOrder: (code: string, sortOrder: number): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+    api.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
 }
 
 export default api

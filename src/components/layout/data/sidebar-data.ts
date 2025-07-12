@@ -78,6 +78,11 @@ export const sidebarData: SidebarData = {
           url: '/workflow-registry',
           icon: IconGitBranch,
         },
+        {
+          title: 'Project Types',
+          url: '/project-types',
+          icon: IconAdjustments,
+        },
       ],
     },
   ],

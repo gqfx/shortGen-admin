@@ -9,6 +9,7 @@
 ## 重要更新说明
 - **2024年最新**: 所有API端点都支持带或不带尾随斜杠的访问方式
 - **新增**: 工作流注册管理API (`/api/workflow-registry`)
+- **新增**: 项目类型管理API (`/api/project-types`)
 - **更新**: 平台账号查询响应现包含完整的凭证信息（包括代理配置）
 
 ## 通用响应格式
@@ -1196,6 +1197,342 @@ curl -X PATCH "http://localhost:8000/api/tasks/update-by-commit-id" \
     "execution"
   ]
 }
+```
+
+### 9. 项目类型管理 (/api/project-types)
+
+#### 9.1 创建项目类型
+- **POST** `/api/project-types`
+- **功能**: 创建新的项目类型配置
+
+**请求体:**
+```json
+{
+  "code": "tech_video_short",
+  "name": "科技短视频",
+  "description": "科技类短视频项目类型",
+  "inspiration_workflow_id": "tech_inspiration_v1",
+  "transform_workflow_id": "script_transform_v1", 
+  "execution_workflow_id": "dreamina_video_gen_v1",
+  "default_parameters": {
+    "duration": 30,
+    "style": "modern",
+    "target_audience": "general"
+  },
+  "parameter_schema": {
+    "type": "object",
+    "properties": {
+      "duration": {
+        "type": "integer",
+        "minimum": 15,
+        "maximum": 60
+      },
+      "style": {
+        "type": "string",
+        "enum": ["modern", "classic", "trendy"]
+      }
+    }
+  },
+  "category": "video",
+  "sort_order": 10,
+  "is_active": true
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "code": "tech_video_short",
+    "name": "科技短视频",
+    "description": "科技类短视频项目类型",
+    "inspiration_workflow_id": "tech_inspiration_v1",
+    "transform_workflow_id": "script_transform_v1",
+    "execution_workflow_id": "dreamina_video_gen_v1",
+    "default_parameters": {
+      "duration": 30,
+      "style": "modern",
+      "target_audience": "general"
+    },
+    "parameter_schema": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 60
+        },
+        "style": {
+          "type": "string", 
+          "enum": ["modern", "classic", "trendy"]
+        }
+      }
+    },
+    "category": "video",
+    "sort_order": 10,
+    "is_active": true,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 9.2 获取项目类型列表
+- **GET** `/api/project-types?skip=0&limit=100&category=video&is_active=true`
+- **功能**: 获取项目类型列表，支持按分类和状态过滤
+
+**查询参数:**
+- `skip`: 跳过的记录数（分页）
+- `limit`: 返回的记录数限制
+- `category`: 项目类型分类过滤
+- `is_active`: 是否激活状态过滤 (true/false)
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    {
+      "code": "tech_video_short",
+      "name": "科技短视频",
+      "description": "科技类短视频项目类型",
+      "category": "video",
+      "sort_order": 10,
+      "is_active": true,
+      "created_at": "2023-01-01T00:00:00"
+    }
+  ]
+}
+```
+
+#### 9.3 获取项目类型详情
+- **GET** `/api/project-types/{project_type_code}`
+- **功能**: 获取指定项目类型的详细信息及关联工作流详情
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success", 
+  "data": {
+    "code": "tech_video_short",
+    "name": "科技短视频",
+    "description": "科技类短视频项目类型",
+    "inspiration_workflow_id": "tech_inspiration_v1",
+    "transform_workflow_id": "script_transform_v1",
+    "execution_workflow_id": "dreamina_video_gen_v1",
+    "default_parameters": {
+      "duration": 30,
+      "style": "modern"
+    },
+    "parameter_schema": {
+      "type": "object",
+      "properties": {
+        "duration": {"type": "integer"},
+        "style": {"type": "string"}
+      }
+    },
+    "category": "video",
+    "sort_order": 10,
+    "is_active": true,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00",
+    "inspiration_workflow": {
+      "id": "tech_inspiration_v1",
+      "name": "科技创意生成工作流",
+      "workflow_type": "inspiration"
+    },
+    "transform_workflow": {
+      "id": "script_transform_v1", 
+      "name": "脚本转换工作流",
+      "workflow_type": "transform"
+    },
+    "execution_workflow": {
+      "id": "dreamina_video_gen_v1",
+      "name": "Dreamina视频生成工作流",
+      "workflow_type": "execution"
+    }
+  }
+}
+```
+
+#### 9.4 更新项目类型
+- **PUT** `/api/project-types/{project_type_code}`
+- **功能**: 更新项目类型配置信息
+
+**请求体:** (所有字段都是可选的)
+```json
+{
+  "name": "更新后的科技短视频",
+  "description": "更新后的描述",
+  "inspiration_workflow_id": "tech_inspiration_v2",
+  "default_parameters": {
+    "duration": 45,
+    "style": "trendy"
+  },
+  "category": "video",
+  "sort_order": 15,
+  "is_active": true
+}
+```
+
+#### 9.5 删除项目类型
+- **DELETE** `/api/project-types/{project_type_code}`
+- **功能**: 软删除项目类型（逻辑删除）
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "message": "Project type deleted successfully"
+  }
+}
+```
+
+#### 9.6 激活项目类型
+- **POST** `/api/project-types/{project_type_code}/activate`
+- **功能**: 激活指定的项目类型
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "code": "tech_video_short",
+    "name": "科技短视频",
+    "is_active": true,
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 9.7 停用项目类型
+- **POST** `/api/project-types/{project_type_code}/deactivate`
+- **功能**: 停用指定的项目类型
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "code": "tech_video_short",
+    "name": "科技短视频", 
+    "is_active": false,
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 9.8 获取项目类型分类列表
+- **GET** `/api/project-types/categories/list`
+- **功能**: 获取系统中所有的项目类型分类
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    "video",
+    "audio",
+    "image"
+  ]
+}
+```
+
+#### 9.9 更新项目类型排序
+- **PUT** `/api/project-types/{project_type_code}/sort-order?sort_order=20`
+- **功能**: 更新项目类型的显示排序
+
+**查询参数:**
+- `sort_order`: 新的排序值
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "code": "tech_video_short",
+    "name": "科技短视频",
+    "sort_order": 20,
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+### 项目类型管理示例用法
+
+1. **创建新项目类型**
+```bash
+curl -X POST "http://localhost:8000/api/project-types" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "education_video",
+    "name": "教育类视频",
+    "description": "适用于教育培训的视频项目类型",
+    "inspiration_workflow_id": "education_inspiration_v1",
+    "transform_workflow_id": "script_transform_v1",
+    "execution_workflow_id": "dreamina_video_gen_v1",
+    "default_parameters": {
+      "duration": 60,
+      "style": "professional",
+      "language": "chinese"
+    },
+    "parameter_schema": {
+      "type": "object",
+      "properties": {
+        "duration": {"type": "integer", "minimum": 30, "maximum": 300},
+        "style": {"type": "string", "enum": ["professional", "casual", "formal"]},
+        "language": {"type": "string", "enum": ["chinese", "english"]}
+      }
+    },
+    "category": "education",
+    "sort_order": 5,
+    "is_active": true
+  }'
+```
+
+2. **查询视频类项目类型**
+```bash
+curl "http://localhost:8000/api/project-types?category=video&is_active=true"
+```
+
+3. **获取项目类型详情及关联工作流**
+```bash
+curl "http://localhost:8000/api/project-types/education_video"
+```
+
+4. **更新项目类型配置**
+```bash
+curl -X PUT "http://localhost:8000/api/project-types/education_video" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "在线教育视频",
+    "default_parameters": {
+      "duration": 90,
+      "style": "modern",
+      "interactive": true
+    },
+    "sort_order": 3
+  }'
+```
+
+5. **获取所有项目类型分类**
+```bash
+curl "http://localhost:8000/api/project-types/categories/list"
+```
+
+6. **停用项目类型**
+```bash
+curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate"
 ```
 
 ### 工作流管理示例用法
