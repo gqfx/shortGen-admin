@@ -84,7 +84,8 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for initial data loading errors
+      console.error('Failed to fetch target accounts:', errorMessage)
     } finally {
       setLoading(false)
     }

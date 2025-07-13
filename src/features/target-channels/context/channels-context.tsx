@@ -75,7 +75,8 @@ export function ChannelsProvider({ children }: ChannelsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for initial data loading errors
+      console.error('Failed to fetch channels:', errorMessage)
     } finally {
       setLoading(false)
     }

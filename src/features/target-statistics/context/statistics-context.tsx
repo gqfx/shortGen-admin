@@ -84,7 +84,8 @@ export function StatisticsProvider({ children }: StatisticsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for initial data loading errors
+      console.error('Failed to fetch target accounts:', errorMessage)
     }
   }, [selectedAccountId])
 
@@ -111,7 +112,8 @@ export function StatisticsProvider({ children }: StatisticsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for data loading errors, just log them
+      console.error('Failed to fetch account statistics:', errorMessage)
     }
   }, [])
 
@@ -129,7 +131,8 @@ export function StatisticsProvider({ children }: StatisticsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for data loading errors, just log them
+      console.error('Failed to fetch growth trends:', errorMessage)
     }
   }, [])
 
@@ -147,7 +150,8 @@ export function StatisticsProvider({ children }: StatisticsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for data loading errors, just log them
+      console.error('Failed to fetch trending videos:', errorMessage)
     }
   }, [])
 
@@ -165,7 +169,8 @@ export function StatisticsProvider({ children }: StatisticsProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for data loading errors, just log them
+      console.error('Failed to fetch analytics summary:', errorMessage)
     }
   }, [])
 

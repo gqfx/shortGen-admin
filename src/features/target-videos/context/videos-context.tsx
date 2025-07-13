@@ -81,7 +81,8 @@ export function VideosProvider({ children }: VideosProviderProps) {
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      toast.error(errorMessage)
+      // Don't show toast for initial data loading errors
+      console.error('Failed to fetch videos:', errorMessage)
     } finally {
       setLoading(false)
     }
