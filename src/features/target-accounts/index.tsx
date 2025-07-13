@@ -102,7 +102,7 @@ function TargetAccountsContent() {
   const filteredAccounts = targetAccounts.filter(account =>
     account.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     account.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.category.toLowerCase().includes(searchTerm.toLowerCase())
+    (account.category && account.category.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   if (error) {
@@ -315,7 +315,10 @@ function TargetAccountsContent() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {account.category.charAt(0).toUpperCase() + account.category.slice(1)}
+                        {account.category ? 
+                          account.category.charAt(0).toUpperCase() + account.category.slice(1) : 
+                          'Uncategorized'
+                        }
                       </Badge>
                     </TableCell>
                     <TableCell>
