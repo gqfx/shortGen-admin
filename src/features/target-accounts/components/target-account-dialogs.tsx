@@ -33,20 +33,14 @@ import { TargetAccount, CreateTargetAccountRequest, UpdateTargetAccountRequest }
 import { useTargetAccounts } from '../context/target-accounts-context'
 
 const createTargetAccountSchema = z.object({
-  platform: z.enum(['youtube', 'tiktok', 'bilibili'], {
-    required_error: 'Please select a platform',
-  }),
-  platform_account_id: z.string().min(1, 'Platform account ID is required'),
-  username: z.string().min(1, 'Username is required'),
-  display_name: z.string().min(1, 'Display name is required'),
-  profile_url: z.string().url('Please enter a valid URL'),
-  description: z.string().optional(),
-  avatar_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-  is_verified: z.boolean(),
-  category: z.string().min(1, 'Category is required'),
+  channel_url: z.string().url('Please enter a valid channel URL'),
+  category: z.string().optional(),
   monitor_frequency: z.enum(['hourly', 'daily', 'weekly'], {
     required_error: 'Please select a monitor frequency',
   }),
+  video_limit: z.number().min(1, 'Video limit must be at least 1').max(1000, 'Video limit cannot exceed 1000'),
+  crawl_videos: z.boolean().optional(),
+  crawl_metrics: z.boolean().optional(),
 })
 
 const updateTargetAccountSchema = z.object({
@@ -96,16 +90,12 @@ export function TargetAccountDialogs({
   const createForm = useForm<CreateFormData>({
     resolver: zodResolver(createTargetAccountSchema),
     defaultValues: {
-      platform: 'youtube',
-      platform_account_id: '',
-      username: '',
-      display_name: '',
-      profile_url: '',
-      description: '',
-      avatar_url: '',
-      is_verified: false,
+      channel_url: '',
       category: '',
       monitor_frequency: 'daily',
+      video_limit: 50,
+      crawl_videos: true,
+      crawl_metrics: true,
     },
   })
 
@@ -138,16 +128,12 @@ export function TargetAccountDialogs({
 
   const handleCreateSubmit = async (data: CreateFormData) => {
     const payload: CreateTargetAccountRequest = {
-      platform: data.platform,
-      platform_account_id: data.platform_account_id,
-      username: data.username,
-      display_name: data.display_name,
-      profile_url: data.profile_url,
-      description: data.description || undefined,
-      avatar_url: data.avatar_url || undefined,
-      is_verified: data.is_verified,
-      category: data.category,
+      channel_url: data.channel_url,
+      category: data.category || undefined,
       monitor_frequency: data.monitor_frequency,
+      video_limit: data.video_limit,
+      crawl_videos: data.crawl_videos,
+      crawl_metrics: data.crawl_metrics,
     }
 
     const result = await createTargetAccount(payload)
@@ -196,123 +182,25 @@ export function TargetAccountDialogs({
       <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Target Account</DialogTitle>
+            <DialogTitle>Add Target Account</DialogTitle>
             <DialogDescription>
-              Add a new target account for monitoring and analysis.
+              Add a channel for monitoring by providing the channel URL. The system will automatically detect the platform and extract channel information.
             </DialogDescription>
           </DialogHeader>
           
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="platform"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Platform</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select platform" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="youtube">YouTube</SelectItem>
-                          <SelectItem value="tiktok">TikTok</SelectItem>
-                          <SelectItem value="bilibili">Bilibili</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="platform_account_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Platform Account ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="UCxxxxxxxxxxxxxx" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="channel_username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="display_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Channel Display Name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <FormField
                 control={createForm.control}
-                name="profile_url"
+                name="channel_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Profile URL</FormLabel>
+                    <FormLabel>Channel URL</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://www.youtube.com/channel/UCxxxxxxxxxxxxxx" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Brief description of the account"
-                        className="resize-none" 
+                      <Input 
+                        placeholder="https://www.youtube.com/channel/UCxxxxxxxxxxxxxx" 
                         {...field} 
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="avatar_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Avatar URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/avatar.jpg" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -325,14 +213,15 @@ export function TargetAccountDialogs({
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Category (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="">No category</SelectItem>
                           {categories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -351,7 +240,7 @@ export function TargetAccountDialogs({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Monitor Frequency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select frequency" />
@@ -371,30 +260,78 @@ export function TargetAccountDialogs({
 
               <FormField
                 control={createForm.control}
-                name="is_verified"
+                name="video_limit"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Verified Account</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Mark if this is a verified account on the platform
-                      </div>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Video Limit</FormLabel>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input 
+                        type="number"
+                        min={1}
+                        max={1000}
+                        placeholder="50" 
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        value={field.value || ''}
                       />
                     </FormControl>
+                    <div className="text-sm text-muted-foreground">
+                      Maximum number of videos to crawl (1-1000)
+                    </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={createForm.control}
+                  name="crawl_videos"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Crawl Videos</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Download video metadata and information
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={createForm.control}
+                  name="crawl_metrics"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Crawl Metrics</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Collect engagement metrics and statistics
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => handleCreateOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Create Target Account</Button>
+                <Button type="submit">Add Target Account</Button>
               </DialogFooter>
             </form>
           </Form>

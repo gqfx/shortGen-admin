@@ -1539,7 +1539,57 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 
 ### 10. 目标账号分析管理 (/api/target-account-analysis)
 
-#### 10.1 创建目标账号
+#### 10.1 快速添加目标账号
+- **POST** `/api/target-account-analysis/accounts/quick-add`
+- **功能**: 通过频道URL快速添加监控账号，系统自动检测平台并提取信息
+
+**最简参数:**
+```json
+{
+  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+  "monitor_frequency": "daily",
+  "video_limit": 50
+}
+```
+
+**完整参数示例:**
+```json
+{
+  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+  "category": "technology",
+  "monitor_frequency": "daily",
+  "video_limit": 50,
+  "crawl_videos": true,
+  "crawl_metrics": true
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": 1,
+    "platform": "youtube",
+    "platform_account_id": "UCxxxxxxxxxxxxxx",
+    "username": "tech_channel", 
+    "display_name": "科技频道",
+    "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+    "description": "专注科技内容的频道",
+    "avatar_url": "https://example.com/avatar.jpg",
+    "is_verified": true,
+    "category": "technology",
+    "is_active": true,
+    "monitor_frequency": "daily",
+    "last_crawled_at": null,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 10.2 创建目标账号（手动）
 - **POST** `/api/target-account-analysis/accounts`
 - **功能**: 创建新的目标账号监控配置
 
@@ -1584,7 +1634,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.2 获取目标账号列表  
+#### 10.3 获取目标账号列表  
 - **GET** `/api/target-account-analysis/accounts?platform=youtube&is_active=true&skip=0&limit=50`
 
 **查询参数:**
@@ -1616,12 +1666,12 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.3 获取账号详情
+#### 10.4 获取账号详情
 - **GET** `/api/target-account-analysis/accounts/{account_id}`
 
 **响应**: 包含账号基本信息及最新统计数据
 
-#### 10.4 更新账号配置
+#### 10.5 更新账号配置
 - **PUT** `/api/target-account-analysis/accounts/{account_id}`
 
 **请求体:** (所有字段都是可选的)
@@ -1634,10 +1684,10 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.5 删除账号监控
+#### 10.6 删除账号监控
 - **DELETE** `/api/target-account-analysis/accounts/{account_id}`
 
-#### 10.6 创建频道信息
+#### 10.7 创建频道信息
 - **POST** `/api/target-account-analysis/channels`
 
 **请求体:**
@@ -1652,10 +1702,10 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.7 获取频道列表
+#### 10.8 获取频道列表
 - **GET** `/api/target-account-analysis/channels?platform=youtube&skip=0&limit=50`
 
-#### 10.8 更新频道订阅数
+#### 10.9 更新频道订阅数
 - **PATCH** `/api/target-account-analysis/channels/{channel_id}/subscriber-count`
 
 **请求体:**
@@ -1665,7 +1715,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.9 记录账号统计数据
+#### 10.10 记录账号统计数据
 - **POST** `/api/target-account-analysis/accounts/{account_id}/statistics`
 
 **请求体:**
@@ -1701,14 +1751,14 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.10 获取账号统计历史
+#### 10.11 获取账号统计历史
 - **GET** `/api/target-account-analysis/accounts/{account_id}/statistics?days=30&limit=100`
 
 **查询参数:**
 - `days`: 获取最近天数的数据
 - `limit`: 限制记录数
 
-#### 10.11 获取增长趋势分析
+#### 10.12 获取增长趋势分析
 - **GET** `/api/target-account-analysis/accounts/{account_id}/growth-trends?days=7`
 
 **响应示例:**
@@ -1727,7 +1777,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.12 创建视频记录
+#### 10.13 创建视频记录
 - **POST** `/api/target-account-analysis/videos`
 
 **请求体:**
@@ -1748,7 +1798,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.13 批量创建视频
+#### 10.14 批量创建视频
 - **POST** `/api/target-account-analysis/videos/batch`
 
 **请求体:**
@@ -1771,7 +1821,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.14 获取视频列表
+#### 10.15 获取视频列表
 - **GET** `/api/target-account-analysis/videos?account_id=1&video_type=short&skip=0&limit=50`
 
 **查询参数:**
@@ -1782,7 +1832,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 - `published_after`: 发布时间起始过滤
 - `published_before`: 发布时间结束过滤
 
-#### 10.15 更新视频下载状态
+#### 10.16 更新视频下载状态
 - **PATCH** `/api/target-account-analysis/videos/{video_id}/download-status`
 
 **请求体:**
@@ -1795,7 +1845,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.16 记录视频互动数据
+#### 10.17 记录视频互动数据
 - **POST** `/api/target-account-analysis/videos/{video_id}/engagement-metrics`
 
 **请求体:**
@@ -1830,10 +1880,10 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.17 获取视频互动历史
+#### 10.18 获取视频互动历史
 - **GET** `/api/target-account-analysis/videos/{video_id}/engagement-metrics?days=30&limit=100`
 
-#### 10.18 批量获取最新互动数据
+#### 10.19 批量获取最新互动数据
 - **POST** `/api/target-account-analysis/videos/latest-metrics`
 
 **请求体:**
@@ -1843,7 +1893,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 }
 ```
 
-#### 10.19 获取热门视频排行
+#### 10.20 获取热门视频排行
 - **GET** `/api/target-account-analysis/videos/trending?account_id=1&metric=views_count&days=7&limit=10`
 
 **查询参数:**
@@ -1852,7 +1902,7 @@ curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate
 - `days`: 时间范围
 - `limit`: 限制数量
 
-#### 10.20 获取账号分析摘要
+#### 10.21 获取账号分析摘要
 - **GET** `/api/target-account-analysis/accounts/{account_id}/analytics-summary`
 
 **响应示例:**

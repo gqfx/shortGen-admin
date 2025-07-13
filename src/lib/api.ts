@@ -606,16 +606,12 @@ export interface TargetAccount {
 }
 
 export interface CreateTargetAccountRequest {
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  platform_account_id: string
-  username: string
-  display_name: string
-  profile_url: string
-  description?: string
-  avatar_url?: string
-  is_verified: boolean
-  category: string
+  channel_url: string
+  category?: string
   monitor_frequency: 'hourly' | 'daily' | 'weekly'
+  video_limit: number
+  crawl_videos?: boolean
+  crawl_metrics?: boolean
 }
 
 export interface UpdateTargetAccountRequest {
@@ -745,7 +741,7 @@ export const targetAccountAnalysisApi = {
     api.get(`/api/target-account-analysis/accounts/${id}`),
   
   createAccount: (data: CreateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.post('/api/target-account-analysis/accounts', data),
+    api.post('/api/target-account-analysis/accounts/quick-add', data),
   
   updateAccount: (id: number, data: UpdateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
     api.put(`/api/target-account-analysis/accounts/${id}`, data),
