@@ -586,4 +586,227 @@ export const projectTypesApi = {
     api.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
 }
 
+// Target Account Analysis types
+export interface TargetAccount {
+  id: number
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  platform_account_id: string
+  username: string
+  display_name: string
+  profile_url: string
+  description: string | null
+  avatar_url: string | null
+  is_verified: boolean
+  category: string
+  is_active: boolean
+  monitor_frequency: 'hourly' | 'daily' | 'weekly'
+  last_crawled_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateTargetAccountRequest {
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  platform_account_id: string
+  username: string
+  display_name: string
+  profile_url: string
+  description?: string
+  avatar_url?: string
+  is_verified: boolean
+  category: string
+  monitor_frequency: 'hourly' | 'daily' | 'weekly'
+}
+
+export interface UpdateTargetAccountRequest {
+  display_name?: string
+  description?: string
+  avatar_url?: string
+  category?: string
+  monitor_frequency?: 'hourly' | 'daily' | 'weekly'
+  is_active?: boolean
+}
+
+export interface Channel {
+  id: number
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  channel_id: string
+  channel_name: string
+  channel_url: string
+  is_verified: boolean
+  subscriber_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateChannelRequest {
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  channel_id: string
+  channel_name: string
+  channel_url: string
+  is_verified: boolean
+  subscriber_count: number
+}
+
+export interface TargetAccountStatistics {
+  id: number
+  account_id: number
+  followers_count: number
+  following_count: number
+  total_videos_count: number
+  total_views: number
+  total_likes: number
+  followers_growth: number
+  followers_growth_rate: number
+  collected_at: string
+  created_at: string
+}
+
+export interface CreateAccountStatisticsRequest {
+  followers_count: number
+  following_count: number
+  total_videos_count: number
+  total_views: number
+  total_likes: number
+  collected_at: string
+}
+
+export interface Video {
+  id: number
+  account_id: number
+  channel_id: number | null
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  platform_video_id: string
+  video_url: string
+  title: string
+  description: string | null
+  thumbnail_url: string | null
+  duration: number | null
+  video_type: 'long' | 'short' | 'live'
+  is_downloaded: boolean
+  download_status: string | null
+  local_file_path: string | null
+  local_file_size: number | null
+  published_at: string
+  discovered_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateVideoRequest {
+  account_id: number
+  channel_id?: number
+  platform: 'youtube' | 'tiktok' | 'bilibili'
+  platform_video_id: string
+  video_url: string
+  title: string
+  description?: string
+  thumbnail_url?: string
+  duration?: number
+  video_type: 'long' | 'short' | 'live'
+  published_at: string
+  discovered_at: string
+}
+
+export interface VideoEngagementMetrics {
+  id: number
+  video_id: number
+  views_count: number
+  likes_count: number
+  comments_count: number
+  shares_count: number
+  engagement_rate: number
+  views_growth: number
+  likes_growth: number
+  collected_at: string
+  created_at: string
+}
+
+export interface CreateVideoEngagementRequest {
+  views_count: number
+  likes_count: number
+  comments_count: number
+  shares_count: number
+  collected_at: string
+}
+
+// Target Account Analysis API
+export const targetAccountAnalysisApi = {
+  // Accounts
+  getAccounts: (skip = 0, limit = 50, platform?: string, isActive?: boolean, category?: string): Promise<AxiosResponse<ApiResponse<TargetAccount[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (platform) params.append('platform', platform)
+    if (isActive !== undefined) params.append('is_active', isActive.toString())
+    if (category) params.append('category', category)
+    return api.get(`/api/target-account-analysis/accounts?${params}`)
+  },
+  
+  getAccountById: (id: number): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+    api.get(`/api/target-account-analysis/accounts/${id}`),
+  
+  createAccount: (data: CreateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+    api.post('/api/target-account-analysis/accounts', data),
+  
+  updateAccount: (id: number, data: UpdateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+    api.put(`/api/target-account-analysis/accounts/${id}`, data),
+  
+  deleteAccount: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+    api.delete(`/api/target-account-analysis/accounts/${id}`),
+
+  // Channels
+  getChannels: (skip = 0, limit = 50, platform?: string): Promise<AxiosResponse<ApiResponse<Channel[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (platform) params.append('platform', platform)
+    return api.get(`/api/target-account-analysis/channels?${params}`)
+  },
+
+  // Videos
+  getVideos: (skip = 0, limit = 50, accountId?: number, channelId?: number, videoType?: string, isDownloaded?: boolean): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (accountId) params.append('account_id', accountId.toString())
+    if (channelId) params.append('channel_id', channelId.toString())
+    if (videoType) params.append('video_type', videoType)
+    if (isDownloaded !== undefined) params.append('is_downloaded', isDownloaded.toString())
+    return api.get(`/api/target-account-analysis/videos?${params}`)
+  },
+
+  // Statistics
+  getAccountStatistics: (accountId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<TargetAccountStatistics[]>>> => {
+    const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
+    return api.get(`/api/target-account-analysis/accounts/${accountId}/statistics?${params}`)
+  },
+
+  getGrowthTrends: (accountId: number, days = 7): Promise<AxiosResponse<ApiResponse<{
+    followers_trend: number
+    videos_trend: number
+    avg_daily_growth: number
+    total_growth_rate: number
+    analysis_period_days: number
+    data_points: number
+  }>>> => {
+    const params = new URLSearchParams({ days: days.toString() })
+    return api.get(`/api/target-account-analysis/accounts/${accountId}/growth-trends?${params}`)
+  },
+
+  getVideoEngagementMetrics: (videoId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<VideoEngagementMetrics[]>>> => {
+    const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
+    return api.get(`/api/target-account-analysis/videos/${videoId}/engagement-metrics?${params}`)
+  },
+
+  getTrendingVideos: (accountId?: number, metric = 'views_count', days = 7, limit = 10): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ metric, days: days.toString(), limit: limit.toString() })
+    if (accountId) params.append('account_id', accountId.toString())
+    return api.get(`/api/target-account-analysis/videos/trending?${params}`)
+  },
+
+  getAnalyticsSummary: (accountId: number): Promise<AxiosResponse<ApiResponse<{
+    account: TargetAccount
+    latest_stats: TargetAccountStatistics
+    recent_videos: Video[]
+    growth_trends: any
+    engagement_analysis: any
+  }>>> =>
+    api.get(`/api/target-account-analysis/accounts/${accountId}/analytics-summary`),
+}
+
 export default api

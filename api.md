@@ -10,7 +10,9 @@
 - **2024年最新**: 所有API端点都支持带或不带尾随斜杠的访问方式
 - **新增**: 工作流注册管理API (`/api/workflow-registry`)
 - **新增**: 项目类型管理API (`/api/project-types`)
+- **新增**: 目标账号分析管理API (`/api/target-account-analysis`) - 支持yt-dlp爬虫Worker数据管理
 - **更新**: 平台账号查询响应现包含完整的凭证信息（包括代理配置）
+- **新增**: 完整的CRUD服务层，支持批量操作和增长率自动计算
 
 ## 通用响应格式
 所有API响应都使用统一的Response格式：
@@ -1534,6 +1536,371 @@ curl "http://localhost:8000/api/project-types/categories/list"
 ```bash
 curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate"
 ```
+
+### 10. 目标账号分析管理 (/api/target-account-analysis)
+
+#### 10.1 创建目标账号
+- **POST** `/api/target-account-analysis/accounts`
+- **功能**: 创建新的目标账号监控配置
+
+**请求体:**
+```json
+{
+  "platform": "youtube",
+  "platform_account_id": "UCxxxxxxxxxxxxxx", 
+  "username": "tech_channel",
+  "display_name": "科技频道",
+  "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+  "description": "专注科技内容的频道",
+  "avatar_url": "https://example.com/avatar.jpg",
+  "is_verified": true,
+  "category": "technology",
+  "monitor_frequency": "daily"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": 1,
+    "platform": "youtube",
+    "platform_account_id": "UCxxxxxxxxxxxxxx",
+    "username": "tech_channel", 
+    "display_name": "科技频道",
+    "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+    "description": "专注科技内容的频道",
+    "avatar_url": "https://example.com/avatar.jpg",
+    "is_verified": true,
+    "category": "technology",
+    "is_active": true,
+    "monitor_frequency": "daily",
+    "last_crawled_at": null,
+    "created_at": "2023-01-01T00:00:00",
+    "updated_at": "2023-01-01T00:00:00"
+  }
+}
+```
+
+#### 10.2 获取目标账号列表  
+- **GET** `/api/target-account-analysis/accounts?platform=youtube&is_active=true&skip=0&limit=50`
+
+**查询参数:**
+- `platform`: 平台过滤 (youtube, tiktok, bilibili)
+- `is_active`: 是否活跃监控
+- `category`: 内容分类过滤
+- `monitor_frequency`: 监控频率过滤
+- `skip`: 跳过记录数
+- `limit`: 限制记录数
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    {
+      "id": 1,
+      "platform": "youtube",
+      "username": "tech_channel",
+      "display_name": "科技频道",
+      "category": "technology", 
+      "is_active": true,
+      "monitor_frequency": "daily",
+      "last_crawled_at": "2023-01-01T12:00:00",
+      "created_at": "2023-01-01T00:00:00"
+    }
+  ]
+}
+```
+
+#### 10.3 获取账号详情
+- **GET** `/api/target-account-analysis/accounts/{account_id}`
+
+**响应**: 包含账号基本信息及最新统计数据
+
+#### 10.4 更新账号配置
+- **PUT** `/api/target-account-analysis/accounts/{account_id}`
+
+**请求体:** (所有字段都是可选的)
+```json
+{
+  "display_name": "更新后的频道名",
+  "category": "entertainment",
+  "monitor_frequency": "hourly",
+  "is_active": false
+}
+```
+
+#### 10.5 删除账号监控
+- **DELETE** `/api/target-account-analysis/accounts/{account_id}`
+
+#### 10.6 创建频道信息
+- **POST** `/api/target-account-analysis/channels`
+
+**请求体:**
+```json
+{
+  "platform": "youtube",
+  "channel_id": "UCxxxxxxxxxxxxxx",
+  "channel_name": "科技频道",
+  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
+  "is_verified": true,
+  "subscriber_count": 150000
+}
+```
+
+#### 10.7 获取频道列表
+- **GET** `/api/target-account-analysis/channels?platform=youtube&skip=0&limit=50`
+
+#### 10.8 更新频道订阅数
+- **PATCH** `/api/target-account-analysis/channels/{channel_id}/subscriber-count`
+
+**请求体:**
+```json
+{
+  "subscriber_count": 155000
+}
+```
+
+#### 10.9 记录账号统计数据
+- **POST** `/api/target-account-analysis/accounts/{account_id}/statistics`
+
+**请求体:**
+```json
+{
+  "followers_count": 150000,
+  "following_count": 500,
+  "total_videos_count": 280,
+  "total_views": 5000000,
+  "total_likes": 120000,
+  "collected_at": "2023-01-01T12:00:00"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success", 
+  "data": {
+    "id": 1,
+    "account_id": 1,
+    "followers_count": 150000,
+    "following_count": 500,
+    "total_videos_count": 280,
+    "total_views": 5000000,
+    "total_likes": 120000,
+    "followers_growth": 1000,
+    "followers_growth_rate": 0.0067,
+    "collected_at": "2023-01-01T12:00:00",
+    "created_at": "2023-01-01T12:00:00"
+  }
+}
+```
+
+#### 10.10 获取账号统计历史
+- **GET** `/api/target-account-analysis/accounts/{account_id}/statistics?days=30&limit=100`
+
+**查询参数:**
+- `days`: 获取最近天数的数据
+- `limit`: 限制记录数
+
+#### 10.11 获取增长趋势分析
+- **GET** `/api/target-account-analysis/accounts/{account_id}/growth-trends?days=7`
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "followers_trend": 5000,
+    "videos_trend": 12,
+    "avg_daily_growth": 714,
+    "total_growth_rate": 3.44,
+    "analysis_period_days": 7,
+    "data_points": 7
+  }
+}
+```
+
+#### 10.12 创建视频记录
+- **POST** `/api/target-account-analysis/videos`
+
+**请求体:**
+```json
+{
+  "account_id": 1,
+  "channel_id": 1,
+  "platform": "youtube",
+  "platform_video_id": "dQw4w9WgXcQ",
+  "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "title": "Amazing Tech Video",
+  "description": "This video shows amazing technology",
+  "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+  "duration": 240,
+  "video_type": "long",
+  "published_at": "2023-01-01T10:00:00",
+  "discovered_at": "2023-01-01T12:00:00"
+}
+```
+
+#### 10.13 批量创建视频
+- **POST** `/api/target-account-analysis/videos/batch`
+
+**请求体:**
+```json
+{
+  "videos": [
+    {
+      "account_id": 1,
+      "platform_video_id": "video1",
+      "title": "Video 1",
+      "duration": 120
+    },
+    {
+      "account_id": 1, 
+      "platform_video_id": "video2",
+      "title": "Video 2", 
+      "duration": 180
+    }
+  ]
+}
+```
+
+#### 10.14 获取视频列表
+- **GET** `/api/target-account-analysis/videos?account_id=1&video_type=short&skip=0&limit=50`
+
+**查询参数:**
+- `account_id`: 账号ID过滤
+- `channel_id`: 频道ID过滤  
+- `video_type`: 视频类型过滤 (long, short, live)
+- `is_downloaded`: 是否已下载过滤
+- `published_after`: 发布时间起始过滤
+- `published_before`: 发布时间结束过滤
+
+#### 10.15 更新视频下载状态
+- **PATCH** `/api/target-account-analysis/videos/{video_id}/download-status`
+
+**请求体:**
+```json
+{
+  "download_status": "completed",
+  "local_file_path": "/storage/videos/amazing_tech_video.mp4",
+  "local_file_size": 52428800,
+  "is_downloaded": true
+}
+```
+
+#### 10.16 记录视频互动数据
+- **POST** `/api/target-account-analysis/videos/{video_id}/engagement-metrics`
+
+**请求体:**
+```json
+{
+  "views_count": 100000,
+  "likes_count": 5000, 
+  "comments_count": 300,
+  "shares_count": 150,
+  "collected_at": "2023-01-01T12:00:00"
+}
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "id": 1,
+    "video_id": 1,
+    "views_count": 100000,
+    "likes_count": 5000,
+    "comments_count": 300, 
+    "shares_count": 150,
+    "engagement_rate": 0.0545,
+    "views_growth": 2000,
+    "likes_growth": 100,
+    "collected_at": "2023-01-01T12:00:00",
+    "created_at": "2023-01-01T12:00:00"
+  }
+}
+```
+
+#### 10.17 获取视频互动历史
+- **GET** `/api/target-account-analysis/videos/{video_id}/engagement-metrics?days=30&limit=100`
+
+#### 10.18 批量获取最新互动数据
+- **POST** `/api/target-account-analysis/videos/latest-metrics`
+
+**请求体:**
+```json
+{
+  "video_ids": [1, 2, 3, 4, 5]
+}
+```
+
+#### 10.19 获取热门视频排行
+- **GET** `/api/target-account-analysis/videos/trending?account_id=1&metric=views_count&days=7&limit=10`
+
+**查询参数:**
+- `account_id`: 账号ID过滤
+- `metric`: 排序指标 (views_count, likes_count, engagement_rate)
+- `days`: 时间范围
+- `limit`: 限制数量
+
+#### 10.20 获取账号分析摘要
+- **GET** `/api/target-account-analysis/accounts/{account_id}/analytics-summary`
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "account": {
+      "id": 1,
+      "username": "tech_channel",
+      "platform": "youtube"
+    },
+    "latest_stats": {
+      "followers_count": 150000,
+      "total_videos_count": 280,
+      "followers_growth": 1000
+    },
+    "recent_videos": [
+      {
+        "id": 1,
+        "title": "Amazing Tech Video",
+        "views_count": 100000,
+        "published_at": "2023-01-01T10:00:00"
+      }
+    ],
+    "growth_trends": {
+      "followers_trend": 5000,
+      "avg_daily_growth": 714
+    },
+    "engagement_analysis": {
+      "avg_engagement_rate": 0.045,
+      "top_performing_video_type": "short"
+    }
+  }
+}
+```
+
+### Worker专用接口说明
+
+以上目标账号分析接口专为yt-dlp爬虫Worker设计，具有以下特点：
+
+1. **幂等性支持**: 账号、频道、视频创建接口支持重复调用，自动去重
+2. **批量操作**: 支持批量创建视频、批量更新互动数据等高效操作
+3. **增长计算**: 自动计算粉丝增长、互动增长等趋势数据
+4. **时间序列**: 统计和互动数据保留完整历史记录用于趋势分析
+5. **状态管理**: 支持下载状态跟踪、爬取状态管理
+6. **性能优化**: 使用索引优化查询，支持分页和过滤
 
 ### 工作流管理示例用法
 

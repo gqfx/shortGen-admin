@@ -7,6 +7,10 @@ import {
   IconCloud,
   IconAdjustments,
   IconGitBranch,
+  IconUsers,
+  IconVideo,
+  IconChartLine,
+  IconDeviceDesktop,
 } from '@tabler/icons-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -82,6 +86,31 @@ export const sidebarData: SidebarData = {
           title: 'Project Types',
           url: '/project-types',
           icon: IconAdjustments,
+        },
+      ],
+    },
+    {
+      title: 'Target Account Analysis',
+      items: [
+        {
+          title: 'Target Accounts',
+          url: '/target-accounts',
+          icon: IconUsers,
+        },
+        {
+          title: 'Channels',
+          url: '/target-channels',
+          icon: IconDeviceDesktop,
+        },
+        {
+          title: 'Videos',
+          url: '/target-videos',
+          icon: IconVideo,
+        },
+        {
+          title: 'Statistics',
+          url: '/target-statistics',
+          icon: IconChartLine,
         },
       ],
     },

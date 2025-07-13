@@ -13,6 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkflowRegistryIndexRouteImport } from './routes/workflow-registry/index'
 import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
+import { Route as TargetVideosIndexRouteImport } from './routes/target-videos/index'
+import { Route as TargetStatisticsIndexRouteImport } from './routes/target-statistics/index'
+import { Route as TargetChannelsIndexRouteImport } from './routes/target-channels/index'
+import { Route as TargetAccountsIndexRouteImport } from './routes/target-accounts/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectTypesIndexRouteImport } from './routes/project-types/index'
 import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-accounts/index'
@@ -37,6 +41,26 @@ const WorkerConfigsIndexRoute = WorkerConfigsIndexRouteImport.update({
 const TasksIndexRoute = TasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TargetVideosIndexRoute = TargetVideosIndexRouteImport.update({
+  id: '/target-videos/',
+  path: '/target-videos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TargetStatisticsIndexRoute = TargetStatisticsIndexRouteImport.update({
+  id: '/target-statistics/',
+  path: '/target-statistics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TargetChannelsIndexRoute = TargetChannelsIndexRouteImport.update({
+  id: '/target-channels/',
+  path: '/target-channels/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TargetAccountsIndexRoute = TargetAccountsIndexRouteImport.update({
+  id: '/target-accounts/',
+  path: '/target-accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -72,6 +96,10 @@ export interface FileRoutesByFullPath {
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/target-accounts': typeof TargetAccountsIndexRoute
+  '/target-channels': typeof TargetChannelsIndexRoute
+  '/target-statistics': typeof TargetStatisticsIndexRoute
+  '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
   '/workflow-registry': typeof WorkflowRegistryIndexRoute
@@ -83,6 +111,10 @@ export interface FileRoutesByTo {
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/target-accounts': typeof TargetAccountsIndexRoute
+  '/target-channels': typeof TargetChannelsIndexRoute
+  '/target-statistics': typeof TargetStatisticsIndexRoute
+  '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
   '/workflow-registry': typeof WorkflowRegistryIndexRoute
@@ -95,6 +127,10 @@ export interface FileRoutesById {
   '/platform-accounts/': typeof PlatformAccountsIndexRoute
   '/project-types/': typeof ProjectTypesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/target-accounts/': typeof TargetAccountsIndexRoute
+  '/target-channels/': typeof TargetChannelsIndexRoute
+  '/target-statistics/': typeof TargetStatisticsIndexRoute
+  '/target-videos/': typeof TargetVideosIndexRoute
   '/tasks/': typeof TasksIndexRoute
   '/worker-configs/': typeof WorkerConfigsIndexRoute
   '/workflow-registry/': typeof WorkflowRegistryIndexRoute
@@ -108,6 +144,10 @@ export interface FileRouteTypes {
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
+    | '/target-accounts'
+    | '/target-channels'
+    | '/target-statistics'
+    | '/target-videos'
     | '/tasks'
     | '/worker-configs'
     | '/workflow-registry'
@@ -119,6 +159,10 @@ export interface FileRouteTypes {
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
+    | '/target-accounts'
+    | '/target-channels'
+    | '/target-statistics'
+    | '/target-videos'
     | '/tasks'
     | '/worker-configs'
     | '/workflow-registry'
@@ -130,6 +174,10 @@ export interface FileRouteTypes {
     | '/platform-accounts/'
     | '/project-types/'
     | '/projects/'
+    | '/target-accounts/'
+    | '/target-channels/'
+    | '/target-statistics/'
+    | '/target-videos/'
     | '/tasks/'
     | '/worker-configs/'
     | '/workflow-registry/'
@@ -142,6 +190,10 @@ export interface RootRouteChildren {
   PlatformAccountsIndexRoute: typeof PlatformAccountsIndexRoute
   ProjectTypesIndexRoute: typeof ProjectTypesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  TargetAccountsIndexRoute: typeof TargetAccountsIndexRoute
+  TargetChannelsIndexRoute: typeof TargetChannelsIndexRoute
+  TargetStatisticsIndexRoute: typeof TargetStatisticsIndexRoute
+  TargetVideosIndexRoute: typeof TargetVideosIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
   WorkerConfigsIndexRoute: typeof WorkerConfigsIndexRoute
   WorkflowRegistryIndexRoute: typeof WorkflowRegistryIndexRoute
@@ -175,6 +227,34 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof TasksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/target-videos/': {
+      id: '/target-videos/'
+      path: '/target-videos'
+      fullPath: '/target-videos'
+      preLoaderRoute: typeof TargetVideosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/target-statistics/': {
+      id: '/target-statistics/'
+      path: '/target-statistics'
+      fullPath: '/target-statistics'
+      preLoaderRoute: typeof TargetStatisticsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/target-channels/': {
+      id: '/target-channels/'
+      path: '/target-channels'
+      fullPath: '/target-channels'
+      preLoaderRoute: typeof TargetChannelsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/target-accounts/': {
+      id: '/target-accounts/'
+      path: '/target-accounts'
+      fullPath: '/target-accounts'
+      preLoaderRoute: typeof TargetAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -222,6 +302,10 @@ const rootRouteChildren: RootRouteChildren = {
   PlatformAccountsIndexRoute: PlatformAccountsIndexRoute,
   ProjectTypesIndexRoute: ProjectTypesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  TargetAccountsIndexRoute: TargetAccountsIndexRoute,
+  TargetChannelsIndexRoute: TargetChannelsIndexRoute,
+  TargetStatisticsIndexRoute: TargetStatisticsIndexRoute,
+  TargetVideosIndexRoute: TargetVideosIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
   WorkerConfigsIndexRoute: WorkerConfigsIndexRoute,
   WorkflowRegistryIndexRoute: WorkflowRegistryIndexRoute,
