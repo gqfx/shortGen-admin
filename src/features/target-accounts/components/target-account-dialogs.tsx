@@ -91,7 +91,7 @@ export function TargetAccountDialogs({
     resolver: zodResolver(createTargetAccountSchema),
     defaultValues: {
       channel_url: '',
-      category: '',
+      category: 'none',
       monitor_frequency: 'daily',
       video_limit: 50,
       crawl_videos: true,
@@ -129,7 +129,7 @@ export function TargetAccountDialogs({
   const handleCreateSubmit = async (data: CreateFormData) => {
     const payload: CreateTargetAccountRequest = {
       channel_url: data.channel_url,
-      category: data.category || undefined,
+      category: data.category && data.category !== 'none' ? data.category : undefined,
       monitor_frequency: data.monitor_frequency,
       video_limit: data.video_limit,
       crawl_videos: data.crawl_videos,
@@ -221,7 +221,7 @@ export function TargetAccountDialogs({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No category</SelectItem>
+                          <SelectItem value="none">No category</SelectItem>
                           {categories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category.charAt(0).toUpperCase() + category.slice(1)}
