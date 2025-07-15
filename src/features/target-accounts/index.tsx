@@ -398,11 +398,12 @@ function TargetAccountsContent() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onConfirm={confirmDelete}
+        handleConfirm={confirmDelete}
         title="Delete Target Account"
-        description={`Are you sure you want to delete "${accountToDelete?.display_name}"? This action cannot be undone.`}
+        desc={`Are you sure you want to delete "${accountToDelete?.display_name}"? This action cannot be undone.`}
         confirmText="Delete"
-        cancelText="Cancel"
+        cancelBtnText="Cancel"
+        destructive={true}
       />
     </div>
   )
