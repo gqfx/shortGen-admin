@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -7,10 +8,22 @@ import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
+import { TaskStatsCards } from './components/task-stats-cards'
+import { TaskFilters } from './components/task-filters'
 import TasksProvider, { useTasks } from './context/tasks-context'
+import PlatformAccountsProvider from '../platform-accounts/context/platform-accounts-context'
+import { Task } from './data/schema'
 
 function TasksContent() {
   const { tasks, isLoading, error } = useTasks()
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>(tasks)
+
+  // Update filtered tasks when tasks change
+  React.useEffect(() => {
+    setFilteredTasks(tasks)
+  }, [tasks])
+
+  const displayTasks = filteredTasks.length > 0 ? filteredTasks : tasks
 
   return (
     <>
@@ -46,7 +59,11 @@ function TasksContent() {
               <div className="text-sm text-muted-foreground">No tasks found. Click "Add Task" to create one.</div>
             </div>
           ) : (
-            <DataTable data={tasks} columns={columns} />
+            <>
+              <TaskStatsCards tasks={displayTasks} />
+              <TaskFilters tasks={tasks} onFilteredTasksChange={setFilteredTasks} />
+              <DataTable data={displayTasks} columns={columns} />
+            </>
           )}
         </div>
       </Main>
@@ -58,8 +75,10 @@ function TasksContent() {
 
 export default function Tasks() {
   return (
-    <TasksProvider>
-      <TasksContent />
-    </TasksProvider>
+    <PlatformAccountsProvider>
+      <TasksProvider>
+        <TasksContent />
+      </TasksProvider>
+    </PlatformAccountsProvider>
   )
 }

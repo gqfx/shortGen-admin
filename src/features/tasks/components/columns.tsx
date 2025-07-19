@@ -2,6 +2,8 @@ import { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { taskTypes, statuses } from '../data/data'
 import { Task } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
@@ -42,16 +44,45 @@ export const columns: ColumnDef<Task>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: 'submit_id',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Submit ID' />
+    ),
+    cell: ({ row }) => {
+      const submitId = row.getValue('submit_id') as string | null
+      if (!submitId) {
+        return <div className='w-[100px] text-muted-foreground text-xs'>No ID</div>
+      }
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className='w-[100px] truncate text-xs font-mono'>
+                {submitId}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{submitId}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+  },
+  {
     accessorKey: 'task_type',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Type' />
     ),
     cell: ({ row }) => {
       const taskType = taskTypes.find((type) => type.value === row.getValue('task_type'))
+      const taskTypeValue = row.getValue('task_type') as string
 
       return (
         <div className='flex space-x-2'>
-          {taskType && <Badge variant='outline'>{taskType.label}</Badge>}
+          <Badge variant='outline'>
+            {taskType ? taskType.label : taskTypeValue}
+          </Badge>
         </div>
       )
     },
@@ -84,13 +115,74 @@ export const columns: ColumnDef<Task>[] = [
     },
   },
   {
+    accessorKey: 'platform_account',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Platform Account' />
+    ),
+    cell: ({ row }) => {
+      const platformAccount = row.getValue('platform_account') as Task['platform_account']
+      
+      if (!platformAccount || !platformAccount.nickname) {
+        return <div className='w-[150px] text-muted-foreground'>No account</div>
+      }
+
+      return (
+        <div className='flex items-center space-x-2 w-[150px]'>
+          <Avatar className='h-6 w-6'>
+            <AvatarImage src={platformAccount.avatar_url || ''} alt={platformAccount.nickname || 'Account'} />
+            <AvatarFallback className='text-xs'>
+              {platformAccount.nickname ? platformAccount.nickname.slice(0, 2).toUpperCase() : 'NA'}
+            </AvatarFallback>
+          </Avatar>
+          <div className='flex flex-col'>
+            <span className='text-sm font-medium truncate'>{platformAccount.nickname || 'Unknown'}</span>
+            <span className='text-xs text-muted-foreground'>{platformAccount.platform || 'Unknown'}</span>
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'forecast_generate_cost',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Gen Cost' />
+    ),
+    cell: ({ row }) => {
+      const cost = row.getValue('forecast_generate_cost') as number | null
+      return (
+        <div className='w-[80px] text-right font-mono text-sm'>
+          {cost !== null ? cost.toFixed(2) : '0.00'}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'forecast_queue_cost',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Queue Cost' />
+    ),
+    cell: ({ row }) => {
+      const cost = row.getValue('forecast_queue_cost') as number | null
+      return (
+        <div className='w-[80px] text-right font-mono text-sm'>
+          {cost !== null ? cost.toFixed(2) : '0.00'}
+        </div>
+      )
+    },
+  },
+  {
     accessorKey: 'project_id',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Project' />
     ),
-    cell: ({ row }) => (
-      <div className='w-[100px]'>Project #{row.getValue('project_id')}</div>
-    ),
+    cell: ({ row }) => {
+      const projectId = row.getValue('project_id') as number | null
+      return (
+        <div className='w-[100px]'>
+          {projectId ? `Project #${projectId}` : 'No Project'}
+        </div>
+      )
+    },
   },
   {
     accessorKey: 'created_at',
@@ -107,15 +199,37 @@ export const columns: ColumnDef<Task>[] = [
     },
   },
   {
-    accessorKey: 'platform_account_id',
+    accessorKey: 'started_at',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Platform' />
+      <DataTableColumnHeader column={column} title='Started' />
     ),
     cell: ({ row }) => {
-      const platformId = row.getValue('platform_account_id')
+      const startedAt = row.getValue('started_at') as string | null
+      if (!startedAt) {
+        return <div className='w-[120px] text-muted-foreground'>Not started</div>
+      }
+      const date = new Date(startedAt)
       return (
-        <div className='w-[100px]'>
-          {platformId ? `Account #${platformId}` : 'None'}
+        <div className='w-[120px]'>
+          {format(date, 'MMM dd, yyyy')}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'completed_at',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Completed' />
+    ),
+    cell: ({ row }) => {
+      const completedAt = row.getValue('completed_at') as string | null
+      if (!completedAt) {
+        return <div className='w-[120px] text-muted-foreground'>Not completed</div>
+      }
+      const date = new Date(completedAt)
+      return (
+        <div className='w-[120px]'>
+          {format(date, 'MMM dd, yyyy')}
         </div>
       )
     },

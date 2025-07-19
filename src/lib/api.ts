@@ -96,27 +96,38 @@ export interface UpdateProjectRequest {
 export interface Task {
   id: number
   project_id: number
-  task_type: string
-  status: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
-  dependencies: number[]
-  task_output: Record<string, any> | null
-  platform_account_id: number | null
-  commit_id: string | null
+  platform_account_id: number
+  platform_account: {
+    id: number
+    platform: string
+    account_id: string
+    nickname: string
+    avatar_url: string
+  }
+  submit_id: string
   error_message: string | null
   started_at: string | null
   completed_at: string | null
   created_at: string
   updated_at: string
+  deleted_at: string | null
+  forecast_generate_cost: number
+  forecast_queue_cost: number
+  task_type: string
+  status: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
+  dependencies: number[]
+  task_output: Record<string, any>
+  task_input: Record<string, any>
 }
 
 export interface CreateTaskRequest {
   project_id: number
+  platform_account_id: number
   task_type: string
-  status: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
+  status?: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
   dependencies?: number[]
+  task_input: Record<string, any>
   task_output?: Record<string, any>
-  platform_account_id?: number
-  commit_id?: string
   error_message?: string
 }
 
@@ -404,6 +415,12 @@ export const tasksApi = {
   
   claim: (taskTypes: string[]): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.post('/api/tasks/claim', { task_types: taskTypes }),
+  
+  getTaskTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+    api.get('/api/tasks/types'),
+  
+  enqueue: (id: number): Promise<AxiosResponse<ApiResponse<Task>>> =>
+    api.post(`/api/tasks/${id}/enqueue`),
 }
 
 // Assets API

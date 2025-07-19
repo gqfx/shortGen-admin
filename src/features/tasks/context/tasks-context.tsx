@@ -20,6 +20,7 @@ interface TasksContextType {
   updateTask: (id: number, data: any) => Promise<void>
   deleteTask: (id: number) => Promise<void>
   claimTasks: (taskTypes: string[]) => Promise<void>
+  enqueueTask: (id: number) => Promise<void>
   refreshTasks: () => void
 }
 
@@ -108,6 +109,18 @@ export default function TasksProvider({ children }: Props) {
     },
   })
 
+  // Enqueue task mutation
+  const enqueueMutation = useMutation({
+    mutationFn: (id: number) => tasksApi.enqueue(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('Task enqueued successfully')
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to enqueue task: ${error.response?.data?.msg || error.message}`)
+    },
+  })
+
   const refreshTasks = () => {
     refetch()
   }
@@ -128,6 +141,10 @@ export default function TasksProvider({ children }: Props) {
     await claimMutation.mutateAsync(taskTypes)
   }
 
+  const enqueueTask = async (id: number) => {
+    await enqueueMutation.mutateAsync(id)
+  }
+
   return (
     <TasksContext.Provider
       value={{
@@ -142,6 +159,7 @@ export default function TasksProvider({ children }: Props) {
         updateTask,
         deleteTask,
         claimTasks,
+        enqueueTask,
         refreshTasks,
       }}
     >

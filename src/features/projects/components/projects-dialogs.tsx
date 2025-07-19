@@ -43,6 +43,12 @@ export function ProjectsDialogs() {
     setIsDeleteDialogOpen,
     setSelectedProject,
     refreshProjects,
+    createProject,
+    updateProject,
+    deleteProject,
+    isCreating,
+    isUpdating,
+    isDeleting,
   } = useProjects()
 
   const createForm = useForm<CreateProjectFormData>({
@@ -79,11 +85,8 @@ export function ProjectsDialogs() {
 
   const handleCreateProject = async (data: CreateProjectFormData) => {
     try {
-      console.log('Creating project:', data)
-      // API call would go here
-      setIsCreateDialogOpen(false)
+      await createProject(data)
       createForm.reset()
-      refreshProjects()
     } catch (error) {
       console.error('Error creating project:', error)
     }
@@ -93,11 +96,7 @@ export function ProjectsDialogs() {
     if (!selectedProject) return
 
     try {
-      console.log('Updating project:', selectedProject.id, data)
-      // API call would go here
-      setIsEditDialogOpen(false)
-      setSelectedProject(null)
-      refreshProjects()
+      await updateProject(selectedProject.id, data)
     } catch (error) {
       console.error('Error updating project:', error)
     }
@@ -107,11 +106,7 @@ export function ProjectsDialogs() {
     if (!selectedProject) return
 
     try {
-      console.log('Deleting project:', selectedProject.id)
-      // API call would go here
-      setIsDeleteDialogOpen(false)
-      setSelectedProject(null)
-      refreshProjects()
+      await deleteProject(selectedProject.id)
     } catch (error) {
       console.error('Error deleting project:', error)
     }
@@ -168,10 +163,12 @@ export function ProjectsDialogs() {
                 )}
               />
               <DialogFooter>
-                <Button type='button' variant='outline' onClick={() => setIsCreateDialogOpen(false)}>
+                <Button type='button' variant='outline' onClick={() => setIsCreateDialogOpen(false)} disabled={isCreating}>
                   Cancel
                 </Button>
-                <Button type='submit'>Create Project</Button>
+                <Button type='submit' disabled={isCreating}>
+                  {isCreating ? 'Creating...' : 'Create Project'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -266,10 +263,12 @@ export function ProjectsDialogs() {
                 )}
               />
               <DialogFooter>
-                <Button type='button' variant='outline' onClick={() => setIsEditDialogOpen(false)}>
+                <Button type='button' variant='outline' onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>
                   Cancel
                 </Button>
-                <Button type='submit'>Update Project</Button>
+                <Button type='submit' disabled={isUpdating}>
+                  {isUpdating ? 'Updating...' : 'Update Project'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -287,9 +286,9 @@ export function ProjectsDialogs() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedProject(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProject} className='bg-red-600 hover:bg-red-700'>
-              Delete
+            <AlertDialogCancel onClick={() => setSelectedProject(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className='bg-red-600 hover:bg-red-700' disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

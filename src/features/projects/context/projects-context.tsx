@@ -6,6 +6,9 @@ import { Project, projectsApi, CreateProjectRequest, UpdateProjectRequest } from
 interface ProjectsContextType {
   projects: Project[]
   isLoading: boolean
+  isCreating: boolean
+  isUpdating: boolean
+  isDeleting: boolean
   selectedProject: Project | null
   isCreateDialogOpen: boolean
   isEditDialogOpen: boolean
@@ -122,6 +125,9 @@ export default function ProjectsProvider({ children }: ProjectsProviderProps) {
       value={{
         projects,
         isLoading,
+        isCreating: createMutation.isPending,
+        isUpdating: updateMutation.isPending,
+        isDeleting: deleteMutation.isPending,
         selectedProject,
         isCreateDialogOpen,
         isEditDialogOpen,

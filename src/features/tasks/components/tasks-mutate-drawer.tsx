@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/utils/show-submitted-data'
+import { useQuery } from '@tanstack/react-query'
+import { tasksApi, projectsApi } from '@/lib/api'
+import { usePlatformAccounts } from '@/features/platform-accounts/context/platform-accounts-context'
+import { useTasks } from '../context/tasks-context'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -11,8 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Sheet,
   SheetClose,
@@ -23,6 +24,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { SelectDropdown } from '@/components/select-dropdown'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Task } from '../data/schema'
 
 interface Props {
@@ -31,32 +34,152 @@ interface Props {
   currentRow?: Task
 }
 
+// Task type configurations based on task_input.md
+const TASK_CONFIGS = {
+  'DREAMINA_IMAGE_GENERATION': {
+    label: '图片生成',
+    fields: {
+      prompt: { type: 'text', required: true, label: 'Prompt' },
+      img: { type: 'text', required: false, label: 'Reference Image URL' },
+      modelName: { 
+        type: 'select', 
+        required: false, 
+        label: 'Model', 
+        options: ['Image 3.0', 'Image 2.1', 'Image 2.0 Pro', 'Image 1.4'],
+        default: 'Image 3.0'
+      },
+      ratio: { 
+        type: 'select', 
+        required: false, 
+        label: 'Aspect Ratio', 
+        options: ['21:9', '16:9', '3:2', '4:3', '1:1', '3:4', '2:3', '9:16'],
+        default: '1:1'
+      },
+      resolution: { 
+        type: 'select', 
+        required: false, 
+        label: 'Resolution', 
+        options: ['1k', '2k'],
+        default: '1k'
+      }
+    }
+  },
+  'DREAMINA_VIDEO_GENERATION': {
+    label: '视频生成',
+    fields: {
+      prompt: { type: 'text', required: true, label: 'Prompt' },
+      img: { type: 'text', required: false, label: 'Reference Image URL' },
+      modelName: { 
+        type: 'select', 
+        required: false, 
+        label: 'Model', 
+        options: ['Video 3.0', 'Video S2.0 Pro'],
+        default: 'Video 3.0'
+      },
+      ratio: { 
+        type: 'select', 
+        required: false, 
+        label: 'Aspect Ratio', 
+        options: ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16'],
+        default: null
+      },
+      time: { 
+        type: 'select', 
+        required: false, 
+        label: 'Duration', 
+        options: ['5s', '10s'],
+        default: '5s'
+      }
+    }
+  },
+  'DREAMINA_LIP_SYNC': {
+    label: '对口型',
+    fields: {
+      image_path: { type: 'text', required: true, label: 'Avatar Image URL' },
+      audio_paths: { type: 'text', required: true, label: 'Audio File URLs (comma separated)' },
+      modelName: { 
+        type: 'select', 
+        required: false, 
+        label: 'Model', 
+        options: ['Avatar Pro', 'Avatar Turbo'],
+        default: 'Avatar Pro'
+      }
+    }
+  }
+} as const
+
 const formSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  status: z.string().min(1, 'Please select a status.'),
-  label: z.string().min(1, 'Please select a label.'),
-  priority: z.string().min(1, 'Please choose a priority.'),
+  project_id: z.coerce.number().optional(),
+  task_type: z.string().min(1, 'Task type is required.'),
+  platform_account_id: z.coerce.number().positive('Platform account is required.'),
+  task_input: z.record(z.any()),
 })
 type TasksForm = z.infer<typeof formSchema>
 
 export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
   const isUpdate = !!currentRow
+  const { createTask } = useTasks()
+  const { platformAccounts } = usePlatformAccounts()
 
-  const form = useForm<TasksForm>({
-    resolver: zodResolver(formSchema),
-    defaultValues: currentRow ?? {
-      title: '',
-      status: '',
-      label: '',
-      priority: '',
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['taskTypes'],
+    queryFn: async () => {
+      const res = await tasksApi.getTaskTypes()
+      return res.data.data || []
     },
   })
 
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const res = await projectsApi.getAll(0, 100)
+      return res.data.data || []
+    },
+  })
+
+  const form = useForm<TasksForm>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      project_id: undefined,
+      task_type: '',
+      platform_account_id: 0,
+      task_input: {},
+    },
+  })
+
+  const selectedTaskType = form.watch('task_type')
+  const taskConfig = TASK_CONFIGS[selectedTaskType as keyof typeof TASK_CONFIGS]
+
+  // Initialize task_input with default values when task type changes
+  const handleTaskTypeChange = (taskType: string) => {
+    form.setValue('task_type', taskType)
+    const config = TASK_CONFIGS[taskType as keyof typeof TASK_CONFIGS]
+    if (config) {
+      const defaultTaskInput: Record<string, any> = {}
+      Object.entries(config.fields).forEach(([fieldName, fieldConfig]) => {
+        if (fieldConfig.default !== undefined && fieldConfig.default !== null) {
+          defaultTaskInput[fieldName] = fieldConfig.default
+        }
+      })
+      form.setValue('task_input', defaultTaskInput)
+    } else {
+      form.setValue('task_input', {})
+    }
+  }
+
   const onSubmit = (data: TasksForm) => {
-    // do something with the form data
+    // Handle special case for audio_paths - convert comma-separated string to array
+    if (data.task_input.audio_paths && typeof data.task_input.audio_paths === 'string') {
+      data.task_input.audio_paths = data.task_input.audio_paths.split(',').map(path => path.trim()).filter(Boolean)
+    }
+
+    const parsedData = {
+      ...data,
+      status: 'waiting' as const, // Default status for new tasks
+    }
+    createTask(parsedData)
     onOpenChange(false)
     form.reset()
-    showSubmittedData(data)
   }
 
   return (
@@ -74,7 +197,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
             {isUpdate
               ? 'Update the task by providing necessary info.'
               : 'Add a new task by providing necessary info.'}
-            Click save when you&apos;re done.
+            Click save when you're done.
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -85,33 +208,20 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
           >
             <FormField
               control={form.control}
-              name='title'
+              name='project_id'
               render={({ field }) => (
                 <FormItem className='space-y-1'>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder='Enter a title' />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='status'
-              render={({ field }) => (
-                <FormItem className='space-y-1'>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>Project</FormLabel>
                   <SelectDropdown
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
-                    placeholder='Select dropdown'
+                    defaultValue={field.value ? String(field.value) : 'none'}
+                    onValueChange={(value) => field.onChange(value === 'none' ? undefined : Number(value))}
+                    placeholder={projects.length > 0 ? 'Select a project (optional)' : 'No projects available'}
                     items={[
-                      { label: 'In Progress', value: 'in progress' },
-                      { label: 'Backlog', value: 'backlog' },
-                      { label: 'Todo', value: 'todo' },
-                      { label: 'Canceled', value: 'canceled' },
-                      { label: 'Done', value: 'done' },
+                      { label: 'No project', value: 'none' },
+                      ...projects.map(project => ({ 
+                        label: project.name, 
+                        value: String(project.id) 
+                      }))
                     ]}
                   />
                   <FormMessage />
@@ -120,78 +230,110 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
             />
             <FormField
               control={form.control}
-              name='label'
+              name='task_type'
               render={({ field }) => (
-                <FormItem className='relative space-y-3'>
-                  <FormLabel>Label</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className='flex flex-col space-y-1'
-                    >
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='documentation' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>
-                          Documentation
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='feature' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>Feature</FormLabel>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='bug' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>Bug</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
+                <FormItem className='space-y-1'>
+                  <FormLabel>Task Type</FormLabel>
+                  <SelectDropdown
+                    defaultValue={field.value}
+                    onValueChange={handleTaskTypeChange}
+                    placeholder='Select a task type'
+                    items={taskTypes.map(type => ({ label: type, value: type }))}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name='priority'
+              name='platform_account_id'
               render={({ field }) => (
-                <FormItem className='relative space-y-3'>
-                  <FormLabel>Priority</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className='flex flex-col space-y-1'
-                    >
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='high' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>High</FormLabel>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='medium' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>Medium</FormLabel>
-                      </FormItem>
-                      <FormItem className='flex items-center space-y-0 space-x-3'>
-                        <FormControl>
-                          <RadioGroupItem value='low' />
-                        </FormControl>
-                        <FormLabel className='font-normal'>Low</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
+                <FormItem className='space-y-1'>
+                  <FormLabel>Platform Account</FormLabel>
+                  <SelectDropdown
+                    defaultValue={String(field.value)}
+                    onValueChange={field.onChange}
+                    placeholder='Select an account'
+                    items={platformAccounts.map(acc => ({ label: acc.name, value: String(acc.id) }))}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            {/* Dynamic Task Input Fields */}
+            {taskConfig ? (
+              <div className='space-y-4'>
+                <FormLabel className='text-base font-medium'>Task Parameters</FormLabel>
+                {Object.entries(taskConfig.fields).map(([fieldName, fieldConfig]) => (
+                  <FormField
+                    key={fieldName}
+                    control={form.control}
+                    name={`task_input.${fieldName}` as any}
+                    render={({ field }) => (
+                      <FormItem className='space-y-1'>
+                        <FormLabel>
+                          {fieldConfig.label}
+                          {fieldConfig.required && <span className='text-red-500 ml-1'>*</span>}
+                        </FormLabel>
+                        <FormControl>
+                          {fieldConfig.type === 'select' ? (
+                            <SelectDropdown
+                              defaultValue={field.value || fieldConfig.default || ''}
+                              onValueChange={field.onChange}
+                              placeholder={`Select ${fieldConfig.label.toLowerCase()}`}
+                              items={fieldConfig.options?.map(option => ({ 
+                                label: option, 
+                                value: option 
+                              })) || []}
+                            />
+                          ) : fieldConfig.type === 'textarea' ? (
+                            <Textarea
+                              placeholder={`Enter ${fieldConfig.label.toLowerCase()}`}
+                              {...field}
+                            />
+                          ) : (
+                            <Input
+                              placeholder={`Enter ${fieldConfig.label.toLowerCase()}`}
+                              {...field}
+                            />
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : selectedTaskType && !taskConfig ? (
+              // Fallback to JSON textarea for unknown task types
+              <FormField
+                control={form.control}
+                name='task_input'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Task Input (JSON)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder='Enter task input as JSON'
+                        className='h-48'
+                        value={typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(e.target.value)
+                            field.onChange(parsed)
+                          } catch {
+                            // Keep the string value if it's not valid JSON yet
+                            field.onChange(e.target.value)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
           </form>
         </Form>
         <SheetFooter className='gap-2'>
