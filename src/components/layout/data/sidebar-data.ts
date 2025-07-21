@@ -98,9 +98,9 @@ export const sidebarData: SidebarData = {
           icon: IconUsers,
         },
         {
-          title: 'Channels',
-          url: '/target-channels',
-          icon: IconDeviceDesktop,
+          title: 'Monitoring Tasks',
+          url: '/monitoring-tasks',
+          icon: IconChecklist,
         },
         {
           title: 'Videos',

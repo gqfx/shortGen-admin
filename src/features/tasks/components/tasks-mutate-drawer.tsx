@@ -111,7 +111,7 @@ const TASK_CONFIGS = {
 const formSchema = z.object({
   project_id: z.coerce.number().optional(),
   task_type: z.string().min(1, 'Task type is required.'),
-  platform_account_id: z.coerce.number().positive('Platform account is required.'),
+  platform_account_id: z.string().min(1, 'Platform account is required.'),
   task_input: z.record(z.any()),
 })
 type TasksForm = z.infer<typeof formSchema>
@@ -142,7 +142,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
     defaultValues: {
       project_id: undefined,
       task_type: '',
-      platform_account_id: 0,
+      platform_account_id: '',
       task_input: {},
     },
   })
@@ -155,7 +155,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
     form.setValue('task_type', taskType)
     const config = TASK_CONFIGS[taskType as keyof typeof TASK_CONFIGS]
     if (config) {
-      const defaultTaskInput: Record<string, any> = {}
+      const defaultTaskInput: Record<string, unknown> = {}
       Object.entries(config.fields).forEach(([fieldName, fieldConfig]) => {
         if (fieldConfig.default !== undefined && fieldConfig.default !== null) {
           defaultTaskInput[fieldName] = fieldConfig.default
@@ -251,7 +251,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
                 <FormItem className='space-y-1'>
                   <FormLabel>Platform Account</FormLabel>
                   <SelectDropdown
-                    defaultValue={String(field.value)}
+                    defaultValue={field.value}
                     onValueChange={field.onChange}
                     placeholder='Select an account'
                     items={platformAccounts.map(acc => ({ label: acc.name, value: String(acc.id) }))}
@@ -269,6 +269,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
                   <FormField
                     key={fieldName}
                     control={form.control}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     name={`task_input.${fieldName}` as any}
                     render={({ field }) => (
                       <FormItem className='space-y-1'>
@@ -282,7 +283,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
                               defaultValue={field.value || fieldConfig.default || ''}
                               onValueChange={field.onChange}
                               placeholder={`Select ${fieldConfig.label.toLowerCase()}`}
-                              items={fieldConfig.options?.map(option => ({ 
+                              items={fieldConfig.options?.map((option: string) => ({
                                 label: option, 
                                 value: option 
                               })) || []}

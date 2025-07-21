@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,18 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { TargetAccount, CreateTargetAccountRequest, UpdateTargetAccountRequest } from '@/lib/api'
+import { TargetAccount, UpdateTargetAccountRequest, QuickAddAccountRequest } from '@/lib/api'
 import { useTargetAccounts } from '../context/target-accounts-context'
 
 const createTargetAccountSchema = z.object({
   channel_url: z.string().url('Please enter a valid channel URL'),
   category: z.string().optional(),
-  monitor_frequency: z.enum(['hourly', 'daily', 'weekly'], {
-    required_error: 'Please select a monitor frequency',
-  }),
-  video_limit: z.number().min(1, 'Video limit must be at least 1').max(1000, 'Video limit cannot exceed 1000'),
+  video_limit: z.number().min(1, 'Video limit must be at least 1').max(1000, 'Video limit cannot exceed 1000').optional(),
   crawl_videos: z.boolean().optional(),
-  crawl_metrics: z.boolean().optional(),
 })
 
 const updateTargetAccountSchema = z.object({
@@ -92,10 +88,8 @@ export function TargetAccountDialogs({
     defaultValues: {
       channel_url: '',
       category: 'none',
-      monitor_frequency: 'daily',
       video_limit: 50,
       crawl_videos: true,
-      crawl_metrics: true,
     },
   })
 
@@ -127,13 +121,11 @@ export function TargetAccountDialogs({
   }, [editingTargetAccount, updateForm])
 
   const handleCreateSubmit = async (data: CreateFormData) => {
-    const payload: CreateTargetAccountRequest = {
+    const payload: QuickAddAccountRequest = {
       channel_url: data.channel_url,
       category: data.category && data.category !== 'none' ? data.category : undefined,
-      monitor_frequency: data.monitor_frequency,
-      video_limit: data.video_limit,
+      video_limit: data.video_limit || 50,
       crawl_videos: data.crawl_videos,
-      crawl_metrics: data.crawl_metrics,
     }
 
     const result = await createTargetAccount(payload)
@@ -182,9 +174,9 @@ export function TargetAccountDialogs({
       <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Target Account</DialogTitle>
+            <DialogTitle>Quick Add Target Account</DialogTitle>
             <DialogDescription>
-              Add a channel for monitoring by providing the channel URL. The system will automatically detect the platform and extract channel information.
+              Add a channel for monitoring by providing the channel URL. The system will automatically detect the platform, extract channel information, and trigger initial crawl tasks.
             </DialogDescription>
           </DialogHeader>
           
@@ -207,56 +199,31 @@ export function TargetAccountDialogs({
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No category</SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category.charAt(0).toUpperCase() + category.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="monitor_frequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monitor Frequency</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select frequency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="hourly">Hourly</SelectItem>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={createForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No category</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={createForm.control}
@@ -283,49 +250,26 @@ export function TargetAccountDialogs({
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="crawl_videos"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Crawl Videos</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Download video metadata and information
-                        </div>
+              <FormField
+                control={createForm.control}
+                name="crawl_videos"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Crawl Videos</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Automatically crawl video list after adding account
                       </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={createForm.control}
-                  name="crawl_metrics"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Crawl Metrics</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Collect engagement metrics and statistics
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => handleCreateOpenChange(false)}>

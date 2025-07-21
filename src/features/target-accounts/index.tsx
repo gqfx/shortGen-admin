@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, ExternalLink } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Video, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -10,14 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+
 import {
   Select,
   SelectContent,
@@ -27,14 +21,18 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { TargetAccountsProvider, useTargetAccounts } from './context/target-accounts-context'
 import { TargetAccountDialogs } from './components/target-account-dialogs'
+import { CrawlManagement } from './components/crawl-management'
+import { VideoManagement } from './components/video-management'
 import { TargetAccount } from '@/lib/api'
 
 function TargetAccountsContent() {
+  const navigate = useNavigate()
   const {
     targetAccounts,
     loading,
@@ -45,6 +43,9 @@ function TargetAccountsContent() {
     setFilters,
     setPagination,
     resetFilters,
+    triggerAccountCrawl,
+    batchTriggerCrawl,
+    getAccountVideos,
   } = useTargetAccounts()
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -53,6 +54,12 @@ function TargetAccountsContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState<TargetAccount | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
+  const [crawlLoading, setCrawlLoading] = useState<string | null>(null)
+  const [crawlDialogOpen, setCrawlDialogOpen] = useState(false)
+  const [crawlAccount, setCrawlAccount] = useState<TargetAccount | null>(null)
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false)
+  const [videoAccount, setVideoAccount] = useState<TargetAccount | null>(null)
 
   const handleEdit = (account: TargetAccount) => {
     setEditingTargetAccount(account)
@@ -69,6 +76,47 @@ function TargetAccountsContent() {
       await deleteTargetAccount(accountToDelete.id)
       setDeleteDialogOpen(false)
       setAccountToDelete(null)
+    }
+  }
+
+  const handleTriggerCrawl = (account: TargetAccount) => {
+    setCrawlAccount(account)
+    setCrawlDialogOpen(true)
+  }
+
+  const handleBatchCrawl = () => {
+    if (selectedAccounts.length === 0) return
+    setCrawlDialogOpen(true)
+  }
+
+  const handleViewVideos = (account: TargetAccount) => {
+    setVideoAccount(account)
+    setVideoDialogOpen(true)
+  }
+
+  const handleAccountClick = (account: TargetAccount) => {
+    // Navigate to account detail page - will be implemented in future tasks
+    navigate({ to: `/target-accounts/${account.id}` })
+  }
+
+  const handleAvatarClick = (e: React.MouseEvent, account: TargetAccount) => {
+    e.stopPropagation() // Prevent row click
+    window.open(account.profile_url, '_blank')
+  }
+
+  const toggleAccountSelection = (accountId: string) => {
+    setSelectedAccounts(prev => 
+      prev.includes(accountId) 
+        ? prev.filter(id => id !== accountId)
+        : [...prev, accountId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedAccounts.length === filteredAccounts.length) {
+      setSelectedAccounts([])
+    } else {
+      setSelectedAccounts(filteredAccounts.map(account => account.id))
     }
   }
 
@@ -129,11 +177,27 @@ function TargetAccountsContent() {
           <p className="text-muted-foreground">
             Manage target accounts for monitoring and analysis
           </p>
+          {selectedAccounts.length > 0 && (
+            <p className="text-sm text-blue-600 mt-1">
+              {selectedAccounts.length} account(s) selected
+            </p>
+          )}
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Target Account
-        </Button>
+        <div className="flex gap-2">
+          {selectedAccounts.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleBatchCrawl}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Batch Crawl ({selectedAccounts.length})
+            </Button>
+          )}
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Target Account
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -183,15 +247,21 @@ function TargetAccountsContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Daily Monitor</CardTitle>
-            <span className="text-2xl">📊</span>
+            <CardTitle className="text-sm font-medium">Recently Added</CardTitle>
+            <span className="text-2xl">🆕</span>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {targetAccounts.filter(a => a.monitor_frequency === 'daily').length}
+              {targetAccounts.filter(a => {
+                if (!a.created_at) return false
+                const created = new Date(a.created_at)
+                const weekAgo = new Date()
+                weekAgo.setDate(weekAgo.getDate() - 7)
+                return created > weekAgo
+              }).length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Daily monitoring
+              Added this week
             </p>
           </CardContent>
         </Card>
@@ -214,20 +284,7 @@ function TargetAccountsContent() {
               />
             </div>
 
-            <Select
-              value={filters.platform || 'all'}
-              onValueChange={(value) => setFilters({ platform: value === 'all' ? undefined : value })}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Platform" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Platforms</SelectItem>
-                <SelectItem value="youtube">YouTube</SelectItem>
-                <SelectItem value="tiktok">TikTok</SelectItem>
-                <SelectItem value="bilibili">Bilibili</SelectItem>
-              </SelectContent>
-            </Select>
+
 
             <Select
               value={filters.isActive !== undefined ? filters.isActive.toString() : 'all'}
@@ -276,8 +333,13 @@ function TargetAccountsContent() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedAccounts.length === filteredAccounts.length && filteredAccounts.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Account</TableHead>
-                  <TableHead>Platform</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Monitor Frequency</TableHead>
                   <TableHead>Status</TableHead>
@@ -287,10 +349,23 @@ function TargetAccountsContent() {
               </TableHeader>
               <TableBody>
                 {filteredAccounts.map((account) => (
-                  <TableRow key={account.id}>
+                  <TableRow 
+                    key={account.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleAccountClick(account)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedAccounts.includes(account.id)}
+                        onCheckedChange={() => toggleAccountSelection(account.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
+                        <Avatar 
+                          className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary/20"
+                          onClick={(e) => handleAvatarClick(e, account)}
+                        >
                           <AvatarImage src={account.avatar_url || undefined} alt={account.display_name} />
                           <AvatarFallback>
                             {account.display_name.substring(0, 2).toUpperCase()}
@@ -303,14 +378,8 @@ function TargetAccountsContent() {
                               <Badge variant="secondary" className="text-xs">✓</Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">@{account.username}</p>
+                          <p className="text-sm text-muted-foreground">@{account.username || account.account_id}</p>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span>{getPlatformIcon(account.platform)}</span>
-                        <span className="capitalize">{account.platform}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -322,7 +391,9 @@ function TargetAccountsContent() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {getFrequencyBadge(account.monitor_frequency)}
+                      {account.monitor_frequency ? getFrequencyBadge(account.monitor_frequency) : (
+                        <Badge variant="secondary">Default</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={account.is_active ? 'default' : 'secondary'}>
@@ -338,35 +409,26 @@ function TargetAccountsContent() {
                         <span className="text-sm text-muted-foreground">Never</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => window.open(account.profile_url, '_blank')}
-                          >
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleEdit(account)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(account)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(account)}
+                        >
+                          <Edit className="mr-1 h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(account)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -404,6 +466,21 @@ function TargetAccountsContent() {
         confirmText="Delete"
         cancelBtnText="Cancel"
         destructive={true}
+      />
+
+      <CrawlManagement
+        open={crawlDialogOpen}
+        onOpenChange={setCrawlDialogOpen}
+        accountId={crawlAccount?.id}
+        accountIds={selectedAccounts.length > 0 ? selectedAccounts : undefined}
+        accountName={crawlAccount?.display_name}
+      />
+
+      <VideoManagement
+        open={videoDialogOpen}
+        onOpenChange={setVideoDialogOpen}
+        accountId={videoAccount?.id || ''}
+        accountName={videoAccount?.display_name || ''}
       />
     </div>
   )

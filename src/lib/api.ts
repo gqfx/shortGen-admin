@@ -94,11 +94,11 @@ export interface UpdateProjectRequest {
 
 // Task types
 export interface Task {
-  id: number
-  project_id: number
-  platform_account_id: number
+  id: string
+  project_id: string
+  platform_account_id: string
   platform_account: {
-    id: number
+    id: string
     platform: string
     account_id: string
     nickname: string
@@ -121,8 +121,8 @@ export interface Task {
 }
 
 export interface CreateTaskRequest {
-  project_id: number
-  platform_account_id: number
+  project_id: string
+  platform_account_id: string
   task_type: string
   status?: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
   dependencies?: number[]
@@ -401,16 +401,16 @@ export const tasksApi = {
   getAll: (skip = 0, limit = 100): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
     api.get(`/api/tasks?skip=${skip}&limit=${limit}`),
   
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  getById: (id: string): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.get(`/api/tasks/${id}`),
   
   create: (data: CreateTaskRequest): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.post('/api/tasks', data),
   
-  update: (id: number, data: UpdateTaskRequest): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  update: (id: string, data: UpdateTaskRequest): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.patch(`/api/tasks/${id}`, data),
   
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
     api.delete(`/api/tasks/${id}`),
   
   claim: (taskTypes: string[]): Promise<AxiosResponse<ApiResponse<Task>>> =>
@@ -419,7 +419,7 @@ export const tasksApi = {
   getTaskTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
     api.get('/api/tasks/types'),
   
-  enqueue: (id: number): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  enqueue: (id: string): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.post(`/api/tasks/${id}/enqueue`),
 }
 
@@ -605,39 +605,120 @@ export const projectTypesApi = {
 
 // Target Account Analysis types
 export interface TargetAccount {
-  id: number
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  platform_account_id: string
-  username: string
+  id: string // Changed to string ID as per new API
+  account_id: string // platform account ID (e.g., YouTube channel ID)
   display_name: string
+  username: string
   profile_url: string
+  channel_url: string
   description: string | null
   avatar_url: string | null
   is_verified: boolean
-  category: string
+  category: string | null
+  subscriber_count: number
   is_active: boolean
   monitor_frequency: 'hourly' | 'daily' | 'weekly'
   last_crawled_at: string | null
+  video_crawl_limit: number
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
-export interface CreateTargetAccountRequest {
+export interface QuickAddAccountRequest {
   channel_url: string
   category?: string
-  monitor_frequency: 'hourly' | 'daily' | 'weekly'
-  video_limit: number
+  video_limit?: number
   crawl_videos?: boolean
-  crawl_metrics?: boolean
+}
+
+export interface AccountCrawlRequest {
+  crawl_videos?: boolean
+  video_limit?: number
+}
+
+export interface BatchAccountCrawlRequest {
+  account_ids: string[] // Changed to string IDs
+  crawl_videos?: boolean
+  video_limit?: number
+}
+
+export interface DeleteAccountRequest {
+  force?: boolean
+}
+
+export interface TriggerDownloadRequest {
+  video_ids: string[] // Changed to string IDs
+  priority?: number
+}
+
+export interface MonitoringTaskUpdate {
+  status?: string
+  error_message?: string
 }
 
 export interface UpdateTargetAccountRequest {
   display_name?: string
+  username?: string
+  profile_url?: string
+  channel_url?: string
   description?: string
   avatar_url?: string
+  is_verified?: boolean
   category?: string
-  monitor_frequency?: 'hourly' | 'daily' | 'weekly'
+  subscriber_count?: number
   is_active?: boolean
+  monitor_frequency?: 'hourly' | 'daily' | 'weekly'
+  video_crawl_limit?: number
+}
+
+// Response types for new API
+export interface QuickAddResponse {
+  account: TargetAccount
+  tasks: Array<{
+    task_id: string
+    task_type: string
+  }>
+}
+
+export interface CrawlResponse {
+  account_id: string
+  tasks: Array<{
+    task_id: string
+    task_type: string
+  }>
+}
+
+export interface BatchCrawlResponse {
+  results: Array<{
+    account_id: string
+    status: 'success' | 'failed'
+    task_count?: number
+    error?: string
+  }>
+}
+
+export interface DownloadResponse {
+  requested_videos: number
+  valid_videos: number
+  invalid_video_ids: string[]
+  tasks: Array<{
+    task_id: string
+    video_id: string
+    status: string
+  }>
+}
+
+export interface MonitoringTask {
+  id: string
+  account_id?: string
+  video_id?: string
+  task_type: string
+  status: string
+  priority?: number
+  error_message?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Channel {
@@ -685,9 +766,9 @@ export interface CreateAccountStatisticsRequest {
 }
 
 export interface Video {
-  id: number
-  account_id: number
-  channel_id: number | null
+  id: string
+  account_id: string
+  channel_id: string | null
   platform: 'youtube' | 'tiktok' | 'bilibili'
   platform_video_id: string
   video_url: string
@@ -746,31 +827,77 @@ export interface CreateVideoEngagementRequest {
 // Target Account Analysis API
 export const targetAccountAnalysisApi = {
   // Accounts
-  getAccounts: (skip = 0, limit = 50, platform?: string, isActive?: boolean, category?: string): Promise<AxiosResponse<ApiResponse<TargetAccount[]>>> => {
+  getAccounts: (skip = 0, limit = 100, isActive?: boolean, category?: string): Promise<AxiosResponse<ApiResponse<TargetAccount[]>>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    if (platform) params.append('platform', platform)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
     if (category) params.append('category', category)
-    return api.get(`/api/target-account-analysis/accounts?${params}`)
+    return api.get(`/api/analysis/accounts/?${params}`)
   },
   
-  getAccountById: (id: number): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.get(`/api/target-account-analysis/accounts/${id}`),
+  getAccountById: (id: string): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+    api.get(`/api/analysis/accounts/${id}`),
   
-  createAccount: (data: CreateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.post('/api/target-account-analysis/accounts/quick-add', data),
+  // Quick add with immediate crawl trigger
+  quickAddAccount: (data: QuickAddAccountRequest): Promise<AxiosResponse<ApiResponse<QuickAddResponse>>> =>
+    api.post('/api/analysis/accounts/quick-add', data),
   
-  updateAccount: (id: number, data: UpdateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.put(`/api/target-account-analysis/accounts/${id}`, data),
+  updateAccount: (id: string, data: UpdateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+    api.put(`/api/analysis/accounts/${id}`, data),
   
-  deleteAccount: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/api/target-account-analysis/accounts/${id}`),
+  deleteAccount: (id: string, data?: DeleteAccountRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+    api.delete(`/api/analysis/accounts/${id}`, { data }),
 
+  // Crawl management
+  triggerAccountCrawl: (accountId: string, data?: AccountCrawlRequest): Promise<AxiosResponse<ApiResponse<CrawlResponse>>> =>
+    api.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data || {}),
+  
+  batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<AxiosResponse<ApiResponse<BatchCrawlResponse>>> =>
+    api.post('/api/analysis/accounts/batch-trigger-crawl', data),
+
+  // Data retrieval
+  getAllVideos: (skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    return api.get(`/api/analysis/videos/?${params}`)
+  },
+
+  getAccountVideos: (accountId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    return api.get(`/api/analysis/accounts/${accountId}/videos?${params}`)
+  },
+
+  getAccountSnapshots: (accountId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<any[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    return api.get(`/api/analysis/accounts/${accountId}/snapshots?${params}`)
+  },
+
+  // Video management
+  getVideoSnapshots: (videoId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<any[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    return api.get(`/api/analysis/videos/${videoId}/snapshots?${params}`)
+  },
+
+  triggerVideoDownload: (data: TriggerDownloadRequest): Promise<AxiosResponse<ApiResponse<DownloadResponse>>> =>
+    api.post('/api/analysis/videos/trigger-download', data),
+
+  // Task management
+  getTasks: (skip = 0, limit = 50, accountId?: string, videoId?: string, taskType?: string, status?: string): Promise<AxiosResponse<ApiResponse<MonitoringTask[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+    if (accountId) params.append('account_id', accountId)
+    if (videoId) params.append('video_id', videoId)
+    if (taskType) params.append('task_type', taskType)
+    if (status) params.append('status', status)
+    return api.get(`/api/analysis/tasks/?${params}`)
+  },
+
+  updateTask: (taskId: string, data: MonitoringTaskUpdate): Promise<AxiosResponse<ApiResponse<MonitoringTask>>> =>
+    api.put(`/api/analysis/tasks/${taskId}`, data),
+
+  // Legacy endpoints (keeping for backward compatibility)
   // Channels
   getChannels: (skip = 0, limit = 50, platform?: string): Promise<AxiosResponse<ApiResponse<Channel[]>>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (platform) params.append('platform', platform)
-    return api.get(`/api/target-account-analysis/channels?${params}`)
+    return api.get(`/api/analysis/channels?${params}`)
   },
 
   // Videos
@@ -780,13 +907,13 @@ export const targetAccountAnalysisApi = {
     if (channelId) params.append('channel_id', channelId.toString())
     if (videoType) params.append('video_type', videoType)
     if (isDownloaded !== undefined) params.append('is_downloaded', isDownloaded.toString())
-    return api.get(`/api/target-account-analysis/videos?${params}`)
+    return api.get(`/api/analysis/videos?${params}`)
   },
 
-  // Statistics
+  // Statistics (legacy - use getAccountSnapshots for new API)
   getAccountStatistics: (accountId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<TargetAccountStatistics[]>>> => {
     const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
-    return api.get(`/api/target-account-analysis/accounts/${accountId}/statistics?${params}`)
+    return api.get(`/api/analysis/accounts/${accountId}/statistics?${params}`)
   },
 
   getGrowthTrends: (accountId: number, days = 7): Promise<AxiosResponse<ApiResponse<{
@@ -798,18 +925,18 @@ export const targetAccountAnalysisApi = {
     data_points: number
   }>>> => {
     const params = new URLSearchParams({ days: days.toString() })
-    return api.get(`/api/target-account-analysis/accounts/${accountId}/growth-trends?${params}`)
+    return api.get(`/api/analysis/accounts/${accountId}/growth-trends?${params}`)
   },
 
   getVideoEngagementMetrics: (videoId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<VideoEngagementMetrics[]>>> => {
     const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
-    return api.get(`/api/target-account-analysis/videos/${videoId}/engagement-metrics?${params}`)
+    return api.get(`/api/analysis/videos/${videoId}/engagement-metrics?${params}`)
   },
 
   getTrendingVideos: (accountId?: number, metric = 'views_count', days = 7, limit = 10): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
     const params = new URLSearchParams({ metric, days: days.toString(), limit: limit.toString() })
     if (accountId) params.append('account_id', accountId.toString())
-    return api.get(`/api/target-account-analysis/videos/trending?${params}`)
+    return api.get(`/api/analysis/videos/trending?${params}`)
   },
 
   getAnalyticsSummary: (accountId: number): Promise<AxiosResponse<ApiResponse<{
@@ -819,7 +946,7 @@ export const targetAccountAnalysisApi = {
     growth_trends: any
     engagement_analysis: any
   }>>> =>
-    api.get(`/api/target-account-analysis/accounts/${accountId}/analytics-summary`),
+    api.get(`/api/analysis/accounts/${accountId}/analytics-summary`),
 }
 
 export default api

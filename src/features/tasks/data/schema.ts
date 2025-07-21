@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // Platform Account schema - make fields optional since they might not exist
 export const platformAccountSchema = z.object({
-  id: z.number().optional(),
+  id: z.string().optional(),
   platform: z.string().optional(),
   account_id: z.string().optional(),
   nickname: z.string().optional(),
@@ -11,9 +11,9 @@ export const platformAccountSchema = z.object({
 
 // Updated schema to match actual API Task structure - make fields optional/nullable as needed
 export const taskSchema = z.object({
-  id: z.number(),
-  project_id: z.number().nullable(),
-  platform_account_id: z.number().nullable(),
+  id: z.string(),
+  project_id: z.string().nullable(),
+  platform_account_id: z.string().nullable(),
   platform_account: platformAccountSchema,
   submit_id: z.string().nullable(),
   error_message: z.string().nullable(),

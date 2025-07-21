@@ -15,11 +15,11 @@ import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as TargetVideosIndexRouteImport } from './routes/target-videos/index'
 import { Route as TargetStatisticsIndexRouteImport } from './routes/target-statistics/index'
-import { Route as TargetChannelsIndexRouteImport } from './routes/target-channels/index'
 import { Route as TargetAccountsIndexRouteImport } from './routes/target-accounts/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectTypesIndexRouteImport } from './routes/project-types/index'
 import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-accounts/index'
+import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
 
@@ -53,11 +53,6 @@ const TargetStatisticsIndexRoute = TargetStatisticsIndexRouteImport.update({
   path: '/target-statistics/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TargetChannelsIndexRoute = TargetChannelsIndexRouteImport.update({
-  id: '/target-channels/',
-  path: '/target-channels/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TargetAccountsIndexRoute = TargetAccountsIndexRouteImport.update({
   id: '/target-accounts/',
   path: '/target-accounts/',
@@ -78,6 +73,11 @@ const PlatformAccountsIndexRoute = PlatformAccountsIndexRouteImport.update({
   path: '/platform-accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MonitoringTasksIndexRoute = MonitoringTasksIndexRouteImport.update({
+  id: '/monitoring-tasks/',
+  path: '/monitoring-tasks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InspirationsIndexRoute = InspirationsIndexRouteImport.update({
   id: '/inspirations/',
   path: '/inspirations/',
@@ -93,11 +93,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
+  '/monitoring-tasks': typeof MonitoringTasksIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/target-accounts': typeof TargetAccountsIndexRoute
-  '/target-channels': typeof TargetChannelsIndexRoute
   '/target-statistics': typeof TargetStatisticsIndexRoute
   '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
@@ -108,11 +108,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
+  '/monitoring-tasks': typeof MonitoringTasksIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/target-accounts': typeof TargetAccountsIndexRoute
-  '/target-channels': typeof TargetChannelsIndexRoute
   '/target-statistics': typeof TargetStatisticsIndexRoute
   '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
@@ -124,11 +124,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
+  '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
   '/platform-accounts/': typeof PlatformAccountsIndexRoute
   '/project-types/': typeof ProjectTypesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/target-accounts/': typeof TargetAccountsIndexRoute
-  '/target-channels/': typeof TargetChannelsIndexRoute
   '/target-statistics/': typeof TargetStatisticsIndexRoute
   '/target-videos/': typeof TargetVideosIndexRoute
   '/tasks/': typeof TasksIndexRoute
@@ -141,11 +141,11 @@ export interface FileRouteTypes {
     | '/'
     | '/assets'
     | '/inspirations'
+    | '/monitoring-tasks'
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
     | '/target-accounts'
-    | '/target-channels'
     | '/target-statistics'
     | '/target-videos'
     | '/tasks'
@@ -156,11 +156,11 @@ export interface FileRouteTypes {
     | '/'
     | '/assets'
     | '/inspirations'
+    | '/monitoring-tasks'
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
     | '/target-accounts'
-    | '/target-channels'
     | '/target-statistics'
     | '/target-videos'
     | '/tasks'
@@ -171,11 +171,11 @@ export interface FileRouteTypes {
     | '/'
     | '/assets/'
     | '/inspirations/'
+    | '/monitoring-tasks/'
     | '/platform-accounts/'
     | '/project-types/'
     | '/projects/'
     | '/target-accounts/'
-    | '/target-channels/'
     | '/target-statistics/'
     | '/target-videos/'
     | '/tasks/'
@@ -187,11 +187,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
+  MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
   PlatformAccountsIndexRoute: typeof PlatformAccountsIndexRoute
   ProjectTypesIndexRoute: typeof ProjectTypesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TargetAccountsIndexRoute: typeof TargetAccountsIndexRoute
-  TargetChannelsIndexRoute: typeof TargetChannelsIndexRoute
   TargetStatisticsIndexRoute: typeof TargetStatisticsIndexRoute
   TargetVideosIndexRoute: typeof TargetVideosIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
@@ -243,13 +243,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TargetStatisticsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/target-channels/': {
-      id: '/target-channels/'
-      path: '/target-channels'
-      fullPath: '/target-channels'
-      preLoaderRoute: typeof TargetChannelsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/target-accounts/': {
       id: '/target-accounts/'
       path: '/target-accounts'
@@ -278,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/monitoring-tasks/': {
+      id: '/monitoring-tasks/'
+      path: '/monitoring-tasks'
+      fullPath: '/monitoring-tasks'
+      preLoaderRoute: typeof MonitoringTasksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inspirations/': {
       id: '/inspirations/'
       path: '/inspirations'
@@ -299,11 +299,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
+  MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,
   PlatformAccountsIndexRoute: PlatformAccountsIndexRoute,
   ProjectTypesIndexRoute: ProjectTypesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   TargetAccountsIndexRoute: TargetAccountsIndexRoute,
-  TargetChannelsIndexRoute: TargetChannelsIndexRoute,
   TargetStatisticsIndexRoute: TargetStatisticsIndexRoute,
   TargetVideosIndexRoute: TargetVideosIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
