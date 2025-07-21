@@ -22,6 +22,7 @@ import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-acc
 import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
+import { Route as TargetAccountsAccountIdRouteImport } from './routes/target-accounts/$accountId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,9 +89,15 @@ const AssetsIndexRoute = AssetsIndexRouteImport.update({
   path: '/assets/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TargetAccountsAccountIdRoute = TargetAccountsAccountIdRouteImport.update({
+  id: '/target-accounts/$accountId',
+  path: '/target-accounts/$accountId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/target-accounts/$accountId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/target-accounts/$accountId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/target-accounts/$accountId'
     | '/assets/'
     | '/inspirations/'
     | '/monitoring-tasks/'
@@ -185,6 +197,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TargetAccountsAccountIdRoute: typeof TargetAccountsAccountIdRoute
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
@@ -292,11 +305,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/target-accounts/$accountId': {
+      id: '/target-accounts/$accountId'
+      path: '/target-accounts/$accountId'
+      fullPath: '/target-accounts/$accountId'
+      preLoaderRoute: typeof TargetAccountsAccountIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TargetAccountsAccountIdRoute: TargetAccountsAccountIdRoute,
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,

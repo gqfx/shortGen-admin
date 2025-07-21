@@ -32,17 +32,19 @@ import { VideoManagement } from './components/video-management'
 import { TargetAccount } from '@/lib/api'
 
 function TargetAccountsContent() {
-  const navigate = useNavigate()
   const {
     targetAccounts,
     loading,
     error,
     pagination,
     filters,
+    navigationState,
     deleteTargetAccount,
     setFilters,
     setPagination,
     resetFilters,
+    navigateToAccountDetail,
+    openProfilePage,
     triggerAccountCrawl,
     batchTriggerCrawl,
     getAccountVideos,
@@ -95,13 +97,12 @@ function TargetAccountsContent() {
   }
 
   const handleAccountClick = (account: TargetAccount) => {
-    // Navigate to account detail page - will be implemented in future tasks
-    navigate({ to: `/target-accounts/${account.id}` })
+    navigateToAccountDetail(account.id)
   }
 
   const handleAvatarClick = (e: React.MouseEvent, account: TargetAccount) => {
     e.stopPropagation() // Prevent row click
-    window.open(account.profile_url, '_blank')
+    openProfilePage(account.profile_url)
   }
 
   const toggleAccountSelection = (accountId: string) => {

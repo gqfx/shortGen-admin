@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Search, Filter, ExternalLink, Play, Download, Clock, Eye } from 'lucide-react'
+import { Search, Filter, ExternalLink, Play, Download, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -30,6 +30,7 @@ function VideosContent() {
     filters,
     setFilters,
     resetFilters,
+    triggerVideoDownload,
   } = useVideos()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -342,13 +343,24 @@ function VideosContent() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.open(video.video_url, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        {!video.is_downloaded && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => triggerVideoDownload([video.id])}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(video.video_url, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

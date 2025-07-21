@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { 
   TargetAccount, 
   QuickAddAccountRequest, 
@@ -23,6 +24,14 @@ interface TargetAccountsContextType {
     isActive?: boolean
     category?: string
   }
+  navigationState: {
+    lastVisitedAccountId?: string
+    returnPath?: string
+    lastProfileVisited?: {
+      url: string
+      timestamp: string
+    }
+  }
   
   // Actions
   fetchTargetAccounts: () => Promise<void>
@@ -32,6 +41,12 @@ interface TargetAccountsContextType {
   setFilters: (filters: Partial<TargetAccountsContextType['filters']>) => void
   setPagination: (pagination: Partial<TargetAccountsContextType['pagination']>) => void
   resetFilters: () => void
+  
+  // Navigation actions
+  navigateToAccountDetail: (accountId: string) => void
+  openProfilePage: (profileUrl: string) => void
+  setNavigationState: (state: Partial<TargetAccountsContextType['navigationState']>) => void
+  handleBrowserNavigation: () => void
   
   // New enhanced actions
   triggerAccountCrawl: (accountId: string, options?: { crawl_videos?: boolean; video_limit?: number }) => Promise<boolean>
@@ -55,6 +70,7 @@ interface TargetAccountsProviderProps {
 }
 
 export function TargetAccountsProvider({ children }: TargetAccountsProviderProps) {
+  const navigate = useNavigate()
   const [targetAccounts, setTargetAccounts] = useState<TargetAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +80,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     total: 0,
   })
   const [filters, setFiltersState] = useState<TargetAccountsContextType['filters']>({})
+  const [navigationState, setNavigationStateInternal] = useState<TargetAccountsContextType['navigationState']>({})
 
   const fetchTargetAccounts = useCallback(async () => {
     try {
@@ -249,6 +266,119 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     setPaginationState(prev => ({ ...prev, skip: 0 }))
   }, [])
 
+  // Navigation handlers
+  const navigateToAccountDetail = useCallback((accountId: string) => {
+    try {
+      // Validate accountId
+      if (!accountId || accountId.trim() === '') {
+        toast.error('Invalid account ID')
+        return
+      }
+
+      // Store current path for potential return navigation
+      setNavigationStateInternal(prev => ({
+        ...prev,
+        lastVisitedAccountId: accountId,
+        returnPath: '/target-accounts'
+      }))
+      
+      // Navigate to account detail page
+      navigate({ 
+        to: '/target-accounts/$accountId',
+        params: { accountId: accountId.trim() }
+      })
+    } catch (error) {
+      toast.error('Failed to navigate to account detail')
+      console.error('Navigation error:', error)
+    }
+  }, [navigate])
+
+  const openProfilePage = useCallback((profileUrl: string) => {
+    try {
+      // Validate URL before opening
+      if (!profileUrl || profileUrl.trim() === '') {
+        toast.error('Profile URL is not available')
+        return
+      }
+      
+      // Clean and validate URL
+      const cleanUrl = profileUrl.trim()
+      let finalUrl: string
+      
+      // Handle different URL formats
+      if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        finalUrl = cleanUrl
+      } else if (cleanUrl.startsWith('//')) {
+        finalUrl = `https:${cleanUrl}`
+      } else {
+        finalUrl = `https://${cleanUrl}`
+      }
+      
+      // Additional validation - check if URL looks valid
+      try {
+        new URL(finalUrl)
+      } catch {
+        toast.error('Invalid profile URL format')
+        return
+      }
+      
+      // Open in new tab with security attributes
+      const newWindow = window.open(finalUrl, '_blank', 'noopener,noreferrer')
+      
+      // Check if popup was blocked
+      if (!newWindow) {
+        toast.error('Popup blocked. Please allow popups for this site.')
+        return
+      }
+      
+      // Store navigation event for analytics/debugging
+      setNavigationStateInternal(prev => ({
+        ...prev,
+        lastProfileVisited: {
+          url: finalUrl,
+          timestamp: new Date().toISOString()
+        }
+      }))
+      
+    } catch (error) {
+      toast.error('Failed to open profile page')
+      console.error('Error opening profile URL:', error)
+    }
+  }, [])
+
+  const setNavigationState = useCallback((state: Partial<TargetAccountsContextType['navigationState']>) => {
+    setNavigationStateInternal(prev => ({ ...prev, ...state }))
+  }, [])
+
+  // Handle browser navigation state preservation
+  const handleBrowserNavigation = useCallback(() => {
+    // This function can be called when the component mounts to restore navigation state
+    // from sessionStorage or other persistence mechanisms
+    try {
+      const savedState = sessionStorage.getItem('target-accounts-navigation-state')
+      if (savedState) {
+        const parsedState = JSON.parse(savedState)
+        setNavigationStateInternal(prev => ({ ...prev, ...parsedState }))
+      }
+    } catch (error) {
+      console.warn('Failed to restore navigation state:', error)
+    }
+  }, [])
+
+  // Save navigation state to sessionStorage when it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('target-accounts-navigation-state', JSON.stringify(navigationState))
+    } catch (error) {
+      console.warn('Failed to save navigation state:', error)
+    }
+  }, [navigationState])
+
+  // Initialize browser navigation state on mount
+  useEffect(() => {
+    handleBrowserNavigation()
+  }, [handleBrowserNavigation])
+
   // Fetch data on mount and when pagination/filters change
   useEffect(() => {
     fetchTargetAccounts()
@@ -260,6 +390,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     error,
     pagination,
     filters,
+    navigationState,
     fetchTargetAccounts,
     createTargetAccount,
     updateTargetAccount,
@@ -267,6 +398,10 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     setFilters,
     setPagination,
     resetFilters,
+    navigateToAccountDetail,
+    openProfilePage,
+    setNavigationState,
+    handleBrowserNavigation,
     triggerAccountCrawl,
     batchTriggerCrawl,
     getAccountVideos,

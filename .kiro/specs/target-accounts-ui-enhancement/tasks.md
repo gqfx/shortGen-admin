@@ -9,7 +9,7 @@
   - Replace dropdown actions menu with expanded Edit and Delete buttons
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Implement Navigation Handlers
+- [x] 2. Implement Navigation Handlers
   - Create navigation function for account detail page routing
   - Add external link handler for profile page navigation
   - Update context to handle navigation state
@@ -18,21 +18,21 @@
 
 ## Phase 2: Account Detail Page Foundation
 
-- [ ] 3. Create Account Detail Route and Page Structure
+- [x] 3. Create Account Detail Route and Page Structure
   - Create new route file at `src/routes/target-accounts/$accountId.tsx`
   - Implement basic page layout with header and navigation
   - Add breadcrumb navigation back to accounts list
   - Create responsive grid layout for content sections
   - _Requirements: 2.1, 8.1, 8.3, 10.1, 10.3_
 
-- [ ] 4. Implement Account Statistics Component
+- [x] 4. Implement Account Statistics Component
   - Create statistics cards component for account metrics
   - Display subscriber count, description, creation date, total videos, views, last published date
   - Handle missing data with appropriate placeholders and loading states
   - Add responsive design for mobile and tablet views
   - _Requirements: 2.1, 2.2, 2.3, 9.1, 10.2_
 
-- [ ] 5. Create Account Detail Context
+- [x] 5. Create Account Detail Context
   - Implement context for account detail state management
   - Add methods for fetching account statistics and videos
   - Handle loading states and error conditions
@@ -41,7 +41,7 @@
 
 ## Phase 3: Video Management in Account Detail
 
-- [ ] 6. Implement Video Filtering Component
+- [-] 6. Implement Video Filtering Component
   - Create filter controls for video list (date range, status, type)
   - Add search functionality for video titles
   - Implement filter state management

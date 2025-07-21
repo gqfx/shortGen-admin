@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { 
   Video,
   targetAccountAnalysisApi,
-  ApiResponse 
+  TriggerDownloadRequest,
+  DownloadResponse,
 } from '@/lib/api'
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
@@ -28,6 +29,7 @@ interface VideosContextType {
   setFilters: (filters: Partial<VideosContextType['filters']>) => void
   setPagination: (pagination: Partial<VideosContextType['pagination']>) => void
   resetFilters: () => void
+  triggerVideoDownload: (videoIds: string[], priority?: number) => Promise<DownloadResponse | undefined>
 }
 
 const VideosContext = createContext<VideosContextType | undefined>(undefined)
@@ -82,7 +84,6 @@ export function VideosProvider({ children }: VideosProviderProps) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
       // Don't show toast for initial data loading errors
-      console.error('Failed to fetch videos:', errorMessage)
     } finally {
       setLoading(false)
     }
@@ -102,6 +103,28 @@ export function VideosProvider({ children }: VideosProviderProps) {
     setPaginationState(prev => ({ ...prev, skip: 0 }))
   }, [])
 
+  const triggerVideoDownload = useCallback(async (videoIds: string[], priority?: number): Promise<DownloadResponse | undefined> => {
+    const toastId = toast.loading(`Triggering download for ${videoIds.length} video(s)...`)
+    try {
+      const request: TriggerDownloadRequest = { video_ids: videoIds, priority }
+      const response = await targetAccountAnalysisApi.triggerVideoDownload(request)
+      
+      if (response.data.code === 0) {
+        toast.success(response.data.msg || 'Download task created successfully.', { id: toastId })
+        // Optionally, refresh the videos list to show updated status
+        fetchVideos()
+        return response.data.data
+      } else {
+        toast.error(response.data.msg || 'Failed to create download task.', { id: toastId })
+        return undefined
+      }
+    } catch (error) {
+      const errorMessage = handleServerError(error)
+      toast.error(errorMessage, { id: toastId })
+      return undefined
+    }
+  }, [fetchVideos])
+
   // Fetch data on mount and when pagination/filters change
   useEffect(() => {
     fetchVideos()
@@ -117,6 +140,7 @@ export function VideosProvider({ children }: VideosProviderProps) {
     setFilters,
     setPagination,
     resetFilters,
+    triggerVideoDownload,
   }
 
   return (
