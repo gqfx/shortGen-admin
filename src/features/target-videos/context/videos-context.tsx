@@ -22,6 +22,7 @@ interface VideosContextType {
     channelId?: number
     videoType?: string
     isDownloaded?: boolean
+    sortBy?: string
   }
   
   // Actions
@@ -68,7 +69,8 @@ export function VideosProvider({ children }: VideosProviderProps) {
         filters.accountId,
         filters.channelId,
         filters.videoType,
-        filters.isDownloaded
+        filters.isDownloaded,
+        filters.sortBy
       )
       
       if (response.data.code === 0) {
@@ -87,7 +89,7 @@ export function VideosProvider({ children }: VideosProviderProps) {
     } finally {
       setLoading(false)
     }
-  }, [pagination.skip, pagination.limit, filters.accountId, filters.channelId, filters.videoType, filters.isDownloaded])
+  }, [pagination.skip, pagination.limit, filters.accountId, filters.channelId, filters.videoType, filters.isDownloaded, filters.sortBy])
 
   const setFilters = useCallback((newFilters: Partial<VideosContextType['filters']>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))

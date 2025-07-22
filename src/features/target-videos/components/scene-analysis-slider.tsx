@@ -132,9 +132,23 @@ export function SceneAnalysisSlider({
     onSceneClick?.(scene)
     onTimeNavigate?.(scene.startTime)
     
-    // Add smooth scroll to center the clicked scene
+    // Add smooth scroll to center the clicked scene with enhanced animation
     setTimeout(() => {
       scrollToScene(index)
+      
+      // Add visual feedback for the clicked scene
+      const sceneElement = sceneRefs.current[index]
+      if (sceneElement) {
+        sceneElement.style.transform = 'scale(1.02)'
+        sceneElement.style.transition = 'transform 0.2s ease-out'
+        
+        setTimeout(() => {
+          sceneElement.style.transform = 'scale(1)'
+          setTimeout(() => {
+            sceneElement.style.transition = ''
+          }, 200)
+        }, 200)
+      }
     }, 100)
   }, [onSceneClick, onTimeNavigate, scrollToScene])
 

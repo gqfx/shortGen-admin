@@ -117,7 +117,13 @@ function VideoDetailContent() {
           {/* Video Player/Thumbnail Component */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Video Player</h2>
-            <VideoPlayer video={video} />
+            <VideoPlayer 
+              video={video}
+              currentTime={currentTime}
+              onTimeUpdate={updateCurrentTime}
+              onSeekToTime={seekToTime}
+              highlightedScene={highlightedScene}
+            />
           </div>
 
           {/* Analysis Results */}

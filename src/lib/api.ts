@@ -623,6 +623,19 @@ export interface TargetAccount {
   created_at: string
   updated_at: string
   deleted_at: string | null
+  latest_snapshot: AccountSnapshot | null
+}
+
+export interface AccountSnapshot {
+  target_account_id: string
+  followers_count: number
+  following_count: number
+  total_videos_count: number
+  total_views: number
+  total_likes: number
+  collected_at: string
+  id: string
+  created_at: string
 }
 
 export interface QuickAddAccountRequest {
@@ -785,6 +798,18 @@ export interface Video {
   discovered_at: string
   created_at: string
   updated_at: string
+  latest_snapshot: VideoSnapshot | null
+}
+
+export interface VideoSnapshot {
+  video_id: string
+  views_count: number
+  likes_count: number
+  comments_count: number
+  favorite_count: number
+  collected_at: string
+  id: string
+  created_at: string
 }
 
 export interface CreateVideoRequest {
@@ -875,8 +900,8 @@ export const targetAccountAnalysisApi = {
     api.post('/api/analysis/accounts/batch-trigger-crawl', data),
 
   // Data retrieval
-  getAllVideos: (skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAllVideos: (skip = 0, limit = 50, sortBy = 'published_at'): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString(), sort_by: sortBy })
     return api.get(`/api/analysis/videos/?${params}`)
   },
 
@@ -906,6 +931,9 @@ export const targetAccountAnalysisApi = {
   getVideoAnalysis: (videoId: string): Promise<AxiosResponse<ApiResponse<VideoAnalysisResponse>>> =>
     api.get(`/api/analysis/videos/${videoId}/analysis`),
 
+  triggerVideoLensAnalysis: (videoId: string): Promise<AxiosResponse<ApiResponse<{ job_id: string }>>> =>
+    api.post(`/api/analysis/videos/${videoId}/analyze`),
+
   triggerVideoAnalysis: (videoId: string, options?: { priority?: number }): Promise<AxiosResponse<ApiResponse<{ task_id: string; status: string }>>> =>
     api.post(`/api/analysis/videos/${videoId}/trigger-analysis`, options || {}),
 
@@ -931,8 +959,8 @@ export const targetAccountAnalysisApi = {
   },
 
   // Videos
-  getVideos: (skip = 0, limit = 50, accountId?: number, channelId?: number, videoType?: string, isDownloaded?: boolean): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getVideos: (skip = 0, limit = 50, accountId?: number, channelId?: number, videoType?: string, isDownloaded?: boolean, sortBy = 'published_at'): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString(), sort_by: sortBy })
     if (accountId) params.append('account_id', accountId.toString())
     if (channelId) params.append('channel_id', channelId.toString())
     if (videoType) params.append('video_type', videoType)

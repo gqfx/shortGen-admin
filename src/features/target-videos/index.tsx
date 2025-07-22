@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Search, Filter, ExternalLink, Play, Download, Clock } from 'lucide-react'
+import { Search, Filter, ExternalLink, Play, Download, Clock, BrainCircuit, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -17,10 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VideosProvider, useVideos } from './context/videos-context'
+import { targetAccountAnalysisApi } from '@/lib/api'
+import { toast } from 'sonner'
+import { handleServerError } from '@/utils/handle-server-error'
 
 function VideosContent() {
   const {
@@ -31,35 +33,36 @@ function VideosContent() {
     setFilters,
     resetFilters,
     triggerVideoDownload,
+    pagination,
+    setPagination,
   } = useVideos()
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [analyzingVideoId, setAnalyzingVideoId] = useState<string | null>(null)
 
-  const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case 'youtube':
-        return '📺'
-      case 'tiktok':
-        return '🎵'
-      case 'bilibili':
-        return '📹'
-      default:
-        return '📺'
+  const handleAnalyzeVideo = async (videoId: string) => {
+    setAnalyzingVideoId(videoId)
+    try {
+      const response = await targetAccountAnalysisApi.triggerVideoLensAnalysis(videoId)
+      if (response.data.code === 0) {
+        toast.success('Video analysis task started', {
+          description: `Job ID: ${response.data.data.job_id}`,
+        })
+      } else {
+        toast.error('Failed to start analysis', {
+          description: response.data.msg,
+        })
+      }
+    } catch (error) {
+      toast.error('Failed to start analysis', {
+        description: handleServerError(error),
+      })
+    } finally {
+      setAnalyzingVideoId(null)
     }
   }
 
-  const getVideoTypeIcon = (type: string) => {
-    switch (type) {
-      case 'short':
-        return '⚡'
-      case 'long':
-        return '📹'
-      case 'live':
-        return '🔴'
-      default:
-        return '📹'
-    }
-  }
+
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return 'N/A'
@@ -73,12 +76,7 @@ function VideosContent() {
     return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
 
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return 'N/A'
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
-  }
+
 
   const filteredVideos = videos.filter(video =>
     video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -227,6 +225,19 @@ function VideosContent() {
               </SelectContent>
             </Select>
 
+            <Select
+              value={filters.sortBy || 'published_at'}
+              onValueChange={(value) => setFilters({ sortBy: value })}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="published_at">Sort by Date</SelectItem>
+                <SelectItem value="views_count">Sort by Views</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Button variant="outline" onClick={resetFilters}>
               <Filter className="mr-2 h-4 w-4" />
               Reset Filters
@@ -261,11 +272,10 @@ function VideosContent() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Video</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Likes</TableHead>
+                  <TableHead>Comments</TableHead>
                   <TableHead>Duration</TableHead>
-                  <TableHead>Account ID</TableHead>
-                  <TableHead>Downloaded</TableHead>
                   <TableHead>Published</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -291,55 +301,43 @@ function VideosContent() {
                             <Play className="h-6 w-6 text-muted-foreground" />
                           </div>
                         </div>
-                        <div className="max-w-[300px]">
-                          <p className="font-medium line-clamp-2">{video.title}</p>
-                          <p className="text-sm text-muted-foreground">ID: {video.platform_video_id}</p>
+                        <div className="max-w-[200px] truncate">
+                          <p className="font-medium" title={video.title}>{video.title}</p>
+                          <p className="text-sm text-muted-foreground">ID: {video.id}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span>{getPlatformIcon(video.platform)}</span>
-                        <span className="capitalize">{video.platform}</span>
-                      </div>
+                      {video.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {video.latest_snapshot.views_count.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span>{getVideoTypeIcon(video.video_type)}</span>
-                        <span className="capitalize">{video.video_type}</span>
-                      </div>
+                      {video.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {video.latest_snapshot.likes_count.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {video.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {video.latest_snapshot.comments_count.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{formatDuration(video.duration)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{video.account_id}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <Badge variant={video.is_downloaded ? 'default' : 'secondary'}>
-                          {video.is_downloaded ? (
-                            <>
-                              <Download className="mr-1 h-3 w-3" />
-                              Downloaded
-                            </>
-                          ) : (
-                            'Not Downloaded'
-                          )}
-                        </Badge>
-                        {video.is_downloaded && video.local_file_size ? (
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(video.local_file_size)}
-                          </p>
-                        ) : null}
-                        {video.download_status && (
-                           <p className="text-xs text-muted-foreground capitalize">
-                             Status: {video.download_status}
-                           </p>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -349,6 +347,20 @@ function VideosContent() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {video.is_downloaded && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAnalyzeVideo(video.id)}
+                            disabled={analyzingVideoId === video.id}
+                          >
+                            {analyzingVideoId === video.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <BrainCircuit className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                         {!video.is_downloaded && (
                           <Button
                             variant="ghost"
@@ -382,6 +394,24 @@ function VideosContent() {
             </div>
           )}
         </CardContent>
+        <div className="flex items-center justify-end space-x-2 p-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPagination({ skip: pagination.skip - pagination.limit })}
+            disabled={pagination.skip === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPagination({ skip: pagination.skip + pagination.limit })}
+            disabled={filteredVideos.length < pagination.limit}
+          >
+            Next
+          </Button>
+        </div>
       </Card>
     </div>
   )

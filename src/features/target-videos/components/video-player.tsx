@@ -112,16 +112,31 @@ export function VideoPlayer({
       if (Math.abs(video.currentTime - targetTime) > 1) {
         video.currentTime = targetTime
         
-        // Add smooth transition effect
-        video.style.transition = 'opacity 0.3s ease-in-out'
-        video.style.opacity = '0.7'
+        // Add enhanced smooth transition effect with ripple animation
+        video.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+        video.style.opacity = '0.6'
+        video.style.transform = 'scale(0.98)'
+        
+        // Show seeking indicator
+        const seekIndicator = document.createElement('div')
+        seekIndicator.className = 'absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg z-10'
+        seekIndicator.innerHTML = `
+          <div class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-in fade-in-0 zoom-in-95 duration-300">
+            Seeking to ${Math.floor(targetTime / 60)}:${(targetTime % 60).toString().padStart(2, '0')}
+          </div>
+        `
+        video.parentElement?.appendChild(seekIndicator)
         
         setTimeout(() => {
           video.style.opacity = '1'
+          video.style.transform = 'scale(1)'
+          
+          // Remove seeking indicator
           setTimeout(() => {
+            seekIndicator?.remove()
             video.style.transition = ''
-          }, 300)
-        }, 100)
+          }, 400)
+        }, 200)
       }
     }
   }, [currentTime, onSeekToTime, isVideoReady])
@@ -131,9 +146,10 @@ export function VideoPlayer({
     if (!highlightedScene || !isVideoReady) return {}
     
     return {
-      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)',
+      boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2)',
       borderRadius: '8px',
-      transition: 'box-shadow 0.3s ease-in-out'
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      transform: 'scale(1.01)'
     }
   }, [highlightedScene, isVideoReady])
 

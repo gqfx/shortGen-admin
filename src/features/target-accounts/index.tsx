@@ -342,7 +342,9 @@ function TargetAccountsContent() {
                   </TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Monitor Frequency</TableHead>
+                  <TableHead>Followers</TableHead>
+                  <TableHead>Total Videos</TableHead>
+                  <TableHead>Total Views</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Crawled</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -385,15 +387,37 @@ function TargetAccountsContent() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {account.category ? 
-                          account.category.charAt(0).toUpperCase() + account.category.slice(1) : 
+                        {account.category ?
+                          account.category.charAt(0).toUpperCase() + account.category.slice(1) :
                           'Uncategorized'
                         }
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {account.monitor_frequency ? getFrequencyBadge(account.monitor_frequency) : (
-                        <Badge variant="secondary">Default</Badge>
+                      {account.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {account.latest_snapshot.followers_count.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {account.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {account.latest_snapshot.total_videos_count.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {account.latest_snapshot ? (
+                        <span className="text-sm font-medium">
+                          {account.latest_snapshot.total_views.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell>
