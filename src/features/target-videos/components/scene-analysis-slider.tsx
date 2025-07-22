@@ -30,6 +30,8 @@ interface SceneAnalysisSliderProps {
   className?: string
   loading?: boolean
   selectedSceneId?: string
+  currentTime?: number
+  autoSyncWithPlayback?: boolean
 }
 
 export function SceneAnalysisSlider({
@@ -38,12 +40,17 @@ export function SceneAnalysisSlider({
   onTimeNavigate,
   className,
   loading = false,
-  selectedSceneId
+  selectedSceneId,
+  currentTime = 0,
+  autoSyncWithPlayback = true
 }: SceneAnalysisSliderProps) {
   const [focusedIndex, setFocusedIndex] = useState(0)
   const [isScrolling, setIsScrolling] = useState(false)
+  const [currentSceneIndex, setCurrentSceneIndex] = useState<number | null>(null)
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const sceneRefs = useRef<(HTMLDivElement | null)[]>([])
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Format time display
   const formatTime = useCallback((seconds: number): string => {
@@ -63,7 +70,7 @@ export function SceneAnalysisSlider({
     return `${Math.round(duration)}s`
   }, [])
 
-  // Scroll to specific scene
+  // Enhanced scroll to specific scene with smooth transitions
   const scrollToScene = useCallback((index: number) => {
     const sceneElement = sceneRefs.current[index]
     const container = scrollContainerRef.current
@@ -72,13 +79,44 @@ export function SceneAnalysisSlider({
       const containerRect = container.getBoundingClientRect()
       const sceneRect = sceneElement.getBoundingClientRect()
       
-      // Calculate scroll position to center the scene
+      // Calculate scroll position to center the scene with padding
       const scrollLeft = sceneElement.offsetLeft - (containerRect.width / 2) + (sceneRect.width / 2)
       
-      container.scrollTo({
-        left: scrollLeft,
-        behavior: 'smooth'
-      })
+      // Enhanced smooth scrolling with custom easing
+      const startScrollLeft = container.scrollLeft
+      const distance = scrollLeft - startScrollLeft
+      const duration = 600 // 600ms for smooth animation
+      const startTime = performance.now()
+      
+      // Custom easing function for smoother animation
+      const easeInOutCubic = (t: number): number => {
+        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1
+      }
+      
+      const animateScroll = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easedProgress = easeInOutCubic(progress)
+        
+        container.scrollLeft = startScrollLeft + (distance * easedProgress)
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll)
+        } else {
+          // Add subtle bounce effect at the end
+          const bounceDistance = 10
+          container.scrollLeft = scrollLeft + bounceDistance
+          
+          setTimeout(() => {
+            container.scrollTo({
+              left: scrollLeft,
+              behavior: 'smooth'
+            })
+          }, 100)
+        }
+      }
+      
+      requestAnimationFrame(animateScroll)
     }
   }, [])
 
@@ -126,28 +164,122 @@ export function SceneAnalysisSlider({
     }
   }, [scenes, focusedIndex, onSceneClick, onTimeNavigate, scrollToScene])
 
-  // Handle scene click
+  // Enhanced scene click handler with improved navigation and feedback
   const handleSceneClick = useCallback((scene: SceneData, index: number) => {
     setFocusedIndex(index)
+    setLastSyncTime(Date.now()) // Update sync time to prevent auto-sync interference
+    
     onSceneClick?.(scene)
     onTimeNavigate?.(scene.startTime)
     
-    // Add smooth scroll to center the clicked scene with enhanced animation
+    // Enhanced smooth scroll with improved timing and animations
     setTimeout(() => {
       scrollToScene(index)
       
-      // Add visual feedback for the clicked scene
+      // Enhanced visual feedback with multiple animation layers
       const sceneElement = sceneRefs.current[index]
       if (sceneElement) {
-        sceneElement.style.transform = 'scale(1.02)'
-        sceneElement.style.transition = 'transform 0.2s ease-out'
+        // Main scale and glow animation
+        sceneElement.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+        sceneElement.style.transform = 'scale(1.06)'
+        sceneElement.style.boxShadow = '0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(59, 130, 246, 0.3)'
+        sceneElement.style.zIndex = '15'
+        sceneElement.style.filter = 'brightness(1.1) contrast(1.05)'
         
+        // Add enhanced ripple effect with multiple waves
+        const ripple1 = document.createElement('div')
+        ripple1.className = 'absolute inset-0 rounded-lg pointer-events-none'
+        ripple1.style.background = 'radial-gradient(circle at center, rgba(59, 130, 246, 0.3) 0%, transparent 60%)'
+        ripple1.style.animation = 'pulse 1s ease-out'
+        sceneElement.appendChild(ripple1)
+        
+        const ripple2 = document.createElement('div')
+        ripple2.className = 'absolute inset-0 rounded-lg pointer-events-none'
+        ripple2.style.background = 'radial-gradient(circle at center, rgba(147, 197, 253, 0.2) 0%, transparent 80%)'
+        ripple2.style.animation = 'pulse 1.4s ease-out 0.2s'
+        sceneElement.appendChild(ripple2)
+        
+        // Add enhanced navigation indicator with time display
+        const navIndicator = document.createElement('div')
+        navIndicator.className = 'absolute top-2 left-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-full text-xs font-medium animate-in fade-in-0 slide-in-from-top-2 duration-500 backdrop-blur-sm border border-blue-400/30'
+        navIndicator.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="flex flex-col">
+              <span class="font-semibold">Jumping to Scene</span>
+              <span class="opacity-90">${Math.floor(scene.startTime / 60)}:${(scene.startTime % 60).toString().padStart(2, '0')}</span>
+            </div>
+          </div>
+        `
+        sceneElement.appendChild(navIndicator)
+        
+        // Add corner accent animations for enhanced visual feedback
+        const corners = ['top-right', 'bottom-left', 'bottom-right']
+        const cornerElements: HTMLElement[] = []
+        
+        corners.forEach((corner, cornerIndex) => {
+          const cornerElement = document.createElement('div')
+          cornerElement.className = `absolute w-4 h-4 border-2 border-blue-400 z-20`
+          
+          switch (corner) {
+            case 'top-right':
+              cornerElement.style.top = '8px'
+              cornerElement.style.right = '8px'
+              cornerElement.style.borderLeft = 'none'
+              cornerElement.style.borderBottom = 'none'
+              break
+            case 'bottom-left':
+              cornerElement.style.bottom = '8px'
+              cornerElement.style.left = '8px'
+              cornerElement.style.borderRight = 'none'
+              cornerElement.style.borderTop = 'none'
+              break
+            case 'bottom-right':
+              cornerElement.style.bottom = '8px'
+              cornerElement.style.right = '8px'
+              cornerElement.style.borderLeft = 'none'
+              cornerElement.style.borderTop = 'none'
+              break
+          }
+          
+          cornerElement.style.animation = `corner-highlight 1.5s ease-in-out ${cornerIndex * 0.15}s`
+          sceneElement.appendChild(cornerElement)
+          cornerElements.push(cornerElement)
+        })
+        
+        // Add progress indicator
+        const progressBar = document.createElement('div')
+        progressBar.className = 'absolute bottom-2 left-2 right-2 h-1 bg-white/20 rounded-full overflow-hidden z-20'
+        progressBar.innerHTML = '<div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" style="width: 100%; animation: progress-fill 1s ease-out;"></div>'
+        sceneElement.appendChild(progressBar)
+        
+        // Enhanced cleanup with staggered timing
         setTimeout(() => {
           sceneElement.style.transform = 'scale(1)'
+          sceneElement.style.boxShadow = ''
+          sceneElement.style.zIndex = ''
+          sceneElement.style.filter = ''
+          
+          // Remove elements with improved staggered timing
           setTimeout(() => {
-            sceneElement.style.transition = ''
-          }, 200)
-        }, 200)
+            navIndicator?.remove()
+            setTimeout(() => {
+              ripple1?.remove()
+              setTimeout(() => {
+                ripple2?.remove()
+                progressBar?.remove()
+                cornerElements.forEach((el, elIndex) => {
+                  setTimeout(() => el?.remove(), elIndex * 50)
+                })
+                setTimeout(() => {
+                  sceneElement.style.transition = ''
+                }, 200)
+              }, 150)
+            }, 150)
+          }, 300)
+        }, 500)
       }
     }, 100)
   }, [onSceneClick, onTimeNavigate, scrollToScene])
@@ -167,16 +299,99 @@ export function SceneAnalysisSlider({
     }
   }, [])
 
-  // Auto-scroll to selected scene
+  // Auto-scroll to selected scene with enhanced synchronization
   useEffect(() => {
     if (selectedSceneId) {
       const sceneIndex = scenes.findIndex(scene => scene.sceneId === selectedSceneId)
       if (sceneIndex !== -1 && sceneIndex !== focusedIndex) {
         setFocusedIndex(sceneIndex)
-        scrollToScene(sceneIndex)
+        
+        // Enhanced smooth scrolling with timing
+        setTimeout(() => {
+          scrollToScene(sceneIndex)
+        }, 100)
       }
     }
   }, [selectedSceneId, scenes, focusedIndex, scrollToScene])
+
+  // Enhanced synchronization with video playback position
+  useEffect(() => {
+    if (autoSyncWithPlayback && currentTime !== undefined && scenes.length > 0) {
+      // Debounce the sync to avoid excessive updates
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+      }
+
+      syncTimeoutRef.current = setTimeout(() => {
+        // Only sync if we haven't manually synced recently
+        const timeSinceLastSync = Date.now() - lastSyncTime
+        if (timeSinceLastSync > 2000) { // 2 second cooldown
+          const newCurrentSceneIndex = scenes.findIndex(scene => 
+            currentTime >= scene.startTime && currentTime <= scene.endTime
+          )
+          
+          if (newCurrentSceneIndex !== -1 && newCurrentSceneIndex !== currentSceneIndex) {
+            setCurrentSceneIndex(newCurrentSceneIndex)
+            setFocusedIndex(newCurrentSceneIndex)
+            
+            // Enhanced smooth scroll to current scene with better animation
+            setTimeout(() => {
+              scrollToScene(newCurrentSceneIndex)
+              
+              // Add enhanced visual feedback for auto-sync with sync indicator
+              const sceneElement = sceneRefs.current[newCurrentSceneIndex]
+              if (sceneElement) {
+                // Main sync animation
+                sceneElement.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                sceneElement.style.transform = 'scale(1.02)'
+                sceneElement.style.boxShadow = '0 0 25px rgba(59, 130, 246, 0.4)'
+                sceneElement.style.zIndex = '5'
+                
+                // Add sync indicator
+                const syncIndicator = document.createElement('div')
+                syncIndicator.className = 'absolute top-2 right-2 bg-blue-600 text-white p-1 rounded-full z-20 animate-in fade-in-0 zoom-in-95 duration-300'
+                syncIndicator.innerHTML = `
+                  <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                `
+                sceneElement.appendChild(syncIndicator)
+                
+                // Add subtle pulse effect
+                const pulseOverlay = document.createElement('div')
+                pulseOverlay.className = 'absolute inset-0 rounded-lg pointer-events-none'
+                pulseOverlay.style.background = 'radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%)'
+                pulseOverlay.style.animation = 'scene-sync-indicator 1s ease-out'
+                sceneElement.appendChild(pulseOverlay)
+                
+                setTimeout(() => {
+                  sceneElement.style.transform = 'scale(1)'
+                  sceneElement.style.boxShadow = ''
+                  sceneElement.style.zIndex = ''
+                  
+                  // Remove indicators
+                  setTimeout(() => {
+                    syncIndicator?.remove()
+                    pulseOverlay?.remove()
+                    sceneElement.style.transition = ''
+                  }, 400)
+                }, 400)
+              }
+            }, 150)
+          }
+        }
+      }, 300) // Reduced debounce for more responsive sync
+    }
+  }, [currentTime, scenes, autoSyncWithPlayback, lastSyncTime, scrollToScene, currentSceneIndex])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Handle scroll events for touch feedback and enhanced mobile support
   useEffect(() => {
@@ -439,13 +654,26 @@ export function SceneAnalysisSlider({
                             {scene.description}
                           </p>
 
-                          {/* Action button */}
+                          {/* Enhanced action button with better feedback */}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start gap-2 h-8 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            className="w-full justify-start gap-2 h-8 text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700"
                             onClick={(e) => {
                               e.stopPropagation()
+                              
+                              // Enhanced visual feedback for direct navigation
+                              const button = e.currentTarget
+                              button.style.transform = 'scale(0.95)'
+                              button.style.transition = 'transform 0.1s ease-out'
+                              
+                              setTimeout(() => {
+                                button.style.transform = 'scale(1)'
+                                setTimeout(() => {
+                                  button.style.transition = ''
+                                }, 100)
+                              }, 100)
+                              
                               onTimeNavigate?.(scene.startTime)
                             }}
                           >

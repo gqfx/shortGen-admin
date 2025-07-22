@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { Plus, Search, Filter, Edit, Trash2, RefreshCw, Video, History } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -36,18 +35,12 @@ function TargetAccountsContent() {
     targetAccounts,
     loading,
     error,
-    pagination,
     filters,
-    navigationState,
     deleteTargetAccount,
     setFilters,
-    setPagination,
     resetFilters,
     navigateToAccountDetail,
     openProfilePage,
-    triggerAccountCrawl,
-    batchTriggerCrawl,
-    getAccountVideos,
   } = useTargetAccounts()
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -57,7 +50,6 @@ function TargetAccountsContent() {
   const [accountToDelete, setAccountToDelete] = useState<TargetAccount | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
-  const [crawlLoading, setCrawlLoading] = useState<string | null>(null)
   const [crawlDialogOpen, setCrawlDialogOpen] = useState(false)
   const [crawlAccount, setCrawlAccount] = useState<TargetAccount | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
@@ -81,20 +73,12 @@ function TargetAccountsContent() {
     }
   }
 
-  const handleTriggerCrawl = (account: TargetAccount) => {
-    setCrawlAccount(account)
-    setCrawlDialogOpen(true)
-  }
 
   const handleBatchCrawl = () => {
     if (selectedAccounts.length === 0) return
     setCrawlDialogOpen(true)
   }
 
-  const handleViewVideos = (account: TargetAccount) => {
-    setVideoAccount(account)
-    setVideoDialogOpen(true)
-  }
 
   const handleAccountClick = (account: TargetAccount) => {
     navigateToAccountDetail(account.id)
@@ -121,32 +105,7 @@ function TargetAccountsContent() {
     }
   }
 
-  const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case 'youtube':
-        return '📺'
-      case 'tiktok':
-        return '🎵'
-      case 'bilibili':
-        return '📹'
-      default:
-        return '📺'
-    }
-  }
 
-  const getFrequencyBadge = (frequency: string) => {
-    const variants = {
-      hourly: 'destructive',
-      daily: 'default',
-      weekly: 'secondary',
-    } as const
-
-    return (
-      <Badge variant={variants[frequency as keyof typeof variants] || 'default'}>
-        {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
-      </Badge>
-    )
-  }
 
   const filteredAccounts = targetAccounts.filter(account =>
     account.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -396,7 +355,7 @@ function TargetAccountsContent() {
                     <TableCell>
                       {account.latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {account.latest_snapshot.followers_count.toLocaleString()}
+                          {(account.latest_snapshot.followers_count ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -405,7 +364,7 @@ function TargetAccountsContent() {
                     <TableCell>
                       {account.latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {account.latest_snapshot.total_videos_count.toLocaleString()}
+                          {(account.latest_snapshot.total_videos_count ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -414,7 +373,7 @@ function TargetAccountsContent() {
                     <TableCell>
                       {account.latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {account.latest_snapshot.total_views.toLocaleString()}
+                          {(account.latest_snapshot.total_views ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>

@@ -36,7 +36,8 @@ export function AnalysisResults({ className }: AnalysisResultsProps) {
     selectedSceneId,
     selectScene,
     highlightScene,
-    seekToTime
+    seekToTime,
+    currentTime
   } = useVideoDetail()
 
   // Don't render if video is not available
@@ -194,6 +195,8 @@ export function AnalysisResults({ className }: AnalysisResultsProps) {
               <SceneAnalysisSlider
                 scenes={analysis.scenes}
                 selectedSceneId={selectedSceneId}
+                currentTime={currentTime}
+                autoSyncWithPlayback={true}
                 onSceneClick={(scene) => {
                   selectScene(scene.sceneId)
                   highlightScene(scene)

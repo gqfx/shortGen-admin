@@ -123,6 +123,7 @@ function VideoDetailContent() {
               onTimeUpdate={updateCurrentTime}
               onSeekToTime={seekToTime}
               highlightedScene={highlightedScene}
+              autoSyncWithScenes={true}
             />
           </div>
 
