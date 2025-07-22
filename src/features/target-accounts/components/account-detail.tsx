@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { AccountDetailProvider, useAccountDetail } from '../context/account-detail-context'
 import { AccountStatistics } from './account-statistics'
+import { VideoFilters } from './video-filters'
+import { VideoList } from './video-list'
 
 function AccountDetailContent() {
   const { accountId } = useParams({ from: '/target-accounts/$accountId' })
@@ -110,6 +112,9 @@ function AccountDetailContent() {
           className="mb-6"
         />
 
+        {/* Video Filters Section */}
+        <VideoFilters />
+
         {/* Main Content Grid Layout */}
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Left Column - Video Management */}
@@ -121,7 +126,7 @@ function AccountDetailContent() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Video filtering and batch operations will be implemented in tasks 6-8
+                  Additional video management tools and analytics will be available here
                 </p>
               </CardContent>
             </Card>
@@ -144,16 +149,7 @@ function AccountDetailContent() {
         </div>
 
         {/* Full Width Section for Video List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Videos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Video list with filtering and batch operations will be implemented in tasks 6-8
-            </p>
-          </CardContent>
-        </Card>
+        <VideoList />
       </main>
     </div>
   )

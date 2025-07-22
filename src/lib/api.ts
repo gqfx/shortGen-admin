@@ -824,6 +824,26 @@ export interface CreateVideoEngagementRequest {
   collected_at: string
 }
 
+// Video Analysis types
+export interface VideoAnalysisResponse {
+  id: string
+  video_id: string
+  scenes: SceneAnalysis[]
+  summary: string
+  analysis_status: 'pending' | 'processing' | 'completed' | 'failed'
+  created_at: string
+  updated_at: string
+}
+
+export interface SceneAnalysis {
+  scene_id: string
+  start_time: number
+  end_time: number
+  thumbnail_url: string
+  description: string
+  confidence: number
+}
+
 // Target Account Analysis API
 export const targetAccountAnalysisApi = {
   // Accounts
@@ -878,6 +898,16 @@ export const targetAccountAnalysisApi = {
 
   triggerVideoDownload: (data: TriggerDownloadRequest): Promise<AxiosResponse<ApiResponse<DownloadResponse>>> =>
     api.post('/api/analysis/videos/trigger-download', data),
+
+  // Video Analysis endpoints
+  getVideoById: (videoId: string): Promise<AxiosResponse<ApiResponse<Video>>> =>
+    api.get(`/api/analysis/videos/${videoId}`),
+
+  getVideoAnalysis: (videoId: string): Promise<AxiosResponse<ApiResponse<VideoAnalysisResponse>>> =>
+    api.get(`/api/analysis/videos/${videoId}/analysis`),
+
+  triggerVideoAnalysis: (videoId: string, options?: { priority?: number }): Promise<AxiosResponse<ApiResponse<{ task_id: string; status: string }>>> =>
+    api.post(`/api/analysis/videos/${videoId}/trigger-analysis`, options || {}),
 
   // Task management
   getTasks: (skip = 0, limit = 50, accountId?: string, videoId?: string, taskType?: string, status?: string): Promise<AxiosResponse<ApiResponse<MonitoringTask[]>>> => {

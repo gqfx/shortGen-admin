@@ -41,21 +41,21 @@
 
 ## Phase 3: Video Management in Account Detail
 
-- [-] 6. Implement Video Filtering Component
+- [x] 6. Implement Video Filtering Component
   - Create filter controls for video list (date range, status, type)
   - Add search functionality for video titles
   - Implement filter state management
   - Add clear filters functionality
   - _Requirements: 3.1, 3.2, 9.1_
 
-- [ ] 7. Create Video List Component for Account Detail
+- [x] 7. Create Video List Component for Account Detail
   - Display video list with thumbnails, titles, metrics, and publish dates
   - Implement video selection checkboxes for batch operations
   - Add individual video action buttons (download/analyze/view)
   - Handle different video states (not downloaded, downloaded, analyzed)
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 8. Implement Batch Video Operations
+- [x] 8. Implement Batch Video Operations
   - Add batch selection controls (select all, clear selection)
   - Create batch download functionality
   - Display batch operation progress and results
@@ -64,21 +64,21 @@
 
 ## Phase 4: Video Detail Page Foundation
 
-- [ ] 9. Create Video Detail Route and Page Structure
+- [x] 9. Create Video Detail Route and Page Structure
   - Create new route file at `src/routes/target-videos/$videoId.tsx`
   - Implement basic page layout with video information section
   - Add navigation breadcrumbs (Accounts > Account > Video)
   - Create responsive layout for video player and information
   - _Requirements: 5.1, 5.4, 8.1, 8.3, 10.1_
 
-- [ ] 10. Implement Video Information Component
+- [x] 10. Implement Video Information Component
   - Display video metadata (title, description, duration, metrics, publish date)
   - Handle missing information with appropriate placeholders
   - Add responsive design for different screen sizes
   - Include video URL link for external access
   - _Requirements: 5.3, 5.4, 9.1, 10.2_
 
-- [ ] 11. Create Video Detail Context
+- [x] 11. Create Video Detail Context
   - Implement context for video detail state management
   - Add methods for fetching video details and analysis data
   - Handle loading states and error conditions
@@ -87,14 +87,14 @@
 
 ## Phase 5: Video Player and Download Management
 
-- [ ] 12. Implement Video Player/Thumbnail Component
+- [x] 12. Implement Video Player/Thumbnail Component
   - Create conditional component showing video player for downloaded videos
   - Display thumbnail with download button for non-downloaded videos
   - Implement download task triggering functionality
   - Add loading states for download operations
   - _Requirements: 5.1, 5.2, 6.1, 9.1_
 
-- [ ] 13. Add Video Download Status Management
+- [x] 13. Add Video Download Status Management
   - Display current download status and progress
   - Handle download task creation and monitoring
   - Show download completion notifications
@@ -103,14 +103,14 @@
 
 ## Phase 6: Video Analysis Features
 
-- [ ] 14. Create Analysis Action Component
+- [x] 14. Create Analysis Action Component
   - Display analysis button for downloaded but unanalyzed videos
   - Implement analysis task triggering functionality
   - Show analysis progress and status updates
   - Handle analysis completion and error states
   - _Requirements: 6.2, 6.3, 6.4, 9.1, 9.2_
 
-- [ ] 15. Implement Analysis Results Display Component
+- [x] 15. Implement Analysis Results Display Component
   - Create component to display analysis results when available
   - Show analysis completion status and metadata
   - Provide entry point to detailed analysis visualization
@@ -119,14 +119,14 @@
 
 ## Phase 7: Scene Analysis Visualization
 
-- [ ] 16. Create Scene Analysis Slider Component
+- [x] 16. Create Scene Analysis Slider Component
   - Implement horizontal scrolling component for scene thumbnails
   - Display scene images, descriptions, and time ranges
   - Add touch/swipe support for mobile devices
   - Implement keyboard navigation for accessibility
   - _Requirements: 7.2, 7.3, 10.2, 10.3_
 
-- [ ] 17. Implement Analysis Summary Component
+- [x] 17. Implement Analysis Summary Component
   - Display video content analysis summary
   - Show key insights and analysis metadata
   - Add expandable sections for detailed information

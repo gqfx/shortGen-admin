@@ -330,10 +330,15 @@ function VideosContent() {
                             'Not Downloaded'
                           )}
                         </Badge>
-                        {video.is_downloaded && video.local_file_size && (
+                        {video.is_downloaded && video.local_file_size ? (
                           <p className="text-xs text-muted-foreground">
                             {formatFileSize(video.local_file_size)}
                           </p>
+                        ) : null}
+                        {video.download_status && (
+                           <p className="text-xs text-muted-foreground capitalize">
+                             Status: {video.download_status}
+                           </p>
                         )}
                       </div>
                     </TableCell>

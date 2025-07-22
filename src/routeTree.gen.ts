@@ -22,6 +22,7 @@ import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-acc
 import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
+import { Route as TargetVideosVideoIdRouteImport } from './routes/target-videos/$videoId'
 import { Route as TargetAccountsAccountIdRouteImport } from './routes/target-accounts/$accountId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -89,6 +90,11 @@ const AssetsIndexRoute = AssetsIndexRouteImport.update({
   path: '/assets/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TargetVideosVideoIdRoute = TargetVideosVideoIdRouteImport.update({
+  id: '/target-videos/$videoId',
+  path: '/target-videos/$videoId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TargetAccountsAccountIdRoute = TargetAccountsAccountIdRouteImport.update({
   id: '/target-accounts/$accountId',
   path: '/target-accounts/$accountId',
@@ -98,6 +104,7 @@ const TargetAccountsAccountIdRoute = TargetAccountsAccountIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
+  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
+  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
+  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/target-accounts/$accountId'
+    | '/target-videos/$videoId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/target-accounts/$accountId'
+    | '/target-videos/$videoId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/target-accounts/$accountId'
+    | '/target-videos/$videoId'
     | '/assets/'
     | '/inspirations/'
     | '/monitoring-tasks/'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TargetAccountsAccountIdRoute: typeof TargetAccountsAccountIdRoute
+  TargetVideosVideoIdRoute: typeof TargetVideosVideoIdRoute
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/target-videos/$videoId': {
+      id: '/target-videos/$videoId'
+      path: '/target-videos/$videoId'
+      fullPath: '/target-videos/$videoId'
+      preLoaderRoute: typeof TargetVideosVideoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/target-accounts/$accountId': {
       id: '/target-accounts/$accountId'
       path: '/target-accounts/$accountId'
@@ -318,6 +338,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TargetAccountsAccountIdRoute: TargetAccountsAccountIdRoute,
+  TargetVideosVideoIdRoute: TargetVideosVideoIdRoute,
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,
