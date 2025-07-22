@@ -628,11 +628,10 @@ export interface TargetAccount {
 
 export interface AccountSnapshot {
   target_account_id: string
-  followers_count: number
-  following_count: number
+  subscriber_count: number
   total_videos_count: number
+  hidden_subscriber_count: boolean | null
   total_views: number
-  total_likes: number
   collected_at: string
   id: string
   created_at: string

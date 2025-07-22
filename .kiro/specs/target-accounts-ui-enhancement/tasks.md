@@ -158,7 +158,7 @@
 
 ## Phase 9: Responsive Design and Accessibility
 
-- [-] 21. Implement Responsive Design Across All Components
+- [ ] 21. Implement Responsive Design Across All Components
   - Ensure all components work on mobile, tablet, and desktop
   - Implement touch-friendly controls for mobile devices
   - Add responsive navigation and layout adjustments

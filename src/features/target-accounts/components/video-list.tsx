@@ -9,7 +9,8 @@ import {
   Square,
   Loader2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  MoreVertical
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,11 +18,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAccountDetail } from '../context/account-detail-context'
 import { AnalysisAction } from '../../target-videos/components/analysis-action'
 import { VideoDetailProvider } from '../../target-videos/context/video-detail-context'
 import { Video } from '@/lib/api'
 import { toast } from 'sonner'
+import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 
 interface VideoListProps {
   className?: string
@@ -41,6 +44,9 @@ export function VideoList({ className }: VideoListProps) {
     errorStates, 
     triggerBatchDownload
   } = useAccountDetail()
+  
+  const { isMobile, isTablet } = useResponsive()
+  const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
   
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set())
   const [batchOperationResult, setBatchOperationResult] = useState<BatchOperationResult | null>(null)
@@ -247,59 +253,81 @@ export function VideoList({ className }: VideoListProps) {
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>
+      <CardHeader className={isMobile ? touchPadding : ''}>
+        <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
+          <CardTitle className={isMobile ? 'text-base' : ''}>
             Videos ({videos.length})
-            {videos.length > 0 && (
+            {videos.length > 0 && !isMobile && (
               <span className="text-sm font-normal text-muted-foreground ml-2">
                 • {videos.filter(v => !v.is_downloaded).length} downloadable
               </span>
             )}
+            {videos.length > 0 && isMobile && (
+              <div className="text-xs font-normal text-muted-foreground mt-1">
+                {videos.filter(v => !v.is_downloaded).length} downloadable
+              </div>
+            )}
           </CardTitle>
           
-          {/* Batch Selection Controls */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{selectedCount} selected</span>
+          {/* Responsive Batch Selection Controls */}
+          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
+            {!isMobile && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{selectedCount} selected</span>
+              </div>
+            )}
+            
+            <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
+              <Button
+                variant="outline"
+                size={isMobile ? "default" : "sm"}
+                onClick={allSelected ? handleClearSelection : handleSelectAll}
+                className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
+                title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
+              >
+                {allSelected ? (
+                  <>
+                    <Square className="h-4 w-4" />
+                    <span className="ml-2">Clear All</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4" />
+                    <span className="ml-2">Select All</span>
+                  </>
+                )}
+              </Button>
+              
+              {selectedCount > 0 && (
+                <Button
+                  variant="default"
+                  size={isMobile ? "default" : "sm"}
+                  onClick={handleBatchDownload}
+                  disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
+                  className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
+                  title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
+                >
+                  {loadingStates.batchDownload ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">
+                    Download ({selectedDownloadableCount})
+                    {isMobile && selectedCount > selectedDownloadableCount && (
+                      <span className="text-xs opacity-75 ml-1">
+                        of {selectedCount}
+                      </span>
+                    )}
+                  </span>
+                </Button>
+              )}
             </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={allSelected ? handleClearSelection : handleSelectAll}
-              className="flex items-center gap-1"
-              title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
-            >
-              {allSelected ? (
-                <>
-                  <Square className="h-4 w-4" />
-                  Clear All
-                </>
-              ) : (
-                <>
-                  <CheckSquare className="h-4 w-4" />
-                  Select All
-                </>
-              )}
-            </Button>
-            
-            {selectedCount > 0 && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleBatchDownload}
-                disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
-                className="flex items-center gap-1"
-                title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
-              >
-                {loadingStates.batchDownload ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Download ({selectedDownloadableCount})
-              </Button>
+            {isMobile && (
+              <div className="text-xs text-muted-foreground text-center">
+                {selectedCount} selected
+              </div>
             )}
           </div>
         </div>

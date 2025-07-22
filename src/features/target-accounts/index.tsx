@@ -24,11 +24,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { TargetAccountsProvider, useTargetAccounts } from './context/target-accounts-context'
 import { TargetAccountDialogs } from './components/target-account-dialogs'
 import { CrawlManagement } from './components/crawl-management'
 import { VideoManagement } from './components/video-management'
 import { TargetAccount } from '@/lib/api'
+import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 
 function TargetAccountsContent() {
   const {
@@ -43,6 +45,9 @@ function TargetAccountsContent() {
     openProfilePage,
   } = useTargetAccounts()
 
+  const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
+
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editingTargetAccount, setEditingTargetAccount] = useState<TargetAccount | null>(null)
@@ -54,6 +59,7 @@ function TargetAccountsContent() {
   const [crawlAccount, setCrawlAccount] = useState<TargetAccount | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
   const [videoAccount, setVideoAccount] = useState<TargetAccount | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const handleEdit = (account: TargetAccount) => {
     setEditingTargetAccount(account)
@@ -129,89 +135,97 @@ function TargetAccountsContent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Target Accounts</h1>
-          <p className="text-muted-foreground">
+    <div className={`space-y-4 md:space-y-6 ${isMobile ? 'p-3' : 'p-4 md:p-6'}`}>
+      {/* Responsive Header */}
+      <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-center justify-between'}`}>
+        <div className={isMobile ? 'text-center' : ''}>
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Target Accounts</h1>
+          <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
             Manage target accounts for monitoring and analysis
           </p>
           {selectedAccounts.length > 0 && (
-            <p className="text-sm text-blue-600 mt-1">
+            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-blue-600 mt-1`}>
               {selectedAccounts.length} account(s) selected
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        
+        {/* Responsive Action Buttons */}
+        <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'gap-2'}`}>
           {selectedAccounts.length > 0 && (
             <Button 
               variant="outline" 
               onClick={handleBatchCrawl}
+              size={isMobile ? "default" : "default"}
+              className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : ''}`}
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Batch Crawl ({selectedAccounts.length})
+              <RefreshCw className={`${isMobile ? 'mr-2' : 'mr-2'} h-4 w-4`} />
+              {isMobile ? `Batch Crawl (${selectedAccounts.length})` : `Batch Crawl (${selectedAccounts.length})`}
             </Button>
           )}
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Target Account
+          <Button 
+            onClick={() => setCreateOpen(true)}
+            size={isMobile ? "default" : "default"}
+            className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : ''}`}
+          >
+            <Plus className={`${isMobile ? 'mr-2' : 'mr-2'} h-4 w-4`} />
+            {isMobile ? 'Add Account' : 'Add Target Account'}
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Responsive Stats Cards */}
+      <div className={`grid gap-3 md:gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
-            <span className="text-2xl">👥</span>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'} ${isMobile ? touchPadding : ''}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Total Accounts</CardTitle>
+            <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`}>👥</span>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{targetAccounts.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Accounts being monitored
+          <CardContent className={isMobile ? touchPadding : ''}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{targetAccounts.length}</div>
+            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
+              {isMobile ? 'Monitored' : 'Accounts being monitored'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <span className="text-2xl">🟢</span>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'} ${isMobile ? touchPadding : ''}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Active</CardTitle>
+            <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`}>🟢</span>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className={isMobile ? touchPadding : ''}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {targetAccounts.filter(a => a.is_active).length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Currently monitoring
+            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
+              {isMobile ? 'Active' : 'Currently monitoring'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verified</CardTitle>
-            <span className="text-2xl">✅</span>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'} ${isMobile ? touchPadding : ''}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Verified</CardTitle>
+            <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`}>✅</span>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className={isMobile ? touchPadding : ''}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {targetAccounts.filter(a => a.is_verified).length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Verified accounts
+            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
+              Verified
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recently Added</CardTitle>
-            <span className="text-2xl">🆕</span>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'} ${isMobile ? touchPadding : ''}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Recent</CardTitle>
+            <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`}>🆕</span>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className={isMobile ? touchPadding : ''}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {targetAccounts.filter(a => {
                 if (!a.created_at) return false
                 const created = new Date(a.created_at)
@@ -220,76 +234,286 @@ function TargetAccountsContent() {
                 return created > weekAgo
               }).length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Added this week
+            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
+              {isMobile ? 'This week' : 'Added this week'}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Responsive Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search accounts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-[300px]"
-              />
-            </div>
+        <CardHeader className={isMobile ? touchPadding : ''}>
+          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center justify-between'}`}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>Filters</CardTitle>
+            {isMobile && (
+              <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className={`${touchTargetSize} w-full`}>
+                    <Filter className="mr-2 h-4 w-4" />
+                    Show Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh]">
+                  <div className="space-y-4 pt-4">
+                    <h3 className="text-lg font-semibold">Filter Accounts</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Search</label>
+                        <div className="flex items-center space-x-2">
+                          <Search className="h-4 w-4" />
+                          <Input
+                            placeholder="Search accounts..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={touchTargetSize}
+                          />
+                        </div>
+                      </div>
 
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Status</label>
+                        <Select
+                          value={filters.isActive !== undefined ? filters.isActive.toString() : 'all'}
+                          onValueChange={(value) => setFilters({ isActive: value === 'all' ? undefined : value === 'true' })}
+                        >
+                          <SelectTrigger className={touchTargetSize}>
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="true">Active</SelectItem>
+                            <SelectItem value="false">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-
-            <Select
-              value={filters.isActive !== undefined ? filters.isActive.toString() : 'all'}
-              onValueChange={(value) => setFilters({ isActive: value === 'all' ? undefined : value === 'true' })}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline" onClick={resetFilters}>
-              <Filter className="mr-2 h-4 w-4" />
-              Reset Filters
-            </Button>
+                      <div className="flex flex-col space-y-2 pt-4">
+                        <Button variant="outline" onClick={resetFilters} className={touchTargetSize}>
+                          <Filter className="mr-2 h-4 w-4" />
+                          Reset Filters
+                        </Button>
+                        <Button onClick={() => setFiltersOpen(false)} className={touchTargetSize}>
+                          Apply Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
-        </CardContent>
+        </CardHeader>
+        {!isMobile && (
+          <CardContent>
+            <div className={`flex ${isTablet ? 'flex-col space-y-3' : 'flex-wrap gap-4'}`}>
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4" />
+                <Input
+                  placeholder="Search accounts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`${isTablet ? 'w-full' : 'w-[300px]'}`}
+                />
+              </div>
+
+              <Select
+                value={filters.isActive !== undefined ? filters.isActive.toString() : 'all'}
+                onValueChange={(value) => setFilters({ isActive: value === 'all' ? undefined : value === 'true' })}
+              >
+                <SelectTrigger className={`${isTablet ? 'w-full' : 'w-[180px]'}`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" onClick={resetFilters}>
+                <Filter className="mr-2 h-4 w-4" />
+                Reset Filters
+              </Button>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
-      {/* Table */}
+      {/* Responsive Table/Cards */}
       <Card>
-        <CardHeader>
-          <CardTitle>Target Accounts ({filteredAccounts.length})</CardTitle>
-          <CardDescription>
-            A list of target accounts configured for monitoring
-          </CardDescription>
+        <CardHeader className={isMobile ? touchPadding : ''}>
+          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center justify-between'}`}>
+            <div>
+              <CardTitle className={isMobile ? 'text-base' : ''}>
+                Target Accounts ({filteredAccounts.length})
+              </CardTitle>
+              <CardDescription className={isMobile ? 'text-xs' : ''}>
+                {isMobile ? 'Configured accounts' : 'A list of target accounts configured for monitoring'}
+              </CardDescription>
+            </div>
+            {!isMobile && filteredAccounts.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedAccounts.length === filteredAccounts.length && filteredAccounts.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">Select All</span>
+              </div>
+            )}
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className={isMobile ? touchPadding : ''}>
           {loading ? (
-            <div className="space-y-4">
+            <div className={`space-y-${isMobile ? '3' : '4'}`}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
+                <div key={i} className={`flex items-center ${touchSpacing}`}>
+                  <Skeleton className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} rounded-full`} />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className={`h-4 ${isMobile ? 'w-[200px]' : 'w-[250px]'}`} />
+                    <Skeleton className={`h-4 ${isMobile ? 'w-[150px]' : 'w-[200px]'}`} />
                   </div>
                 </div>
               ))}
             </div>
+          ) : isMobile ? (
+            /* Mobile Card Layout */
+            <div className="space-y-3">
+              {/* Mobile Select All */}
+              {filteredAccounts.length > 0 && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedAccounts.length === filteredAccounts.length && filteredAccounts.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-sm font-medium">Select All</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedAccounts.length} selected
+                  </span>
+                </div>
+              )}
+              
+              {filteredAccounts.map((account) => (
+                <Card 
+                  key={account.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleAccountClick(account)}
+                >
+                  <CardContent className={`${touchPadding} space-y-3`}>
+                    {/* Account Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedAccounts.includes(account.id)}
+                            onCheckedChange={() => toggleAccountSelection(account.id)}
+                            className={touchTargetSize}
+                          />
+                        </div>
+                        <Avatar 
+                          className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} cursor-pointer hover:ring-2 hover:ring-primary/20`}
+                          onClick={(e) => handleAvatarClick(e, account)}
+                        >
+                          <AvatarImage src={account.avatar_url || undefined} alt={account.display_name} />
+                          <AvatarFallback className="text-xs">
+                            {account.display_name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <p className="font-medium text-sm truncate">{account.display_name}</p>
+                            {account.is_verified && (
+                              <Badge variant="secondary" className="text-xs">✓</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            @{account.username || account.account_id}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Mobile Actions Menu */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className={`${touchTargetSize} p-2`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(account)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(account)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    {/* Account Stats */}
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Category:</span>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {account.category ?
+                              account.category.charAt(0).toUpperCase() + account.category.slice(1) :
+                              'Uncategorized'
+                            }
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Status:</span>
+                        <div className="mt-1">
+                          <Badge variant={account.is_active ? 'default' : 'secondary'} className="text-xs">
+                            {account.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Subscribers:</span>
+                        <div className="mt-1 font-medium">
+                          {account.latest_snapshot ? 
+                            (account.latest_snapshot.subscriber_count ?? 0).toLocaleString() : 
+                            'N/A'
+                          }
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Videos:</span>
+                        <div className="mt-1 font-medium">
+                          {account.latest_snapshot ? 
+                            (account.latest_snapshot.total_videos_count ?? 0).toLocaleString() : 
+                            'N/A'
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Last Crawled */}
+                    <div className="text-xs text-muted-foreground">
+                      Last crawled: {account.last_crawled_at ? 
+                        new Date(account.last_crawled_at).toLocaleDateString() : 
+                        'Never'
+                      }
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
+            /* Desktop Table Layout */
             <Table>
               <TableHeader>
                 <TableRow>
@@ -301,7 +525,7 @@ function TargetAccountsContent() {
                   </TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Followers</TableHead>
+                  <TableHead>Subscribers</TableHead>
                   <TableHead>Total Videos</TableHead>
                   <TableHead>Total Views</TableHead>
                   <TableHead>Status</TableHead>
@@ -355,7 +579,7 @@ function TargetAccountsContent() {
                     <TableCell>
                       {account.latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(account.latest_snapshot.followers_count ?? 0).toLocaleString()}
+                          {(account.latest_snapshot.subscriber_count ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -421,11 +645,15 @@ function TargetAccountsContent() {
           )}
 
           {!loading && filteredAccounts.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No target accounts found</p>
-              <Button onClick={() => setCreateOpen(true)} className="mt-2">
+            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+              <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>No target accounts found</p>
+              <Button 
+                onClick={() => setCreateOpen(true)} 
+                className={`mt-2 ${touchTargetSize}`}
+                size={isMobile ? "default" : "default"}
+              >
                 <Plus className="mr-2 h-4 w-4" />
-                Add First Target Account
+                {isMobile ? 'Add Account' : 'Add First Target Account'}
               </Button>
             </div>
           )}

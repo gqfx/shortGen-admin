@@ -12,6 +12,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { TargetAccount } from '@/lib/api'
+import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 
 interface AccountStatisticsProps {
   account: TargetAccount | null
@@ -41,38 +42,41 @@ function StatCard({
   description,
   trend 
 }: StatCardProps) {
+  const { isMobile } = useResponsive()
+  const { touchPadding } = useTouchFriendly()
+  
   return (
     <Card className="h-full">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center space-x-2">
+      <CardContent className={isMobile ? touchPadding : "p-4 sm:p-6"}>
+        <div className={`flex items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'}`}>
+          <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
             <div className="text-muted-foreground">{icon}</div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>{title}</p>
           </div>
           {trend && (
-            <div className={`flex items-center space-x-1 text-xs ${
+            <div className={`flex items-center space-x-1 ${isMobile ? 'text-xs' : 'text-xs'} ${
               trend.isPositive ? 'text-green-600' : 'text-red-600'
             }`}>
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUp className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
               <span>{trend.isPositive ? '+' : ''}{trend.value}%</span>
             </div>
           )}
         </div>
         <div className="space-y-1">
           {loading ? (
-            <Skeleton className="h-8 w-24" />
+            <Skeleton className={`${isMobile ? 'h-6 w-20' : 'h-8 w-24'}`} />
           ) : (
-            <div className="text-2xl font-bold">
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {value || placeholder}
             </div>
           )}
           {description && !loading && (
-            <p className="text-xs text-muted-foreground line-clamp-2">
+            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground line-clamp-2`}>
               {description}
             </p>
           )}
           {loading && description && (
-            <Skeleton className="h-4 w-full" />
+            <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} />
           )}
         </div>
       </CardContent>
@@ -125,6 +129,9 @@ function getRelativeTime(dateString: string | null): string {
 }
 
 export function AccountStatistics({ account, loading = false, className }: AccountStatisticsProps) {
+  const { isMobile, isTablet } = useResponsive()
+  const { touchPadding, touchSpacing } = useTouchFriendly()
+  
   // Calculate derived statistics
   const totalVideos = 0 // This would come from video count API
   const totalViews = 0 // This would come from aggregated video views
@@ -134,66 +141,77 @@ export function AccountStatistics({ account, loading = false, className }: Accou
   return (
     <div className={className}>
       {/* Account Overview Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="h-5 w-5" />
-              <span>Account Overview</span>
+      <Card className={isMobile ? 'mb-4' : 'mb-6'}>
+        <CardHeader className={isMobile ? touchPadding : ''}>
+          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center justify-between'}`}>
+            <CardTitle className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
+              <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+              <span className={isMobile ? 'text-base' : ''}>Account Overview</span>
             </CardTitle>
             {account?.is_verified && (
-              <Badge variant="secondary" className="flex items-center space-x-1">
+              <Badge variant="secondary" className={`flex items-center ${isMobile ? 'space-x-1 self-start' : 'space-x-1'}`}>
                 <CheckCircle className="h-3 w-3" />
-                <span>Verified</span>
+                <span className={isMobile ? 'text-xs' : ''}>Verified</span>
               </Badge>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className={isMobile ? touchPadding : ''}>
+          <div className={`space-y-${isMobile ? '3' : '4'}`}>
             {/* Account Name and Username */}
             <div className="space-y-2">
               {loading ? (
                 <>
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className={`${isMobile ? 'h-5 w-40' : 'h-6 w-48'}`} />
+                  <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-semibold">{account?.display_name || 'Unknown Account'}</h3>
-                  <p className="text-sm text-muted-foreground">@{account?.username || 'unknown'}</p>
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>
+                    {account?.display_name || 'Unknown Account'}
+                  </h3>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
+                    @{account?.username || 'unknown'}
+                  </p>
                 </>
               )}
             </div>
             
             {/* Account Description */}
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Description</p>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
+                Description
+              </p>
               {loading ? (
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} />
+                  <Skeleton className={`${isMobile ? 'h-3 w-3/4' : 'h-4 w-3/4'}`} />
                 </div>
               ) : (
-                <p className="text-sm leading-relaxed">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} leading-relaxed`}>
                   {account?.description || 'No description available'}
                 </p>
               )}
             </div>
 
             {/* Category and Status */}
-            <div className="flex flex-wrap gap-2">
+            <div className={`flex flex-wrap ${touchSpacing}`}>
               {loading ? (
                 <>
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className={`${isMobile ? 'h-5 w-14' : 'h-6 w-16'}`} />
+                  <Skeleton className={`${isMobile ? 'h-5 w-14' : 'h-6 w-16'}`} />
                 </>
               ) : (
                 <>
                   {account?.category && (
-                    <Badge variant="outline">{account.category}</Badge>
+                    <Badge variant="outline" className={isMobile ? 'text-xs px-2 py-1' : ''}>
+                      {account.category}
+                    </Badge>
                   )}
-                  <Badge variant={account?.is_active ? 'default' : 'secondary'}>
+                  <Badge 
+                    variant={account?.is_active ? 'default' : 'secondary'}
+                    className={isMobile ? 'text-xs px-2 py-1' : ''}
+                  >
                     {account?.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </>
@@ -203,8 +221,10 @@ export function AccountStatistics({ account, loading = false, className }: Accou
         </CardContent>
       </Card>
 
-      {/* Statistics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Responsive Statistics Grid */}
+      <div className={`grid gap-${isMobile ? '3' : '4'} ${
+        isMobile ? 'grid-cols-2' : isTablet ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'
+      }`}>
         {/* Subscriber Count */}
         <StatCard
           title="Subscribers"
@@ -263,32 +283,36 @@ export function AccountStatistics({ account, loading = false, className }: Accou
       </div>
 
       {/* Additional Information Card */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <FileText className="h-5 w-5" />
-            <span>Account Details</span>
+      <Card className={isMobile ? 'mt-4' : 'mt-6'}>
+        <CardHeader className={isMobile ? touchPadding : ''}>
+          <CardTitle className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
+            <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+            <span className={isMobile ? 'text-base' : ''}>Account Details</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <CardContent className={isMobile ? touchPadding : ''}>
+          <div className={`grid gap-${isMobile ? '3' : '4'} ${isMobile ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Account ID</p>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
+                Account ID
+              </p>
               {loading ? (
-                <Skeleton className="h-4 w-32" />
+                <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
               ) : (
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-mono bg-muted px-2 py-1 rounded break-all`}>
                   {account?.account_id || 'N/A'}
                 </p>
               )}
             </div>
             
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
+                Last Updated
+              </p>
               {loading ? (
-                <Skeleton className="h-4 w-32" />
+                <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
               ) : (
-                <p className="text-sm">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
                   {formatDate(account?.updated_at || null)}
                 </p>
               )}
