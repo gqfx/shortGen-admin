@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Video, TargetAccount } from '@/lib/api'
 
-interface VideoFilters {
+export interface VideoFilters {
   dateRange?: {
     start: string
     end: string
@@ -9,6 +9,7 @@ interface VideoFilters {
   status?: 'all' | 'downloaded' | 'not_downloaded' | 'analyzed'
   videoType?: 'all' | 'long' | 'short' | 'live'
   searchQuery?: string
+  sortBy?: 'views_desc' | 'date_desc' | string
 }
 
 interface TargetAccountsState {

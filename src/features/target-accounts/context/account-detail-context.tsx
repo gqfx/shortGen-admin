@@ -9,7 +9,7 @@ import {
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
 
-// We will use AccountSnapshot directly
+import { VideoFilters } from '../stores/target-accounts-store'
 
 interface LoadingStates {
   account: boolean
@@ -49,15 +49,6 @@ interface AccountDetailContextType {
   setPagination: (pagination: Partial<AccountDetailContextType['pagination']>) => void
 }
 
-export interface VideoFilters {
-  dateRange?: {
-    start: string
-    end: string
-  }
-  status?: 'all' | 'downloaded' | 'not_downloaded' | 'analyzed'
-  searchQuery?: string
-  sortBy?: 'views_desc' | 'date_desc'
-}
 
 const AccountDetailContext = createContext<AccountDetailContextType | undefined>(undefined)
 
@@ -172,13 +163,13 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     try {
       setLoadingStates(prev => ({ ...prev, batchDownload: true }))
       const response = await analysisApi.triggerVideoDownload({ video_ids: videoIds })
-      if (response.data.code === 0) {
-        toast.success(response.data.data.message)
+      if (response.code === 0) {
+        toast.success(response.data.message)
         // The download status should be updated via polling the task, not manually setting it.
         // We can trigger a refresh of the video data after a short delay.
         setTimeout(() => fetchAccountVideos(accountId), 3000)
       } else {
-        toast.error(response.data.msg || 'Failed to trigger batch download')
+        toast.error(response.msg || 'Failed to trigger batch download')
       }
     } catch (error) {
       toast.error(handleServerError(error))

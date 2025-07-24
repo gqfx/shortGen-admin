@@ -333,43 +333,43 @@ export const projectsApi = {
 
 // Tasks API
 export const tasksApi = {
-  create: (data: unknown): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  create: (data: unknown): Promise<ApiResponse<Task>> =>
     api.post('/api/tasks', data),
 
-  createBatch: (data: unknown): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
+  createBatch: (data: unknown): Promise<ApiResponse<Task[]>> =>
     api.post('/api/tasks/batch', data),
 
-  updateStatus: (taskId: string, data: unknown): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  updateStatus: (taskId: string, data: unknown): Promise<ApiResponse<Task>> =>
     api.patch(`/api/tasks/${taskId}`, data),
 
   getTaskTypes: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/tasks/types'),
 
-  listTasks: (params: { project_id?: string; task_type?: string; skip?: number; limit?: number }): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
+  listTasks: (params: { project_id?: string; task_type?: string; skip?: number; limit?: number }): Promise<ApiResponse<Task[]>> =>
     api.get('/api/tasks', { params }),
 
-  enqueue: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  enqueue: (taskId: string): Promise<ApiResponse<unknown>> =>
     api.post(`/api/tasks/${taskId}/enqueue`),
 
-  getQueueStatus: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  getQueueStatus: (taskId: string): Promise<ApiResponse<unknown>> =>
     api.get(`/api/tasks/${taskId}/queue-status`),
 
-  cancel: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  cancel: (taskId: string): Promise<ApiResponse<unknown>> =>
     api.post(`/api/tasks/${taskId}/cancel`),
 
-  deleteAllQueues: (): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  deleteAllQueues: (): Promise<ApiResponse<unknown>> =>
     api.post('/api/tasks/delete-all-queues'),
 
-  getQueueInfo: (): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  getQueueInfo: (): Promise<ApiResponse<unknown>> =>
     api.get('/api/tasks/queue-info'),
 
-  listRedisQueues: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+  listRedisQueues: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/tasks/list-redis-queues'),
 
-  callback: (data: unknown): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  callback: (data: unknown): Promise<ApiResponse<unknown>> =>
     api.post('/api/tasks/callback', data),
 
-  retryMonitoring: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
+  retryMonitoring: (taskId: string): Promise<ApiResponse<unknown>> =>
     api.post(`/api/tasks/monitoring/${taskId}/retry`),
 }
 
@@ -464,7 +464,7 @@ export const platformAccountsApi = {
 
 // Worker Configs API
 export const workerConfigsApi = {
-  getAll: (skip = 0, limit = 100, workerType?: string, configType?: string, isActive?: boolean): Promise<AxiosResponse<ApiResponse<WorkerConfig[]>>> => {
+  getAll: (skip = 0, limit = 100, workerType?: string, configType?: string, isActive?: boolean): Promise<ApiResponse<WorkerConfig[]>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (workerType) params.append('worker_type', workerType)
     if (configType) params.append('config_type', configType)
@@ -472,22 +472,22 @@ export const workerConfigsApi = {
     return api.get(`/api/worker-configs?${params}`)
   },
   
-  getById: (id: string): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
+  getById: (id: string): Promise<ApiResponse<WorkerConfig>> =>
     api.get(`/api/worker-configs/${id}`),
   
-  create: (data: CreateWorkerConfigRequest): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
+  create: (data: CreateWorkerConfigRequest): Promise<ApiResponse<WorkerConfig>> =>
     api.post('/api/worker-configs', data),
   
-  update: (id: string, data: UpdateWorkerConfigRequest): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
+  update: (id: string, data: UpdateWorkerConfigRequest): Promise<ApiResponse<WorkerConfig>> =>
     api.put(`/api/worker-configs/${id}`, data),
   
-  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
     api.delete(`/api/worker-configs/${id}`),
   
-  assignToTask: (taskId: string, data: ConfigAssignmentRequest): Promise<AxiosResponse<ApiResponse<TaskConfigAssignment[]>>> =>
+  assignToTask: (taskId: string, data: ConfigAssignmentRequest): Promise<ApiResponse<TaskConfigAssignment[]>> =>
     api.post(`/api/worker-configs/tasks/${taskId}/assign`, data),
   
-  getTaskConfigs: (taskId: string): Promise<AxiosResponse<ApiResponse<Record<string, unknown>>>> =>
+  getTaskConfigs: (taskId: string): Promise<ApiResponse<Record<string, unknown>>> =>
     api.get(`/api/worker-configs/tasks/${taskId}/configs`),
 }
 
@@ -524,35 +524,35 @@ export const workflowRegistryApi = {
 
 // ProjectType API
 export const projectTypesApi = {
-  getAll: (skip = 0, limit = 100, category?: string, isActive?: boolean): Promise<AxiosResponse<ApiResponse<ProjectType[]>>> => {
+  getAll: (skip = 0, limit = 100, category?: string, isActive?: boolean): Promise<ApiResponse<ProjectType[]>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (category) params.append('category', category)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
     return api.get(`/api/project-types?${params}`)
   },
   
-  getById: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  getById: (code: string): Promise<ApiResponse<ProjectType>> =>
     api.get(`/api/project-types/${code}`),
   
-  create: (data: ProjectTypeCreate): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  create: (data: ProjectTypeCreate): Promise<ApiResponse<ProjectType>> =>
     api.post('/api/project-types', data),
   
-  update: (code: string, data: ProjectTypeUpdate): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  update: (code: string, data: ProjectTypeUpdate): Promise<ApiResponse<ProjectType>> =>
     api.put(`/api/project-types/${code}`, data),
   
-  delete: (code: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  delete: (code: string): Promise<ApiResponse<{ message: string }>> =>
     api.delete(`/api/project-types/${code}`),
   
-  activate: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  activate: (code: string): Promise<ApiResponse<ProjectType>> =>
     api.post(`/api/project-types/${code}/activate`),
   
-  deactivate: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  deactivate: (code: string): Promise<ApiResponse<ProjectType>> =>
     api.post(`/api/project-types/${code}/deactivate`),
   
-  getCategories: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+  getCategories: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/project-types/categories/list'),
   
-  updateSortOrder: (code: string, sortOrder: number): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  updateSortOrder: (code: string, sortOrder: number): Promise<ApiResponse<ProjectType>> =>
     api.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
 }
 
@@ -707,25 +707,25 @@ export const analysisApi = {
   /**
    * 快速添加目标账号并立即触发一次后台数据同步任务.
    */
-  quickAddAccount: (data: QuickAddAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
+  quickAddAccount: (data: QuickAddAccountRequest): Promise<ApiResponse<TargetAccount>> =>
     api.post('/api/analysis/accounts/quick-add', data),
 
   /**
    * 手动创建并入队视频下载任务.
    */
-  triggerVideoDownload: (data: TriggerDownloadRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  triggerVideoDownload: (data: TriggerDownloadRequest): Promise<ApiResponse<{ message: string }>> =>
     api.post('/api/analysis/videos/trigger-download', data),
 
   /**
    * 手动触发对指定账号的后台数据同步任务.
    */
-  triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest): Promise<AxiosResponse<ApiResponse<MonitoringTask>>> =>
+  triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest): Promise<ApiResponse<MonitoringTask>> =>
     api.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data),
 
   /**
    * 批量触发多个账号的后台数据同步任务.
    */
-  batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<ApiResponse<{ message: string }>> =>
     api.post('/api/analysis/accounts/batch-trigger-crawl', data),
 
   /**
@@ -779,7 +779,7 @@ export const analysisApi = {
   /**
    * 触发对指定视频的后台镜头分析任务.
    */
-  analyzeVideo: (videoId: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  analyzeVideo: (videoId: string): Promise<ApiResponse<{ message: string }>> =>
     api.post(`/api/analysis/videos/${videoId}/analyze`),
 
   /**

@@ -1,13 +1,19 @@
-import { ColumnDef } from '@tanstack/react-table'
-import { format } from 'date-fns'
+import { ColumnDef, Row } from '@tanstack/react-table'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { taskTypes, statuses } from '../data/data'
-import { Task } from '../data/schema'
+import { Task, taskSchema } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
-import { DataTableRowActions } from './data-table-row-actions'
+import { useTasks } from '../context/tasks-context'
 
 export const columns: ColumnDef<Task>[] = [
   {
@@ -35,37 +41,16 @@ export const columns: ColumnDef<Task>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'id',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='ID' />
-    ),
-    cell: ({ row }) => <div className='w-[80px]'>#{row.getValue('id')}</div>,
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: 'submit_id',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Submit ID' />
     ),
     cell: ({ row }) => {
       const submitId = row.getValue('submit_id') as string | null
-      if (!submitId) {
-        return <div className='w-[100px] text-muted-foreground text-xs'>No ID</div>
-      }
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <div className='w-[100px] truncate text-xs font-mono'>
-                {submitId}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{submitId}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className='w-[100px]'>
+          {submitId ? <Badge>有</Badge> : <Badge variant='secondary'>无</Badge>}
+        </div>
       )
     },
   },
@@ -120,25 +105,60 @@ export const columns: ColumnDef<Task>[] = [
       <DataTableColumnHeader column={column} title='Platform Account' />
     ),
     cell: ({ row }) => {
-      const platformAccount = row.getValue('platform_account') as Task['platform_account']
-      
-      if (!platformAccount || !platformAccount.nickname) {
+      const task = taskSchema.parse(row.original)
+      const { platform_account: platformAccount } = task
+
+      const copyToClipboard = (text: string | undefined) => {
+        if (text) {
+          navigator.clipboard.writeText(text)
+          toast.success('Copied to clipboard!')
+        } else {
+          toast.error('No content to copy.')
+        }
+      }
+
+      if (!platformAccount) {
         return <div className='w-[150px] text-muted-foreground'>No account</div>
       }
 
+      const displayName =
+        platformAccount.nickname || platformAccount.name || 'Unknown'
+
       return (
-        <div className='flex items-center space-x-2 w-[150px]'>
-          <Avatar className='h-6 w-6'>
-            <AvatarImage src={platformAccount.avatar_url || ''} alt={platformAccount.nickname || 'Account'} />
-            <AvatarFallback className='text-xs'>
-              {platformAccount.nickname ? platformAccount.nickname.slice(0, 2).toUpperCase() : 'NA'}
-            </AvatarFallback>
-          </Avatar>
-          <div className='flex flex-col'>
-            <span className='text-sm font-medium truncate'>{platformAccount.nickname || 'Unknown'}</span>
-            <span className='text-xs text-muted-foreground'>{platformAccount.platform || 'Unknown'}</span>
-          </div>
-        </div>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <div className='flex items-center space-x-2 w-[150px] cursor-pointer'>
+              <Avatar className='h-6 w-6'>
+                <AvatarImage
+                  src={platformAccount.avatar_url || ''}
+                  alt={displayName}
+                />
+                <AvatarFallback className='text-xs'>
+                  {displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className='flex flex-col'>
+                <span className='text-sm font-medium truncate'>
+                  {displayName}
+                </span>
+                <span className='text-xs text-muted-foreground'>
+                  {platformAccount.platform || 'Unknown'}
+                </span>
+              </div>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-[180px]'>
+            <DropdownMenuItem onClick={() => copyToClipboard(platformAccount.credentials?.email)}>
+              {platformAccount.credentials?.email || 'N/A'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyToClipboard(platformAccount.credentials?.password)}>
+              {platformAccount.credentials?.password || 'N/A'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyToClipboard(platformAccount.proxy)}>
+              {platformAccount.proxy || 'N/A'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     },
   },
@@ -171,71 +191,62 @@ export const columns: ColumnDef<Task>[] = [
     },
   },
   {
-    accessorKey: 'project_id',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Project' />
-    ),
-    cell: ({ row }) => {
-      const projectId = row.getValue('project_id') as number | null
-      return (
-        <div className='w-[100px]'>
-          {projectId ? `Project #${projectId}` : 'No Project'}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'created_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Created' />
-    ),
-    cell: ({ row }) => {
-      const date = new Date(row.getValue('created_at'))
-      return (
-        <div className='w-[120px]'>
-          {format(date, 'MMM dd, yyyy')}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'started_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Started' />
-    ),
-    cell: ({ row }) => {
-      const startedAt = row.getValue('started_at') as string | null
-      if (!startedAt) {
-        return <div className='w-[120px] text-muted-foreground'>Not started</div>
-      }
-      const date = new Date(startedAt)
-      return (
-        <div className='w-[120px]'>
-          {format(date, 'MMM dd, yyyy')}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'completed_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Completed' />
-    ),
-    cell: ({ row }) => {
-      const completedAt = row.getValue('completed_at') as string | null
-      if (!completedAt) {
-        return <div className='w-[120px] text-muted-foreground'>Not completed</div>
-      }
-      const date = new Date(completedAt)
-      return (
-        <div className='w-[120px]'>
-          {format(date, 'MMM dd, yyyy')}
-        </div>
-      )
-    },
-  },
-  {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Actions' />
+    ),
+    cell: ({ row }) => <TaskActionsCell row={row} />,
   },
 ]
+
+const TaskActionsCell = ({ row }: { row: Row<Task> }) => {
+  const task = taskSchema.parse(row.original)
+  const { setOpen, setCurrentRow, enqueueTask } = useTasks()
+
+  return (
+    <div className='flex items-center space-x-2'>
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => {
+          setCurrentRow(task)
+          setOpen('detail')
+        }}
+      >
+        View Details
+      </Button>
+      <Button
+        variant='outline'
+        size='sm'
+        onClick={() => {
+          setCurrentRow(task)
+          setOpen('update')
+        }}
+      >
+        Edit
+      </Button>
+      {task.status === 'waiting' && (
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => {
+            enqueueTask(task.id)
+          }}
+        >
+          Start
+        </Button>
+      )}
+      {['failed', 'error'].includes(task.status) && (
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => {
+            enqueueTask(task.id)
+          }}
+        >
+          Retry
+        </Button>
+      )}
+    </div>
+  )
+}

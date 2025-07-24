@@ -79,7 +79,7 @@ export default function WorkerConfigsProvider({ children }: WorkerConfigsProvide
     },
   })
 
-  const workerConfigs = apiResponse?.data || []
+  const workerConfigs = apiResponse || []
 
   // Create config mutation
   const createMutation = useMutation({
@@ -137,7 +137,7 @@ export default function WorkerConfigsProvider({ children }: WorkerConfigsProvide
     try {
       const response = await workerConfigsApi.getTaskConfigs(taskId)
       toast.success('Task configurations fetched successfully')
-      return response.data.data as Record<string, WorkerConfig>
+      return response.data as Record<string, WorkerConfig>
     } catch (error) {
       const apiError = error as ApiError
       toast.error(`Failed to fetch task configurations: ${apiError.response?.data?.msg || apiError.message}`)
@@ -163,7 +163,7 @@ export default function WorkerConfigsProvider({ children }: WorkerConfigsProvide
 
   const assignToTask = async (taskId: string, data: ConfigAssignmentRequest): Promise<TaskConfigAssignment[]> => {
     const response = await assignToTaskMutation.mutateAsync({ taskId, data })
-    return response.data.data
+    return response.data
   }
   
     return (

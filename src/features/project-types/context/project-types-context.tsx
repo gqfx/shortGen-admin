@@ -64,7 +64,7 @@ export default function ProjectTypesProvider({ children }: Props) {
     refetchOnWindowFocus: false,
   })
 
-  const projectTypes = apiResponse?.data?.data || []
+  const projectTypes = apiResponse?.data || []
   console.log('📊 Processed project types:', projectTypes)
 
   // Fetch categories
@@ -74,7 +74,7 @@ export default function ProjectTypesProvider({ children }: Props) {
     retry: false,
     refetchOnWindowFocus: false,
   })
-  const categories = categoriesResponse?.data?.data || []
+  const categories = categoriesResponse?.data || []
 
   // Create project type mutation
   const createMutation = useMutation({

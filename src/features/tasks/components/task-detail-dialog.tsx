@@ -29,60 +29,73 @@ const isVideoUrl = (url: string): boolean => {
   return videoExtensions.some(ext => url.toLowerCase().includes(ext))
 }
 
+// Define a type for the media items
+interface MediaItem {
+  id?: string | number;
+  url: string;
+  title?: string;
+  type?: 'image' | 'video' | string;
+}
+
 // Component to render media items from task output
-const MediaRenderer = ({ items }: { items: any[] }) => {
+const MediaRenderer = ({ items }: { items: MediaItem[] }) => {
   return (
     <div className="overflow-x-auto">
       <div className="flex gap-3 pb-2" style={{ width: 'max-content' }}>
         {items.map((item, index) => {
-          if (item.url) {
-            if (isImageUrl(item.url)) {
-              return (
-                <div key={item.id || index} className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
-                  <img 
-                    src={item.url} 
-                    alt={item.title || `Generated Image ${index + 1}`}
-                    className="w-[150px] h-auto object-cover"
-                    loading="lazy"
-                  />
-                  {item.id && (
-                    <div className="px-2 py-1">
-                      <p className="text-xs text-muted-foreground font-mono truncate">ID: {item.id}</p>
-                    </div>
-                  )}
-                </div>
-              )
-            } else if (isVideoUrl(item.url)) {
-              return (
-                <div key={item.id || index} className="border rounded-md overflow-hidden shadow-sm flex-shrink-0">
-                  <video 
-                    src={item.url} 
-                    controls 
-                    className="w-[150px] h-auto"
-                    preload="metadata"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                  {item.id && (
-                    <div className="px-2 py-1">
-                      <p className="text-xs text-muted-foreground font-mono truncate">ID: {item.id}</p>
-                    </div>
-                  )}
-                </div>
-              )
-            }
+          const key = item.id || index;
+          const isImage = item.type === 'image' || (item.url && isImageUrl(item.url));
+          const isVideo = item.type === 'video' || (item.url && isVideoUrl(item.url));
+
+          if (isImage) {
+            return (
+              <div key={key} className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
+                <img
+                  src={item.url}
+                  alt={item.title || `Generated Image ${index + 1}`}
+                  className="w-[150px] h-auto object-cover"
+                  loading="lazy"
+                />
+                {item.id && (
+                  <div className="px-2 py-1">
+                    <p className="text-xs text-muted-foreground font-mono truncate">ID: {item.id}</p>
+                  </div>
+                )}
+              </div>
+            );
           }
+
+          if (isVideo) {
+            return (
+              <div key={key} className="border rounded-md overflow-hidden shadow-sm flex-shrink-0">
+                <video
+                  src={item.url}
+                  controls
+                  className="w-[150px] h-auto"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                {item.id && (
+                  <div className="px-2 py-1">
+                    <p className="text-xs text-muted-foreground font-mono truncate">ID: {item.id}</p>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
-            <div key={item.id || index} className="border rounded-md p-2 bg-muted flex-shrink-0 w-[150px]">
+            <div key={key} className="border rounded-md p-2 bg-muted flex-shrink-0 w-[150px]">
               <pre className="text-xs font-mono whitespace-pre-wrap">
                 {JSON.stringify(item, null, 2)}
               </pre>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 export function TaskDetailDialog({ open, onOpenChange, task }: Props) {

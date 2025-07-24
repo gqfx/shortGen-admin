@@ -121,12 +121,12 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     try {
       const response = await analysisApi.quickAddAccount(data)
 
-      if (response.data.code === 0) {
+      if (response.code === 0) {
         toast.success('Target account added successfully')
         await fetchTargetAccounts()
-        return response.data.data
+        return response.data
       } else {
-        toast.error(response.data.msg || 'Failed to create target account')
+        toast.error(response.msg || 'Failed to create target account')
         return null
       }
     } catch (error) {
@@ -180,11 +180,11 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     try {
       const response = await analysisApi.triggerAccountCrawl(accountId, data)
 
-      if (response.data.code === 0) {
-        toast.success(`Successfully triggered crawl for account ${accountId}. Task ID: ${response.data.data.id}`)
+      if (response.code === 0) {
+        toast.success(`Successfully triggered crawl for account ${accountId}. Task ID: ${response.data.id}`)
         return true
       } else {
-        toast.error(response.data.msg || 'Failed to trigger crawl')
+        toast.error(response.msg || 'Failed to trigger crawl')
         return false
       }
     } catch (error) {
@@ -198,11 +198,11 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     try {
       const response = await analysisApi.batchTriggerCrawl(data)
 
-      if (response.data.code === 0) {
-        toast.success(response.data.data.message)
+      if (response.code === 0) {
+        toast.success(response.data.message)
         return true
       } else {
-        toast.error(response.data.msg || 'Failed to trigger batch crawl')
+        toast.error(response.msg || 'Failed to trigger batch crawl')
         return false
       }
     } catch (error) {
@@ -233,11 +233,11 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     try {
       const response = await analysisApi.triggerVideoDownload(data)
 
-      if (response.data.code === 0) {
-        toast.success(response.data.data.message)
+      if (response.code === 0) {
+        toast.success(response.data.message)
         return true
       } else {
-        toast.error(response.data.msg || 'Failed to trigger video download')
+        toast.error(response.msg || 'Failed to trigger video download')
         return false
       }
     } catch (error) {

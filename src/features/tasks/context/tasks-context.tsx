@@ -54,7 +54,7 @@ export default function TasksProvider({ children }: Props) {
     refetchOnWindowFocus: false,
   })
 
-  const tasks = apiResponse?.data.data || []
+  const tasks = apiResponse?.data || []
 
   // Create task mutation
   const createMutation = useMutation({

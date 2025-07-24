@@ -1,12 +1,20 @@
 import { z } from 'zod'
 
 // Platform Account schema - make fields optional since they might not exist
+// Platform Account schema - make fields optional since they might not exist
 export const platformAccountSchema = z.object({
   id: z.string().optional(),
   platform: z.string().optional(),
   account_id: z.string().optional(),
   nickname: z.string().optional(),
   avatar_url: z.string().optional(),
+  name: z.string().optional(),
+  credentials: z.object({
+    email: z.string().optional(),
+    password: z.string().optional(),
+    proxy: z.string().optional(),
+  }).optional(),
+  proxy: z.string().optional(),
 }).nullable()
 
 // Updated schema to match actual API Task structure - make fields optional/nullable as needed
