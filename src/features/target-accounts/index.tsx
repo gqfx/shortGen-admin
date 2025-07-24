@@ -52,7 +52,7 @@ function TargetAccountsContent() {
     openProfilePage,
   } = useTargetAccounts()
 
-  const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { isMobile, isTablet, isDesktop: _isDesktop } = useResponsive()
   const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
   const { announceStatus, announceError, announceSuccess } = useAccessibility()
 
@@ -66,7 +66,7 @@ function TargetAccountsContent() {
   const [crawlDialogOpen, setCrawlDialogOpen] = useState(false)
   const [crawlAccount, setCrawlAccount] = useState<TargetAccount | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
-  const [videoAccount, setVideoAccount] = useState<TargetAccount | null>(null)
+  const [videoAccount, _setVideoAccount] = useState<TargetAccount | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const handleEdit = (account: TargetAccount) => {
@@ -78,6 +78,11 @@ function TargetAccountsContent() {
     setAccountToDelete(account)
     setDeleteDialogOpen(true)
   }
+ 
+  const handleCrawl = (account: TargetAccount) => {
+    setCrawlAccount(account)
+    setCrawlDialogOpen(true)
+  }
 
   const confirmDelete = async () => {
     if (accountToDelete) {
@@ -86,7 +91,7 @@ function TargetAccountsContent() {
         announceSuccess(`Account ${accountToDelete.display_name} deleted successfully`)
         setDeleteDialogOpen(false)
         setAccountToDelete(null)
-      } catch (error) {
+      } catch (_error) {
         announceError(`Failed to delete account ${accountToDelete.display_name}`)
       }
     }
@@ -126,7 +131,7 @@ function TargetAccountsContent() {
     if (selectedAccounts.length === filteredAccounts.length) {
       setSelectedAccounts([])
     } else {
-      setSelectedAccounts(filteredAccounts.map(account => account.id))
+      setSelectedAccounts(filteredAccounts.map(account => account.account_id).filter((id): id is string => !!id))
     }
   }
 
@@ -443,8 +448,8 @@ function TargetAccountsContent() {
                       <div className="flex items-center space-x-3 flex-1">
                         <div onClick={(e) => e.stopPropagation()}>
                           <Checkbox
-                            checked={selectedAccounts.includes(account.id)}
-                            onCheckedChange={() => toggleAccountSelection(account.id)}
+                            checked={!!account.account_id && selectedAccounts.includes(account.account_id)}
+                            onCheckedChange={() => account.account_id && toggleAccountSelection(account.account_id)}
                             className={touchTargetSize}
                           />
                         </div>
@@ -488,6 +493,10 @@ function TargetAccountsContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleCrawl(account)}>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Crawl
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(account)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
@@ -597,11 +606,11 @@ function TargetAccountsContent() {
                   >
                     <TableCell onClick={(e) => e.stopPropagation()} role="gridcell">
                       <Checkbox
-                        checked={selectedAccounts.includes(account.id)}
-                        onCheckedChange={() => toggleAccountSelection(account.id)}
+                        checked={!!account.account_id && selectedAccounts.includes(account.account_id)}
+                        onCheckedChange={() => account.account_id && toggleAccountSelection(account.account_id)}
                         aria-label={`Select account ${account.display_name}`}
                         aria-describedby={`account-${account.id}-info`}
-                        title={selectedAccounts.includes(account.id) ? `Deselect ${account.display_name}` : `Select ${account.display_name}`}
+                        title={account.account_id && selectedAccounts.includes(account.account_id) ? `Deselect ${account.display_name}` : `Select ${account.display_name}`}
                       />
                     </TableCell>
                     <TableCell role="gridcell">
@@ -685,7 +694,23 @@ function TargetAccountsContent() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(account)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleCrawl(account)
+                          }}
+                          aria-label={`Crawl account ${account.display_name}`}
+                          title={`Crawl ${account.display_name}`}
+                        >
+                          <RefreshCw className="mr-1 h-3 w-3" aria-hidden="true" />
+                          Crawl
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEdit(account)
+                          }}
                           aria-label={`Edit account ${account.display_name}`}
                           title={`Edit ${account.display_name}`}
                         >
@@ -695,7 +720,10 @@ function TargetAccountsContent() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(account)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(account)
+                          }}
                           className="text-destructive hover:text-destructive"
                           aria-label={`Delete account ${account.display_name}`}
                           title={`Delete ${account.display_name}`}
@@ -750,7 +778,7 @@ function TargetAccountsContent() {
       <CrawlManagement
         open={crawlDialogOpen}
         onOpenChange={setCrawlDialogOpen}
-        accountId={crawlAccount?.id}
+        accountId={crawlAccount?.account_id}
         accountIds={selectedAccounts.length > 0 ? selectedAccounts : undefined}
         accountName={crawlAccount?.display_name}
       />
