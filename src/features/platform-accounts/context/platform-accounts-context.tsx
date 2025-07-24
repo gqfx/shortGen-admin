@@ -1,12 +1,24 @@
 import { createContext, useContext, ReactNode, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { platformAccountsApi, PlatformAccount } from '@/lib/api'
+import { AxiosError } from 'axios'
+import {
+  platformAccountsApi,
+  PlatformAccount,
+  PlatformAccountCreate,
+  PlatformAccountUpdate,
+  PlatformAccountUsageReset,
+} from '@/lib/api'
 import { toast } from 'sonner'
+
+interface ApiErrorResponse {
+  msg: string
+}
 
 interface PlatformAccountsContextType {
   platformAccounts: PlatformAccount[]
   isLoading: boolean
   error: any
+  platforms: string[]
   selectedAccount: PlatformAccount | null
   setSelectedAccount: (account: PlatformAccount | null) => void
   isCreateDialogOpen: boolean
@@ -17,9 +29,10 @@ interface PlatformAccountsContextType {
   setIsDeleteDialogOpen: (open: boolean) => void
   isDetailDialogOpen: boolean
   setIsDetailDialogOpen: (open: boolean) => void
-  createAccount: (data: any) => Promise<void>
-  updateAccount: (id: number, data: any) => Promise<void>
-  deleteAccount: (id: number) => Promise<void>
+  createAccount: (data: PlatformAccountCreate) => Promise<void>
+  updateAccount: (id: string, data: PlatformAccountUpdate) => Promise<void>
+  deleteAccount: (id: string) => Promise<void>
+  resetUsage: (id: string, data: PlatformAccountUsageReset) => Promise<void>
   refreshAccounts: () => void
 }
 
@@ -47,62 +60,71 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
   const queryClient = useQueryClient()
 
   // Fetch platform accounts
-  const { data: apiResponse, isLoading, error, refetch } = useQuery({
+  const { data: accountsResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['platformAccounts'],
-    queryFn: async () => {
-      console.log('🔄 Fetching platform accounts from API...')
-      try {
-        const response = await platformAccountsApi.getAll(0, 100)
-        console.log('✅ Platform Accounts API Response:', response.data)
-        return response
-      } catch (err) {
-        console.error('❌ Platform Accounts API Error:', err)
-        throw err
-      }
-    },
+    queryFn: () => platformAccountsApi.getAll(0, 100),
   })
+  const platformAccounts = accountsResponse?.data || []
 
-  const platformAccounts = apiResponse?.data?.data || []
-  console.log('📊 Processed platform accounts:', platformAccounts)
+  // Fetch available platforms
+  const { data: platformsResponse } = useQuery({
+    queryKey: ['platformAccountPlatforms'],
+    queryFn: () => platformAccountsApi.getPlatforms(),
+  })
+  const platforms = platformsResponse?.data || []
 
   // Create account mutation
   const createMutation = useMutation({
-    mutationFn: (data: any) => platformAccountsApi.create(data),
+    mutationFn: (data: PlatformAccountCreate) => platformAccountsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platformAccounts'] })
       toast.success('Platform account created successfully')
       setIsCreateDialogOpen(false)
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast.error(`Failed to create platform account: ${error.response?.data?.msg || error.message}`)
     },
   })
 
   // Update account mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => platformAccountsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: PlatformAccountUpdate }) =>
+      platformAccountsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platformAccounts'] })
       toast.success('Platform account updated successfully')
       setIsEditDialogOpen(false)
       setSelectedAccount(null)
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast.error(`Failed to update platform account: ${error.response?.data?.msg || error.message}`)
     },
   })
 
   // Delete account mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => platformAccountsApi.delete(id),
+    mutationFn: (id: string) => platformAccountsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platformAccounts'] })
       toast.success('Platform account deleted successfully')
       setIsDeleteDialogOpen(false)
       setSelectedAccount(null)
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast.error(`Failed to delete platform account: ${error.response?.data?.msg || error.message}`)
+    },
+  })
+
+  // Reset usage mutation
+  const resetUsageMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: PlatformAccountUsageReset }) =>
+      platformAccountsApi.resetUsage(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platformAccounts'] })
+      toast.success('Account usage reset successfully')
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      toast.error(`Failed to reset usage: ${error.response?.data?.msg || error.message}`)
     },
   })
 
@@ -110,16 +132,20 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
     refetch()
   }
 
-  const createAccount = async (data: any) => {
+  const createAccount = async (data: PlatformAccountCreate) => {
     await createMutation.mutateAsync(data)
   }
 
-  const updateAccount = async (id: number, data: any) => {
+  const updateAccount = async (id: string, data: PlatformAccountUpdate) => {
     await updateMutation.mutateAsync({ id, data })
   }
 
-  const deleteAccount = async (id: number) => {
+  const deleteAccount = async (id: string) => {
     await deleteMutation.mutateAsync(id)
+  }
+
+  const resetUsage = async (id: string, data: PlatformAccountUsageReset) => {
+    await resetUsageMutation.mutateAsync({ id, data })
   }
 
   return (
@@ -128,6 +154,7 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
         platformAccounts,
         isLoading,
         error,
+        platforms,
         selectedAccount,
         setSelectedAccount,
         isCreateDialogOpen,
@@ -141,6 +168,7 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
         createAccount,
         updateAccount,
         deleteAccount,
+        resetUsage,
         refreshAccounts,
       }}
     >

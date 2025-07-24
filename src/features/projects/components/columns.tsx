@@ -2,7 +2,7 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { statuses, projectTypes } from '../data/data'
-import { Project } from '@/lib/api'
+import { Project } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 import { format } from 'date-fns'
@@ -48,7 +48,7 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const projectType = projectTypes.find(
-        (type) => type.value === row.original.project_type
+        (type) => type.value === row.original.project_type_code
       )
 
       return (

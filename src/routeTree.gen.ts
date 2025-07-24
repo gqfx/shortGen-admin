@@ -13,8 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkflowRegistryIndexRouteImport } from './routes/workflow-registry/index'
 import { Route as WorkerConfigsIndexRouteImport } from './routes/worker-configs/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
-import { Route as TargetVideosIndexRouteImport } from './routes/target-videos/index'
-import { Route as TargetStatisticsIndexRouteImport } from './routes/target-statistics/index'
 import { Route as TargetAccountsIndexRouteImport } from './routes/target-accounts/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectTypesIndexRouteImport } from './routes/project-types/index'
@@ -22,7 +20,6 @@ import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-acc
 import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
-import { Route as TargetVideosVideoIdRouteImport } from './routes/target-videos/$videoId'
 import { Route as TargetAccountsAccountIdRouteImport } from './routes/target-accounts/$accountId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -43,16 +40,6 @@ const WorkerConfigsIndexRoute = WorkerConfigsIndexRouteImport.update({
 const TasksIndexRoute = TasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TargetVideosIndexRoute = TargetVideosIndexRouteImport.update({
-  id: '/target-videos/',
-  path: '/target-videos/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TargetStatisticsIndexRoute = TargetStatisticsIndexRouteImport.update({
-  id: '/target-statistics/',
-  path: '/target-statistics/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TargetAccountsIndexRoute = TargetAccountsIndexRouteImport.update({
@@ -90,11 +77,6 @@ const AssetsIndexRoute = AssetsIndexRouteImport.update({
   path: '/assets/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TargetVideosVideoIdRoute = TargetVideosVideoIdRouteImport.update({
-  id: '/target-videos/$videoId',
-  path: '/target-videos/$videoId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TargetAccountsAccountIdRoute = TargetAccountsAccountIdRouteImport.update({
   id: '/target-accounts/$accountId',
   path: '/target-accounts/$accountId',
@@ -104,7 +86,6 @@ const TargetAccountsAccountIdRoute = TargetAccountsAccountIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
-  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -112,8 +93,6 @@ export interface FileRoutesByFullPath {
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/target-accounts': typeof TargetAccountsIndexRoute
-  '/target-statistics': typeof TargetStatisticsIndexRoute
-  '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
   '/workflow-registry': typeof WorkflowRegistryIndexRoute
@@ -121,7 +100,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
-  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
@@ -129,8 +107,6 @@ export interface FileRoutesByTo {
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/target-accounts': typeof TargetAccountsIndexRoute
-  '/target-statistics': typeof TargetStatisticsIndexRoute
-  '/target-videos': typeof TargetVideosIndexRoute
   '/tasks': typeof TasksIndexRoute
   '/worker-configs': typeof WorkerConfigsIndexRoute
   '/workflow-registry': typeof WorkflowRegistryIndexRoute
@@ -139,7 +115,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
-  '/target-videos/$videoId': typeof TargetVideosVideoIdRoute
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
@@ -147,8 +122,6 @@ export interface FileRoutesById {
   '/project-types/': typeof ProjectTypesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/target-accounts/': typeof TargetAccountsIndexRoute
-  '/target-statistics/': typeof TargetStatisticsIndexRoute
-  '/target-videos/': typeof TargetVideosIndexRoute
   '/tasks/': typeof TasksIndexRoute
   '/worker-configs/': typeof WorkerConfigsIndexRoute
   '/workflow-registry/': typeof WorkflowRegistryIndexRoute
@@ -158,7 +131,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/target-accounts/$accountId'
-    | '/target-videos/$videoId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -166,8 +138,6 @@ export interface FileRouteTypes {
     | '/project-types'
     | '/projects'
     | '/target-accounts'
-    | '/target-statistics'
-    | '/target-videos'
     | '/tasks'
     | '/worker-configs'
     | '/workflow-registry'
@@ -175,7 +145,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/target-accounts/$accountId'
-    | '/target-videos/$videoId'
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
@@ -183,8 +152,6 @@ export interface FileRouteTypes {
     | '/project-types'
     | '/projects'
     | '/target-accounts'
-    | '/target-statistics'
-    | '/target-videos'
     | '/tasks'
     | '/worker-configs'
     | '/workflow-registry'
@@ -192,7 +159,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/target-accounts/$accountId'
-    | '/target-videos/$videoId'
     | '/assets/'
     | '/inspirations/'
     | '/monitoring-tasks/'
@@ -200,8 +166,6 @@ export interface FileRouteTypes {
     | '/project-types/'
     | '/projects/'
     | '/target-accounts/'
-    | '/target-statistics/'
-    | '/target-videos/'
     | '/tasks/'
     | '/worker-configs/'
     | '/workflow-registry/'
@@ -210,7 +174,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TargetAccountsAccountIdRoute: typeof TargetAccountsAccountIdRoute
-  TargetVideosVideoIdRoute: typeof TargetVideosVideoIdRoute
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
@@ -218,8 +181,6 @@ export interface RootRouteChildren {
   ProjectTypesIndexRoute: typeof ProjectTypesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TargetAccountsIndexRoute: typeof TargetAccountsIndexRoute
-  TargetStatisticsIndexRoute: typeof TargetStatisticsIndexRoute
-  TargetVideosIndexRoute: typeof TargetVideosIndexRoute
   TasksIndexRoute: typeof TasksIndexRoute
   WorkerConfigsIndexRoute: typeof WorkerConfigsIndexRoute
   WorkflowRegistryIndexRoute: typeof WorkflowRegistryIndexRoute
@@ -253,20 +214,6 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof TasksIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/target-videos/': {
-      id: '/target-videos/'
-      path: '/target-videos'
-      fullPath: '/target-videos'
-      preLoaderRoute: typeof TargetVideosIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/target-statistics/': {
-      id: '/target-statistics/'
-      path: '/target-statistics'
-      fullPath: '/target-statistics'
-      preLoaderRoute: typeof TargetStatisticsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/target-accounts/': {
@@ -318,13 +265,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/target-videos/$videoId': {
-      id: '/target-videos/$videoId'
-      path: '/target-videos/$videoId'
-      fullPath: '/target-videos/$videoId'
-      preLoaderRoute: typeof TargetVideosVideoIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/target-accounts/$accountId': {
       id: '/target-accounts/$accountId'
       path: '/target-accounts/$accountId'
@@ -338,7 +278,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TargetAccountsAccountIdRoute: TargetAccountsAccountIdRoute,
-  TargetVideosVideoIdRoute: TargetVideosVideoIdRoute,
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,
@@ -346,8 +285,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectTypesIndexRoute: ProjectTypesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   TargetAccountsIndexRoute: TargetAccountsIndexRoute,
-  TargetStatisticsIndexRoute: TargetStatisticsIndexRoute,
-  TargetVideosIndexRoute: TargetVideosIndexRoute,
   TasksIndexRoute: TasksIndexRoute,
   WorkerConfigsIndexRoute: WorkerConfigsIndexRoute,
   WorkflowRegistryIndexRoute: WorkflowRegistryIndexRoute,

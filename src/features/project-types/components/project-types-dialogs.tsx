@@ -38,28 +38,28 @@ import { IconCheck, IconX, IconToggleLeft, IconToggleRight, IconArrowUp, IconArr
 const createProjectTypeSchema = z.object({
   code: z.string().min(1, 'Project type code is required'),
   name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   inspiration_workflow_id: z.string().optional(),
   transform_workflow_id: z.string().optional(),
   execution_workflow_id: z.string().optional(),
-  default_parameters: z.string().min(1, 'Default parameters is required'),
-  parameter_schema: z.string().min(1, 'Parameter schema is required'),
-  category: z.string().min(1, 'Category is required'),
-  sort_order: z.number().min(1, 'Sort order must be at least 1'),
-  is_active: z.boolean().default(true),
+  default_parameters: z.string().refine(val => { try { JSON.parse(val); return true } catch { return false } }, { message: 'Invalid JSON format' }).optional(),
+  parameter_schema: z.string().refine(val => { try { JSON.parse(val); return true } catch { return false } }, { message: 'Invalid JSON format' }).optional(),
+  category: z.string().optional(),
+  sort_order: z.number().min(1, 'Sort order must be at least 1').optional(),
+  is_active: z.boolean().optional(),
 })
 
 const updateProjectTypeSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  inspiration_workflow_id: z.string().optional(),
-  transform_workflow_id: z.string().optional(),
-  execution_workflow_id: z.string().optional(),
-  default_parameters: z.string().min(1, 'Default parameters is required'),
-  parameter_schema: z.string().min(1, 'Parameter schema is required'),
-  category: z.string().min(1, 'Category is required'),
-  sort_order: z.number().min(1, 'Sort order must be at least 1'),
-  is_active: z.boolean().default(true),
+  name: z.string().min(1, 'Name is required').optional(),
+  description: z.string().optional(),
+  inspiration_workflow_id: z.string().optional().nullable(),
+  transform_workflow_id: z.string().optional().nullable(),
+  execution_workflow_id: z.string().optional().nullable(),
+  default_parameters: z.string().refine(val => { try { JSON.parse(val); return true } catch { return false } }, { message: 'Invalid JSON format' }).optional(),
+  parameter_schema: z.string().refine(val => { try { JSON.parse(val); return true } catch { return false } }, { message: 'Invalid JSON format' }).optional(),
+  category: z.string().optional(),
+  sort_order: z.number().min(1, 'Sort order must be at least 1').optional(),
+  is_active: z.boolean().optional(),
 })
 
 type CreateProjectTypeValues = z.infer<typeof createProjectTypeSchema>
@@ -98,6 +98,8 @@ export function ProjectTypesDialogs() {
     deactivateProjectType,
     updateSortOrder,
     setSelectedProjectType,
+    categories,
+    isLoadingCategories,
   } = useProjectTypes()
 
   const [defaultParamsDisplayValue, setDefaultParamsDisplayValue] = useState('')
@@ -138,52 +140,32 @@ export function ProjectTypesDialogs() {
 
   const handleCreateSubmit = async (values: CreateProjectTypeValues) => {
     try {
-      const defaultParamsObj = JSON.parse(values.default_parameters)
-      const paramSchemaObj = JSON.parse(values.parameter_schema)
       await createProjectType({
         ...values,
-        default_parameters: defaultParamsObj,
-        parameter_schema: paramSchemaObj,
-        inspiration_workflow_id: values.inspiration_workflow_id || null,
-        transform_workflow_id: values.transform_workflow_id || null,
-        execution_workflow_id: values.execution_workflow_id || null,
+        default_parameters: values.default_parameters ? JSON.parse(values.default_parameters) : undefined,
+        parameter_schema: values.parameter_schema ? JSON.parse(values.parameter_schema) : undefined,
       })
       createForm.reset()
     } catch (error) {
-      console.error('Invalid JSON:', error)
-      if (error instanceof SyntaxError) {
-        if (error.message.includes('default_parameters')) {
-          createForm.setError('default_parameters', { message: 'Invalid JSON format' })
-        } else {
-          createForm.setError('parameter_schema', { message: 'Invalid JSON format' })
-        }
-      }
+      // Zod handles JSON validation, so this block might only catch other errors
+      console.error('Failed to create project type:', error)
     }
   }
 
   const handleUpdateSubmit = async (values: UpdateProjectTypeValues) => {
     if (!selectedProjectType) return
     try {
-      const defaultParamsObj = JSON.parse(values.default_parameters)
-      const paramSchemaObj = JSON.parse(values.parameter_schema)
       await updateProjectType(selectedProjectType.code, {
         ...values,
-        default_parameters: defaultParamsObj,
-        parameter_schema: paramSchemaObj,
+        default_parameters: values.default_parameters ? JSON.parse(values.default_parameters) : undefined,
+        parameter_schema: values.parameter_schema ? JSON.parse(values.parameter_schema) : undefined,
         inspiration_workflow_id: values.inspiration_workflow_id || null,
         transform_workflow_id: values.transform_workflow_id || null,
         execution_workflow_id: values.execution_workflow_id || null,
       })
       updateForm.reset()
     } catch (error) {
-      console.error('Invalid JSON:', error)
-      if (error instanceof SyntaxError) {
-        if (error.message.includes('default_parameters')) {
-          updateForm.setError('default_parameters', { message: 'Invalid JSON format' })
-        } else {
-          updateForm.setError('parameter_schema', { message: 'Invalid JSON format' })
-        }
-      }
+      console.error('Failed to update project type:', error)
     }
   }
 
@@ -313,10 +295,15 @@ export function ProjectTypesDialogs() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="audio">Audio</SelectItem>
-                        <SelectItem value="image">Image</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
+                        {isLoadingCategories ? (
+                          <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                        ) : (
+                          categories.map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -513,10 +500,15 @@ export function ProjectTypesDialogs() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="audio">Audio</SelectItem>
-                        <SelectItem value="image">Image</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
+                        {isLoadingCategories ? (
+                          <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                        ) : (
+                          categories.map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -550,7 +542,7 @@ export function ProjectTypesDialogs() {
                     <FormItem>
                       <FormLabel>Inspiration Workflow ID (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., tech_inspiration_v1" {...field} />
+                        <Input placeholder="e.g., tech_inspiration_v1" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -563,7 +555,7 @@ export function ProjectTypesDialogs() {
                     <FormItem>
                       <FormLabel>Transform Workflow ID (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., script_transform_v1" {...field} />
+                        <Input placeholder="e.g., script_transform_v1" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -576,7 +568,7 @@ export function ProjectTypesDialogs() {
                     <FormItem>
                       <FormLabel>Execution Workflow ID (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., dreamina_video_gen_v1" {...field} />
+                        <Input placeholder="e.g., dreamina_video_gen_v1" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

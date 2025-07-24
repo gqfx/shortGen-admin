@@ -1,21 +1,15 @@
 import { createContext, useContext, useEffect, useCallback, useState } from 'react'
 import { useTargetAccountsStore } from '../stores/target-accounts-store'
-import { 
-  TargetAccount, 
+import {
+  TargetAccount,
   Video,
-  targetAccountAnalysisApi
+  analysisApi,
+  AccountSnapshot,
 } from '@/lib/api'
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
 
-interface AccountStatistics {
-  subscriberCount: number
-  description: string
-  createdAt: string
-  totalVideos: number
-  totalViews: number
-  lastPublishedAt: string | null
-}
+// We will use AccountSnapshot directly
 
 interface LoadingStates {
   account: boolean
@@ -33,7 +27,7 @@ interface ErrorStates {
 
 interface AccountDetailContextType {
   account: TargetAccount | null
-  accountStats: AccountStatistics | null
+  accountStats: AccountSnapshot | null
   videos: Video[]
   loading: boolean
   loadingStates: LoadingStates
@@ -46,7 +40,7 @@ interface AccountDetailContextType {
   }
   currentFilters: VideoFilters
   fetchAccountDetail: (accountId: string) => Promise<void>
-  fetchAccountVideos: (accountId: string, filters?: VideoFilters, pagination?: { skip?: number, limit?: number }) => Promise<void>
+  fetchAccountVideos: (accountId: string, params?: { skip?: number; limit?: number; sort_by?: string }) => Promise<void>
   fetchAccountStatistics: (accountId: string) => Promise<void>
   triggerBatchDownload: (videoIds: string[]) => Promise<void>
   filterVideos: (filters: VideoFilters) => void
@@ -90,7 +84,7 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
   const currentFilters = useTargetAccountsStore((state) => state.filters[accountId] || EMPTY_FILTERS)
 
   const [account, setAccount] = useState<TargetAccount | null>(initialData)
-  const [accountStats, _setAccountStats] = useState<AccountStatistics | null>(null)
+  const [accountStats, _setAccountStats] = useState<AccountSnapshot | null>(null)
   const [videos, setComponentVideos] = useState<Video[]>(storeVideos)
   const [allVideos, setAllVideos] = useState<Video[]>(storeVideos)
   const [loading, setLoading] = useState(true)
@@ -119,11 +113,11 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
   const fetchAccountDetail = useCallback(async (id: string) => {
     try {
       setLoadingStates(prev => ({ ...prev, account: true }))
-      const response = await targetAccountAnalysisApi.getAccountById(id)
-      if (response.data.code === 0) {
-        setAccount(response.data.data)
+      const response = await analysisApi.getAccount(id)
+      if (response.code === 0) {
+        setAccount(response.data)
       } else {
-        toast.error(response.data.msg)
+        toast.error(response.msg || 'Failed to fetch account details')
       }
     } catch (error) {
       toast.error(handleServerError(error))
@@ -136,16 +130,19 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     setFilters(accountId, filters)
   }, [accountId, setFilters])
 
-  const fetchAccountVideos = useCallback(async (id: string) => {
+  const fetchAccountVideos = useCallback(async (id: string, params?: { skip?: number, limit?: number, sort_by?: string }) => {
     try {
       setLoadingStates(prev => ({ ...prev, videos: true }))
-      const response = await targetAccountAnalysisApi.getAccountVideos(id, pagination.skip, pagination.limit)
-      if (response.data.code === 0) {
-        const videoData = response.data.data
-        setVideos(accountId, videoData)
-        setAllVideos(videoData)
+      const response = await analysisApi.getAccountVideos(id, {
+        skip: params?.skip ?? pagination.skip,
+        limit: params?.limit ?? pagination.limit,
+        sort_by: params?.sort_by,
+      })
+      if (response.code === 0) {
+        setVideos(accountId, response.data)
+        setAllVideos(response.data)
       } else {
-        toast.error(response.data.msg)
+        toast.error(response.msg || 'Failed to fetch account videos')
       }
     } catch (error) {
       toast.error(handleServerError(error))
@@ -154,19 +151,34 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     }
   }, [accountId, pagination.skip, pagination.limit, setVideos])
 
-  const fetchAccountStatistics = useCallback(async () => {
-    // Implementation remains the same for now
+  const fetchAccountStatistics = useCallback(async (id: string) => {
+    try {
+      setLoadingStates(prev => ({ ...prev, statistics: true }))
+      const response = await analysisApi.getAccountSnapshots(id, { limit: 1, skip: 0 })
+      if (response.code === 0 && response.data.length > 0) {
+        // Assuming we want the latest snapshot for the stats
+        _setAccountStats(response.data[0])
+      } else if (response.code !== 0) {
+        toast.error(response.msg || 'Failed to fetch account statistics')
+      }
+    } catch (error) {
+      toast.error(handleServerError(error))
+    } finally {
+      setLoadingStates(prev => ({ ...prev, statistics: false }))
+    }
   }, [])
 
   const triggerBatchDownload = useCallback(async (videoIds: string[]) => {
     try {
       setLoadingStates(prev => ({ ...prev, batchDownload: true }))
-      const response = await targetAccountAnalysisApi.triggerVideoDownload({ video_ids: videoIds, priority: 10 })
+      const response = await analysisApi.triggerVideoDownload({ video_ids: videoIds })
       if (response.data.code === 0) {
-        toast.success('Batch download started')
-        videoIds.forEach(videoId => updateVideo(accountId, videoId, { is_downloaded: true }))
+        toast.success(response.data.data.message)
+        // The download status should be updated via polling the task, not manually setting it.
+        // We can trigger a refresh of the video data after a short delay.
+        setTimeout(() => fetchAccountVideos(accountId), 3000)
       } else {
-        toast.error(response.data.msg)
+        toast.error(response.data.msg || 'Failed to trigger batch download')
       }
     } catch (error) {
       toast.error(handleServerError(error))
@@ -204,7 +216,7 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
   useEffect(() => {
     let filtered = allVideos
     if (currentFilters.searchQuery) {
-      filtered = filtered.filter(v => v.title.includes(currentFilters.searchQuery!))
+      filtered = filtered.filter(v => v.title && v.title.includes(currentFilters.searchQuery!))
     }
     // TODO: Add other filters from currentFilters here
     setComponentVideos(filtered)

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { workflowRegistryApi, WorkflowRegistry } from '@/lib/api'
+import { workflowRegistryApi, WorkflowRegistry, WorkflowRegistryCreate, WorkflowRegistryUpdate } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface WorkflowRegistryContextType {
@@ -21,8 +21,8 @@ interface WorkflowRegistryContextType {
   setIsDetailDialogOpen: (open: boolean) => void
   
   // API operations
-  createWorkflow: (data: any) => Promise<void>
-  updateWorkflow: (id: string, data: any) => Promise<void>
+  createWorkflow: (data: WorkflowRegistryCreate) => Promise<void>
+  updateWorkflow: (id: string, data: WorkflowRegistryUpdate) => Promise<void>
   deleteWorkflow: (id: string) => Promise<void>
   activateWorkflow: (id: string) => Promise<void>
   deactivateWorkflow: (id: string) => Promise<void>
@@ -50,7 +50,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       console.log('🔄 Fetching workflows from API...')
       try {
         const response = await workflowRegistryApi.getAll(0, 100)
-        console.log('✅ Workflows API Response:', response.data)
+        console.log('✅ Workflows API Response:', response)
         return response
       } catch (err) {
         console.error('❌ Workflows API Error:', err)
@@ -61,12 +61,12 @@ export default function WorkflowRegistryProvider({ children }: Props) {
     refetchOnWindowFocus: false,
   })
 
-  const workflows = apiResponse?.data?.data || []
+  const workflows = apiResponse || []
   console.log('📊 Processed workflows:', workflows)
 
   // Create workflow mutation
   const createMutation = useMutation({
-    mutationFn: (data: any) => workflowRegistryApi.create(data),
+    mutationFn: (data: WorkflowRegistryCreate) => workflowRegistryApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflow-registry'] })
       toast.success('Workflow created successfully')
@@ -79,7 +79,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
 
   // Update workflow mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => workflowRegistryApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: WorkflowRegistryUpdate }) => workflowRegistryApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflow-registry'] })
       toast.success('Workflow updated successfully')
@@ -133,11 +133,11 @@ export default function WorkflowRegistryProvider({ children }: Props) {
     refetch()
   }
 
-  const createWorkflow = async (data: any) => {
+  const createWorkflow = async (data: WorkflowRegistryCreate) => {
     await createMutation.mutateAsync(data)
   }
 
-  const updateWorkflow = async (id: string, data: any) => {
+  const updateWorkflow = async (id: string, data: WorkflowRegistryUpdate) => {
     await updateMutation.mutateAsync({ id, data })
   }
 

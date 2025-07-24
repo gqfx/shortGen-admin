@@ -19,8 +19,6 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAccountDetail } from '../context/account-detail-context'
-import { AnalysisAction } from '../../target-videos/components/analysis-action'
-import { VideoDetailProvider } from '../../target-videos/context/video-detail-context'
 import { Video } from '@/lib/api'
 import { toast } from 'sonner'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
@@ -173,7 +171,7 @@ export function VideoList({ className }: VideoListProps) {
         triggerBatchDownload([video.id])
         break
       case 'view':
-        navigate({ to: '/target-videos/$videoId', params: { videoId: video.id } })
+        // navigate({ to: '/target-videos/$videoId', params: { videoId: video.id } })
         break
     }
   }, [triggerBatchDownload, navigate])
@@ -184,9 +182,6 @@ export function VideoList({ className }: VideoListProps) {
     }
   }, [])
 
-  const handleNavigateToVideoDetail = useCallback((videoId: string) => {
-    navigate({ to: '/target-videos/$videoId', params: { videoId } })
-  }, [navigate])
  
    // Computed values
    const selectedCount = selectedVideoIds.size
@@ -402,7 +397,6 @@ export function VideoList({ className }: VideoListProps) {
                 handleVideoSelect,
                 handleVideoAction,
                 handleThumbnailClick,
-                handleNavigateToVideoDetail,
               }}
             >
               {Row}
@@ -420,7 +414,6 @@ interface VideoItemProps {
   onSelect: (videoId: string, checked: boolean) => void
   onAction: (video: Video, action: 'download' | 'view') => void
   onThumbnailClick: (video: Video) => void
-  onNavigateToDetail: (videoId: string) => void
 }
 
 interface RowProps {
@@ -432,7 +425,6 @@ interface RowProps {
     handleVideoSelect: (videoId: string, checked: boolean) => void
     handleVideoAction: (video: Video, action: 'download' | 'view') => void
     handleThumbnailClick: (video: Video) => void
-    handleNavigateToVideoDetail: (videoId: string) => void
   }
 }
 
@@ -443,7 +435,6 @@ const Row = ({ index, style, data }: RowProps) => {
     handleVideoSelect,
     handleVideoAction,
     handleThumbnailClick,
-    handleNavigateToVideoDetail,
   } = data
   const video = videos[index]
   const isSelected = selectedVideoIds.has(video.id)
@@ -456,7 +447,6 @@ const Row = ({ index, style, data }: RowProps) => {
         onSelect={handleVideoSelect}
         onAction={handleVideoAction}
         onThumbnailClick={handleThumbnailClick}
-        onNavigateToDetail={handleNavigateToVideoDetail}
       />
     </div>
   )
@@ -468,7 +458,6 @@ function VideoItem({
   onSelect,
   onAction,
   onThumbnailClick,
-  onNavigateToDetail,
 }: VideoItemProps) {
   const getVideoStatus = (): 'downloaded' | 'not_downloaded' => {
     if (video.is_downloaded) {
@@ -504,9 +493,14 @@ function VideoItem({
         )
       case 'downloaded':
         return (
-          <VideoDetailProvider videoId={video.id}>
-            <AnalysisAction variant="compact" showStatus={false} />
-          </VideoDetailProvider>
+          <Button
+            variant="outline"
+            size="sm"
+            // onClick={() => onAction(video, 'view')}
+            className="flex items-center gap-1"
+          >
+            View Details
+          </Button>
         )
       default:
         return null
@@ -522,15 +516,22 @@ function VideoItem({
     }
   }
 
+  const formatNumber = (num: number | undefined | null) => {
+    if (num === null || num === undefined) return 'N/A'
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}m`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}k`
+    return num.toString()
+  }
+
   return (
     <div
       className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer"
       role="article"
-      onClick={() => onNavigateToDetail(video.id)}
+      // onClick={() => onNavigateToDetail(video.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          onNavigateToDetail(video.id)
+          // onNavigateToDetail(video.id)
         }
       }}
       tabIndex={0}
@@ -589,31 +590,31 @@ function VideoItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h3 
+            <h3
               id={`video-${video.id}-title`}
               className="font-medium line-clamp-2 mb-1"
             >
               {video.title}
             </h3>
             
-            <div 
+            <div
               id={`video-${video.id}-meta`}
               className="flex items-center gap-4 text-sm text-muted-foreground mb-2"
-              aria-label={`Video metrics: N/A views, N/A likes, N/A comments, published ${formatDate(video.published_at)}`}
+              aria-label={`Video metrics: ${formatNumber(video.latest_snapshot?.views_count)} views, ${formatNumber(video.latest_snapshot?.likes_count)} likes, ${formatNumber(video.latest_snapshot?.comments_count)} comments, published ${formatDate(video.published_at)}`}
             >
-              <span aria-label="View count">N/A views</span>
-              <span aria-label="Like count">N/A likes</span>
-              <span aria-label="Comment count">N/A comments</span>
+              <span aria-label="View count">{formatNumber(video.latest_snapshot?.views_count)} views</span>
+              <span aria-label="Like count">{formatNumber(video.latest_snapshot?.likes_count)} likes</span>
+              <span aria-label="Comment count">{formatNumber(video.latest_snapshot?.comments_count)} comments</span>
               <span aria-label={`Published ${formatDate(video.published_at)}`}>{formatDate(video.published_at)}</span>
             </div>
             
             <div className="flex items-center gap-2" id={`video-${video.id}-status`}>
               {getStatusBadge()}
-              {video.video_type && (
+              {/* {video.video_type && (
                 <Badge variant="outline" className="capitalize" aria-label={`Video type: ${video.video_type}`}>
                   {video.video_type}
                 </Badge>
-              )}
+              )} */}
             </div>
           </div>
 

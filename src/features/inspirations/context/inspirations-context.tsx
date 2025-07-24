@@ -18,10 +18,11 @@ interface InspirationsContextType {
   isDetailDialogOpen: boolean
   setIsDetailDialogOpen: (open: boolean) => void
   createInspiration: (data: any) => Promise<void>
-  updateInspiration: (id: number, data: any) => Promise<void>
-  deleteInspiration: (id: number) => Promise<void>
-  approveInspiration: (id: number, data?: any) => Promise<void>
-  rejectInspiration: (id: number, data?: any) => Promise<void>
+  updateInspiration: (id: string, data: any) => Promise<void>
+  deleteInspiration: (id: string) => Promise<void>
+  approveInspiration: (id: string, data?: any) => Promise<void>
+  rejectInspiration: (id: string, data?: any) => Promise<void>
+  regenerateInspiration: (id: string, data?: any) => Promise<void>
   refreshInspirations: () => void
 }
 
@@ -49,22 +50,11 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
   const queryClient = useQueryClient()
 
   // Fetch inspirations
-  const { data: apiResponse, isLoading, error, refetch } = useQuery({
+  const { data: inspirations = [], isLoading, error, refetch } = useQuery<Inspiration[]>({
     queryKey: ['inspirations'],
-    queryFn: async () => {
-      console.log('🔄 Fetching inspirations from API...')
-      try {
-        const response = await inspirationsApi.getAll(0, 100)
-        console.log('✅ Inspirations API Response:', response.data)
-        return response
-      } catch (err) {
-        console.error('❌ Inspirations API Error:', err)
-        throw err
-      }
-    },
+    queryFn: () => inspirationsApi.getAll(0, 100),
+    
   })
-
-  const inspirations = apiResponse?.data?.data || []
   console.log('📊 Processed inspirations:', inspirations)
 
   // Create inspiration mutation
@@ -82,7 +72,7 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
 
   // Update inspiration mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => inspirationsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => inspirationsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] })
       toast.success('Inspiration updated successfully')
@@ -96,7 +86,7 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
 
   // Delete inspiration mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => inspirationsApi.delete(id),
+    mutationFn: (id: string) => inspirationsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] })
       toast.success('Inspiration deleted successfully')
@@ -110,7 +100,7 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
 
   // Approve inspiration mutation
   const approveMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data?: any }) => inspirationsApi.approve(id, data),
+    mutationFn: ({ id, data }: { id: string; data?: any }) => inspirationsApi.approve(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] })
       toast.success('Inspiration approved successfully')
@@ -122,13 +112,25 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
 
   // Reject inspiration mutation
   const rejectMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data?: any }) => inspirationsApi.reject(id, data),
+    mutationFn: ({ id, data }: { id: string; data?: any }) => inspirationsApi.reject(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] })
       toast.success('Inspiration rejected successfully')
     },
     onError: (error: any) => {
       toast.error(`Failed to reject inspiration: ${error.response?.data?.msg || error.message}`)
+    },
+  })
+
+  // Regenerate inspiration mutation
+  const regenerateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: any }) => inspirationsApi.regenerate(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['inspirations'] })
+      toast.success(`Inspiration regeneration started successfully. Execution ID: ${data.execution_id}`)
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to regenerate inspiration: ${error.response?.data?.msg || error.message}`)
     },
   })
 
@@ -140,20 +142,24 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
     await createMutation.mutateAsync(data)
   }
 
-  const updateInspiration = async (id: number, data: any) => {
+  const updateInspiration = async (id: string, data: any) => {
     await updateMutation.mutateAsync({ id, data })
   }
 
-  const deleteInspiration = async (id: number) => {
+  const deleteInspiration = async (id: string) => {
     await deleteMutation.mutateAsync(id)
   }
 
-  const approveInspiration = async (id: number, data?: any) => {
+  const approveInspiration = async (id: string, data?: any) => {
     await approveMutation.mutateAsync({ id, data })
   }
 
-  const rejectInspiration = async (id: number, data?: any) => {
+  const rejectInspiration = async (id: string, data?: any) => {
     await rejectMutation.mutateAsync({ id, data })
+  }
+
+  const regenerateInspiration = async (id: string, data?: any) => {
+    await regenerateMutation.mutateAsync({ id, data })
   }
 
   return (
@@ -177,6 +183,7 @@ export default function InspirationsProvider({ children }: InspirationsProviderP
         deleteInspiration,
         approveInspiration,
         rejectInspiration,
+        regenerateInspiration,
         refreshInspirations,
       }}
     >

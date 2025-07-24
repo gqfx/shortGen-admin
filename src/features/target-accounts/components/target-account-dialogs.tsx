@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,14 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { TargetAccount, UpdateTargetAccountRequest, QuickAddAccountRequest } from '@/lib/api'
+import { TargetAccount, TargetAccountUpdate, QuickAddAccountRequest } from '@/lib/api'
 import { useTargetAccounts } from '../context/target-accounts-context'
 
 const createTargetAccountSchema = z.object({
   channel_url: z.string().url('Please enter a valid channel URL'),
-  category: z.string().optional(),
-  video_limit: z.number().min(1, 'Video limit must be at least 1').max(1000, 'Video limit cannot exceed 1000').optional(),
-  crawl_videos: z.boolean().optional(),
 })
 
 const updateTargetAccountSchema = z.object({
@@ -44,7 +41,6 @@ const updateTargetAccountSchema = z.object({
   description: z.string().optional(),
   avatar_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   category: z.string().min(1, 'Category is required').optional(),
-  monitor_frequency: z.enum(['hourly', 'daily', 'weekly']).optional(),
   is_active: z.boolean().optional(),
 })
 
@@ -87,9 +83,6 @@ export function TargetAccountDialogs({
     resolver: zodResolver(createTargetAccountSchema),
     defaultValues: {
       channel_url: '',
-      category: 'none',
-      video_limit: 50,
-      crawl_videos: true,
     },
   })
 
@@ -101,7 +94,6 @@ export function TargetAccountDialogs({
       description: '',
       avatar_url: '',
       category: '',
-      monitor_frequency: 'daily',
       is_active: true,
     },
   })
@@ -113,8 +105,7 @@ export function TargetAccountDialogs({
         display_name: editingTargetAccount.display_name,
         description: editingTargetAccount.description || '',
         avatar_url: editingTargetAccount.avatar_url || '',
-        category: editingTargetAccount.category,
-        monitor_frequency: editingTargetAccount.monitor_frequency,
+        category: editingTargetAccount.category || '',
         is_active: editingTargetAccount.is_active,
       })
     }
@@ -123,9 +114,6 @@ export function TargetAccountDialogs({
   const handleCreateSubmit = async (data: CreateFormData) => {
     const payload: QuickAddAccountRequest = {
       channel_url: data.channel_url,
-      category: data.category && data.category !== 'none' ? data.category : undefined,
-      video_limit: data.video_limit || 50,
-      crawl_videos: data.crawl_videos,
     }
 
     const result = await createTargetAccount(payload)
@@ -138,12 +126,11 @@ export function TargetAccountDialogs({
   const handleUpdateSubmit = async (data: UpdateFormData) => {
     if (!editingTargetAccount) return
 
-    const payload: UpdateTargetAccountRequest = {
+    const payload: TargetAccountUpdate = {
       display_name: data.display_name,
       description: data.description,
       avatar_url: data.avatar_url || undefined,
       category: data.category,
-      monitor_frequency: data.monitor_frequency,
       is_active: data.is_active,
     }
 
@@ -199,77 +186,6 @@ export function TargetAccountDialogs({
                 )}
               />
 
-              <FormField
-                control={createForm.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No category</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="video_limit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Video Limit</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number"
-                        min={1}
-                        max={1000}
-                        placeholder="50" 
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <div className="text-sm text-muted-foreground">
-                      Maximum number of videos to crawl (1-1000)
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="crawl_videos"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Crawl Videos</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Automatically crawl video list after adding account
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => handleCreateOpenChange(false)}>
@@ -366,28 +282,6 @@ export function TargetAccountDialogs({
                   )}
                 />
 
-                <FormField
-                  control={updateForm.control}
-                  name="monitor_frequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monitor Frequency</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select frequency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="hourly">Hourly</SelectItem>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <FormField

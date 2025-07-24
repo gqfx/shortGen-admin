@@ -31,19 +31,19 @@ import { Switch } from '@/components/ui/switch'
 const createConfigSchema = z.object({
   config_name: z.string().min(1, 'Config name is required'),
   config_type: z.string().min(1, 'Config type is required'),
-  worker_type: z.string().min(1, 'Worker type is required'),
-  description: z.string().min(1, 'Description is required'),
+  worker_type: z.string().optional(),
+  description: z.string().optional(),
   priority: z.number().min(1).max(10),
-  is_active: z.boolean().default(true),
+  is_active: z.boolean(),
 })
 
 const updateConfigSchema = z.object({
   config_name: z.string().min(1, 'Config name is required'),
   config_type: z.string().min(1, 'Config type is required'),
-  worker_type: z.string().min(1, 'Worker type is required'),
-  description: z.string().min(1, 'Description is required'),
+  worker_type: z.string().optional(),
+  description: z.string().optional(),
   priority: z.number().min(1).max(10),
-  is_active: z.boolean(),
+  is_active: z.boolean().optional(),
 })
 
 type CreateConfigFormData = z.infer<typeof createConfigSchema>
@@ -106,10 +106,10 @@ export function WorkerConfigDialogs() {
   React.useEffect(() => {
     if (selectedConfig && isEditDialogOpen) {
       editForm.reset({
-        config_name: selectedConfig.config_name || selectedConfig.name,
+        config_name: selectedConfig.config_name,
         config_type: selectedConfig.config_type,
-        worker_type: selectedConfig.worker_type,
-        description: selectedConfig.description,
+        worker_type: selectedConfig.worker_type || '',
+        description: selectedConfig.description || '',
         priority: selectedConfig.priority,
         is_active: selectedConfig.is_active,
       })
@@ -117,14 +117,20 @@ export function WorkerConfigDialogs() {
   }, [selectedConfig, isEditDialogOpen, editForm])
 
   const handleCreateConfig = async (data: CreateConfigFormData) => {
+    if (!data.worker_type) {
+      createForm.setError('worker_type', { type: 'manual', message: 'Worker type is required' })
+      return
+    }
     try {
       await createConfig({
         ...data,
+        worker_type: data.worker_type,
+        description: data.description || '',
         config_data: {},
       })
       createForm.reset()
-    } catch (error) {
-      console.error('Failed to create config:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast messages
     }
   }
 
@@ -136,8 +142,8 @@ export function WorkerConfigDialogs() {
         ...data,
         config_data: selectedConfig.config_data || {},
       })
-    } catch (error) {
-      console.error('Failed to update config:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast messages
     }
   }
 
@@ -146,8 +152,8 @@ export function WorkerConfigDialogs() {
     
     try {
       await deleteConfig(selectedConfig.id)
-    } catch (error) {
-      console.error('Failed to delete config:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast messages
     }
   }
 
@@ -438,7 +444,7 @@ export function WorkerConfigDialogs() {
             <Card>
               <CardHeader>
                 <CardTitle className='flex items-center justify-between'>
-                  {selectedConfig.config_name || selectedConfig.name}
+                  {selectedConfig.config_name}
                   <Badge className={selectedConfig.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                     {selectedConfig.is_active ? 'Active' : 'Inactive'}
                   </Badge>
@@ -464,7 +470,7 @@ export function WorkerConfigDialogs() {
                   </div>
                   <div>
                     <span className='font-medium'>Version:</span>
-                    <p>{selectedConfig.version || 'N/A'}</p>
+                    <p>N/A</p>
                   </div>
                   <div>
                     <span className='font-medium'>Created:</span>
@@ -495,7 +501,7 @@ export function WorkerConfigDialogs() {
               Are you sure you want to delete this worker configuration? This action cannot be undone.
               {selectedConfig && (
                 <div className='mt-2 p-2 bg-gray-50 rounded'>
-                  <strong>{selectedConfig.config_name || selectedConfig.name}</strong>
+                  <strong>{selectedConfig.config_name}</strong>
                 </div>
               )}
             </AlertDialogDescription>

@@ -6,7 +6,8 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconGitBranch, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye, IconCode } from '@tabler/icons-react'
+import { IconGitBranch, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye, IconLink } from '@tabler/icons-react'
+import type { WorkflowRegistry } from '@/lib/api'
 import WorkflowRegistryProvider, { useWorkflowRegistry } from './context/workflow-registry-context'
 import { WorkflowRegistryDialogs } from './components/workflow-registry-dialogs'
 
@@ -37,22 +38,22 @@ function WorkflowRegistryContent() {
     deactivateWorkflow,
   } = useWorkflowRegistry()
 
-  const handleEdit = (workflow: any) => {
+  const handleEdit = (workflow: WorkflowRegistry) => {
     setSelectedWorkflow(workflow)
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (workflow: any) => {
+  const handleDelete = (workflow: WorkflowRegistry) => {
     setSelectedWorkflow(workflow)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleViewDetails = (workflow: any) => {
+  const handleViewDetails = (workflow: WorkflowRegistry) => {
     setSelectedWorkflow(workflow)
     setIsDetailDialogOpen(true)
   }
 
-  const handleToggleActive = async (workflow: any) => {
+  const handleToggleActive = async (workflow: WorkflowRegistry) => {
     try {
       if (workflow.is_active) {
         await deactivateWorkflow(workflow.id)
@@ -175,21 +176,17 @@ function WorkflowRegistryContent() {
                       </span>
                     </div>
                     <div className='flex justify-between'>
-                      <span>Version:</span>
-                      <span>{workflow.version}</span>
-                    </div>
-                    <div className='flex justify-between'>
                       <span>Status:</span>
                       <span className={workflow.is_active ? 'text-green-600' : 'text-red-600'}>
                         {workflow.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     <div className='flex justify-between items-center'>
-                      <span>Config:</span>
+                      <span>Webhook:</span>
                       <div className='flex items-center text-muted-foreground'>
-                        <IconCode className='h-3 w-3 mr-1' />
+                        <IconLink className='h-3 w-3 mr-1' />
                         <span className='text-xs'>
-                          {Object.keys(workflow.config || {}).length} keys
+                          {workflow.n8n_webhook_url ? 'Configured' : 'Not set'}
                         </span>
                       </div>
                     </div>

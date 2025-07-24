@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { 
+import {
   MonitoringTask,
   MonitoringTaskUpdate,
-  targetAccountAnalysisApi,
-  ApiResponse 
+  analysisApi,
 } from '@/lib/api'
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
@@ -62,28 +61,28 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
       setLoading(true)
       setError(null)
       
-      const response = await targetAccountAnalysisApi.getTasks(
-        pagination.skip,
-        pagination.limit,
-        filters.accountId,
-        filters.videoId,
-        filters.taskType,
-        filters.status
-      )
+      const response = await analysisApi.getTasks({
+        skip: pagination.skip,
+        limit: pagination.limit,
+        account_id: filters.accountId,
+        video_id: filters.videoId,
+        task_type: filters.taskType,
+        status: filters.status,
+      })
       
-      if (response.data.code === 0) {
-        setTasks(response.data.data)
+      if (response.code === 0) {
+        setTasks(response.data)
         setPaginationState(prev => ({
           ...prev,
-          total: response.data.data.length
+          total: response.data.length
         }))
       } else {
-        setError(response.data.msg || 'Failed to fetch monitoring tasks')
+        setError(response.msg || 'Failed to fetch monitoring tasks')
       }
     } catch (error) {
       const errorMessage = handleServerError(error)
       setError(errorMessage)
-      console.error('Failed to fetch monitoring tasks:', errorMessage)
+      // console.error('Failed to fetch monitoring tasks:', errorMessage)
     } finally {
       setLoading(false)
     }
@@ -91,14 +90,14 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
 
   const updateTask = useCallback(async (taskId: string, data: MonitoringTaskUpdate): Promise<boolean> => {
     try {
-      const response = await targetAccountAnalysisApi.updateTask(taskId, data)
+      const response = await analysisApi.updateTask(taskId, data)
       
-      if (response.data.code === 0) {
+      if (response.code === 0) {
         toast.success('Task updated successfully')
         await fetchTasks()
         return true
       } else {
-        toast.error(response.data.msg || 'Failed to update task')
+        toast.error(response.msg || 'Failed to update task')
         return false
       }
     } catch (error) {

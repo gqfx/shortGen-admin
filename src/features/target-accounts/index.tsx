@@ -107,9 +107,11 @@ function TargetAccountsContent() {
     navigateToAccountDetail(account.id)
   }
 
-  const handleAvatarClick = (e: React.MouseEvent, account: TargetAccount) => {
+  const handleAvatarClick = (e: React.MouseEvent | React.KeyboardEvent, account: TargetAccount) => {
     e.stopPropagation() // Prevent row click
-    openProfilePage(account.profile_url)
+    if (account.profile_url) {
+      openProfilePage(account.profile_url)
+    }
   }
 
   const toggleAccountSelection = (accountId: string) => {
@@ -131,8 +133,8 @@ function TargetAccountsContent() {
 
 
   const filteredAccounts = targetAccounts.filter(account =>
-    account.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (account.display_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (account.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (account.category && account.category.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
@@ -237,20 +239,6 @@ function TargetAccountsContent() {
           </CardContent>
         </Card>
 
-        <Card role="img" aria-label={`Verified accounts: ${targetAccounts.filter(a => a.is_verified).length}`}>
-          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'} ${isMobile ? touchPadding : ''}`}>
-            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Verified</CardTitle>
-            <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`} aria-hidden="true">✅</span>
-          </CardHeader>
-          <CardContent className={isMobile ? touchPadding : ''}>
-            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} aria-label={`${targetAccounts.filter(a => a.is_verified).length} verified accounts`}>
-              {targetAccounts.filter(a => a.is_verified).length}
-            </div>
-            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
-              Verified
-            </p>
-          </CardContent>
-        </Card>
 
         <Card role="img" aria-label={`Recent accounts: ${targetAccounts.filter(a => {
                 if (!a.created_at) return false
@@ -476,15 +464,12 @@ function TargetAccountsContent() {
                         >
                           <AvatarImage src={account.avatar_url || undefined} alt={`${account.display_name} avatar`} />
                           <AvatarFallback className="text-xs" aria-label={`${account.display_name} initials`}>
-                            {account.display_name.substring(0, 2).toUpperCase()}
+                            {(account.display_name || '??').substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
                             <p className="font-medium text-sm truncate">{account.display_name}</p>
-                            {account.is_verified && (
-                              <Badge variant="secondary" className="text-xs">✓</Badge>
-                            )}
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
                             @{account.username || account.account_id}
@@ -560,10 +545,7 @@ function TargetAccountsContent() {
 
                     {/* Last Crawled */}
                     <div className="text-xs text-muted-foreground">
-                      Last crawled: {account.last_crawled_at ? 
-                        new Date(account.last_crawled_at).toLocaleDateString() : 
-                        'Never'
-                      }
+                      Updated at: {new Date(account.updated_at).toLocaleDateString()}
                     </div>
                   </CardContent>
                 </Card>
@@ -588,7 +570,7 @@ function TargetAccountsContent() {
                   <TableHead role="columnheader">Total Videos</TableHead>
                   <TableHead role="columnheader">Total Views</TableHead>
                   <TableHead role="columnheader">Status</TableHead>
-                  <TableHead role="columnheader">Last Crawled</TableHead>
+                  <TableHead role="columnheader">Updated At</TableHead>
                   <TableHead className="text-right" role="columnheader">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -638,15 +620,12 @@ function TargetAccountsContent() {
                         >
                           <AvatarImage src={account.avatar_url || undefined} alt={`${account.display_name} avatar`} />
                           <AvatarFallback aria-label={`${account.display_name} initials`}>
-                            {account.display_name.substring(0, 2).toUpperCase()}
+                            {(account.display_name || '??').substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="flex items-center space-x-2">
                             <p className="font-medium">{account.display_name}</p>
-                            {account.is_verified && (
-                              <Badge variant="secondary" className="text-xs" aria-label="Verified account">✓</Badge>
-                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">@{account.username || account.account_id}</p>
                         </div>
@@ -693,13 +672,9 @@ function TargetAccountsContent() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {account.last_crawled_at ? (
-                        <span className="text-sm">
-                          {new Date(account.last_crawled_at).toLocaleDateString()}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Never</span>
-                      )}
+                      <span className="text-sm">
+                        {new Date(account.updated_at).toLocaleDateString()}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()} role="gridcell">
                       <div className="flex items-center justify-end gap-2" role="group" aria-label={`Actions for ${account.display_name}`}>

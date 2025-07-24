@@ -155,11 +155,8 @@ export function AccountStatistics({ account, loading = false, className }: Accou
   const { isMobile, isTablet } = useResponsive()
   const { touchPadding, touchSpacing } = useTouchFriendly()
   
-  // Calculate derived statistics
-  const totalVideos = 0 // This would come from video count API
-  const totalViews = 0 // This would come from aggregated video views
-  const accountAge = account?.created_at ? 
-    Math.floor((new Date().getTime() - new Date(account.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0
+  const accountAge = account?.published_at ?
+    Math.floor((new Date().getTime() - new Date(account.published_at).getTime()) / (1000 * 60 * 60 * 24)) : 0
 
   return (
     <div className={className}>
@@ -262,35 +259,35 @@ export function AccountStatistics({ account, loading = false, className }: Accou
         {/* Subscriber Count */}
         <StatCard
           title="Subscribers"
-          value={account?.subscriber_count ? formatNumber(account.subscriber_count) : 'N/A'}
+          value={account?.latest_snapshot?.subscriber_count ? formatNumber(account.latest_snapshot.subscriber_count) : 'N/A'}
           icon={<Users className="h-4 w-4" />}
           loading={loading}
-          description={account?.subscriber_count ? `${account.subscriber_count.toLocaleString()} total subscribers` : undefined}
+          description={account?.latest_snapshot?.subscriber_count ? `${account.latest_snapshot.subscriber_count.toLocaleString()} total subscribers` : undefined}
         />
 
         {/* Account Creation Date */}
         <StatCard
           title="Account Created"
-          value={formatDate(account?.created_at || null)}
+          value={formatDate(account?.published_at || null)}
           icon={<Calendar className="h-4 w-4" />}
           loading={loading}
-          description={account?.created_at ? `${accountAge} days ago` : undefined}
+          description={account?.published_at ? `${accountAge} days ago` : undefined}
         />
 
         {/* Total Videos (placeholder - would come from API) */}
         <StatCard
           title="Total Videos"
-          value={totalVideos || 'N/A'}
+          value={account?.latest_snapshot?.total_videos_count ? formatNumber(account.latest_snapshot.total_videos_count) : 'N/A'}
           icon={<Video className="h-4 w-4" />}
           loading={loading}
           placeholder="Loading..."
-          description="Videos in this account"
+          description={account?.latest_snapshot?.total_videos_count ? `${account.latest_snapshot.total_videos_count.toLocaleString()} videos in this account` : "Videos in this account"}
         />
 
         {/* Total Views (placeholder - would come from API) */}
         <StatCard
           title="Total Views"
-          value={totalViews ? formatNumber(totalViews) : 'N/A'}
+          value={account?.latest_snapshot?.total_views ? formatNumber(account.latest_snapshot.total_views) : 'N/A'}
           icon={<Eye className="h-4 w-4" />}
           loading={loading}
           placeholder="Loading..."
@@ -306,14 +303,6 @@ export function AccountStatistics({ account, loading = false, className }: Accou
           description={account?.last_crawled_at ? formatDate(account.last_crawled_at) : 'Never crawled'}
         />
 
-        {/* Monitor Frequency */}
-        <StatCard
-          title="Monitor Frequency"
-          value={account?.monitor_frequency ? account.monitor_frequency.charAt(0).toUpperCase() + account.monitor_frequency.slice(1) : 'N/A'}
-          icon={<TrendingUp className="h-4 w-4" />}
-          loading={loading}
-          description={`Crawl limit: ${account?.video_crawl_limit || 'N/A'} videos`}
-        />
       </div>
 
       {/* Additional Information Card */}

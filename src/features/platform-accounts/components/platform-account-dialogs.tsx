@@ -26,33 +26,29 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Form schemas
+const credentialsSchema = z.object({
+  email: z.string().email('Invalid email format').optional(),
+  password: z.string().optional(),
+  proxy: z.string().optional(),
+  // Allow any other string keys
+}).catchall(z.any())
+
 const createAccountSchema = z.object({
   platform: z.string().min(1, 'Platform is required'),
   name: z.string().min(1, 'Name is required'),
-  daily_limit: z.number().min(1, 'Daily limit must be at least 1'),
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-  proxy: z.string().optional(),
+  daily_limit: z.coerce.number().int().positive('Daily limit must be a positive number').optional(),
+  credentials: credentialsSchema,
 })
 
 const updateAccountSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  daily_limit: z.number().min(1, 'Daily limit must be at least 1'),
-  status: z.enum(['active', 'inactive', 'suspended']),
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-  proxy: z.string().optional(),
+  name: z.string().min(1, 'Name is required').optional(),
+  daily_limit: z.coerce.number().int().positive('Daily limit must be a positive number').optional(),
+  status: z.string().optional(),
+  credentials: credentialsSchema.optional(),
 })
 
 type CreateAccountFormData = z.infer<typeof createAccountSchema>
 type UpdateAccountFormData = z.infer<typeof updateAccountSchema>
-
-const platforms = [
-  { value: 'dreamina', label: 'Dreamina' },
-  { value: 'midjourney', label: 'Midjourney' },
-  { value: 'runway', label: 'Runway' },
-  { value: 'stable_diffusion', label: 'Stable Diffusion' },
-]
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -63,6 +59,7 @@ const statusOptions = [
 export function PlatformAccountDialogs() {
   const {
     selectedAccount,
+    platforms,
     isCreateDialogOpen,
     setIsCreateDialogOpen,
     isEditDialogOpen,
@@ -74,6 +71,7 @@ export function PlatformAccountDialogs() {
     createAccount,
     updateAccount,
     deleteAccount,
+    resetUsage,
   } = usePlatformAccounts()
 
   const createForm = useForm<CreateAccountFormData>({
@@ -82,22 +80,16 @@ export function PlatformAccountDialogs() {
       platform: '',
       name: '',
       daily_limit: 20,
-      email: '',
-      password: '',
-      proxy: '',
+      credentials: {
+        email: '',
+        password: '',
+        proxy: '',
+      },
     },
   })
 
   const editForm = useForm<UpdateAccountFormData>({
     resolver: zodResolver(updateAccountSchema),
-    defaultValues: {
-      name: '',
-      daily_limit: 20,
-      status: 'active' as const,
-      email: '',
-      password: '',
-      proxy: '',
-    },
   })
 
   // Reset and populate edit form when selectedAccount changes
@@ -106,26 +98,19 @@ export function PlatformAccountDialogs() {
       editForm.reset({
         name: selectedAccount.name,
         daily_limit: selectedAccount.daily_limit,
-        status: selectedAccount.status as 'active' | 'inactive' | 'suspended',
-        email: selectedAccount.credentials?.email || '',
-        password: selectedAccount.credentials?.password || '',
-        proxy: selectedAccount.credentials?.proxy || '',
+        status: selectedAccount.status,
+        credentials: {
+          email: selectedAccount.credentials?.email || '',
+          password: selectedAccount.credentials?.password || '',
+          proxy: selectedAccount.credentials?.proxy || '',
+        },
       })
     }
   }, [selectedAccount, isEditDialogOpen, editForm])
 
   const handleCreateAccount = async (data: CreateAccountFormData) => {
     try {
-      await createAccount({
-        platform: data.platform,
-        name: data.name,
-        daily_limit: data.daily_limit,
-        credentials: {
-          email: data.email,
-          password: data.password,
-          proxy: data.proxy || undefined,
-        },
-      })
+      await createAccount(data)
       createForm.reset()
     } catch (error) {
       console.error('Failed to create account:', error)
@@ -136,16 +121,7 @@ export function PlatformAccountDialogs() {
     if (!selectedAccount) return
     
     try {
-      await updateAccount(selectedAccount.id, {
-        name: data.name,
-        daily_limit: data.daily_limit,
-        status: data.status,
-        credentials: {
-          email: data.email,
-          password: data.password,
-          proxy: data.proxy || undefined,
-        },
-      })
+      await updateAccount(selectedAccount.id, data)
     } catch (error) {
       console.error('Failed to update account:', error)
     }
@@ -188,8 +164,8 @@ export function PlatformAccountDialogs() {
                       </FormControl>
                       <SelectContent>
                         {platforms.map((platform) => (
-                          <SelectItem key={platform.value} value={platform.value}>
-                            {platform.label}
+                          <SelectItem key={platform} value={platform}>
+                            {platform}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -216,14 +192,9 @@ export function PlatformAccountDialogs() {
                 name='daily_limit'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Daily Limit</FormLabel>
+                    <FormLabel>Daily Limit (Optional)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        placeholder='20'
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
+                      <Input type='number' placeholder='20' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,7 +202,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={createForm.control}
-                name='email'
+                name='credentials.email'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
@@ -244,7 +215,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={createForm.control}
-                name='password'
+                name='credentials.password'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
@@ -257,7 +228,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={createForm.control}
-                name='proxy'
+                name='credentials.proxy'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Proxy (Optional)</FormLabel>
@@ -334,12 +305,7 @@ export function PlatformAccountDialogs() {
                   <FormItem>
                     <FormLabel>Daily Limit</FormLabel>
                     <FormControl>
-                      <Input 
-                        type='number' 
-                        placeholder='20'
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
+                      <Input type='number' placeholder='20' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -347,7 +313,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={editForm.control}
-                name='email'
+                name='credentials.email'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
@@ -360,7 +326,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={editForm.control}
-                name='password'
+                name='credentials.password'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
@@ -373,7 +339,7 @@ export function PlatformAccountDialogs() {
               />
               <FormField
                 control={editForm.control}
-                name='proxy'
+                name='credentials.proxy'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Proxy (Optional)</FormLabel>
@@ -422,7 +388,7 @@ export function PlatformAccountDialogs() {
                   </div>
                   <div>
                     <span className='font-medium'>Daily Limit:</span>
-                    <p>{selectedAccount.daily_limit}</p>
+                    <p>{selectedAccount.daily_limit || 'N/A'}</p>
                   </div>
                   <div>
                     <span className='font-medium'>Used Today:</span>
@@ -430,7 +396,7 @@ export function PlatformAccountDialogs() {
                   </div>
                   <div>
                     <span className='font-medium'>Remaining:</span>
-                    <p>{selectedAccount.remaining_quota}</p>
+                    <p>{selectedAccount.remaining_quota ?? 'N/A'}</p>
                   </div>
                   <div>
                     <span className='font-medium'>Available:</span>
@@ -440,34 +406,39 @@ export function PlatformAccountDialogs() {
                   </div>
                   <div>
                     <span className='font-medium'>Created:</span>
-                    <p>{new Date(selectedAccount.created_at).toLocaleDateString()}</p>
+                    <p>{new Date(selectedAccount.created_at).toLocaleString()}</p>
+                  </div>
+                   <div>
+                    <span className='font-medium'>Last Used:</span>
+                    <p>{selectedAccount.last_used_at ? new Date(selectedAccount.last_used_at).toLocaleString() : 'Never'}</p>
                   </div>
                 </div>
-                {selectedAccount.credentials && (
+                {selectedAccount.credentials && Object.keys(selectedAccount.credentials).length > 0 && (
                   <div className='mt-4'>
                     <h4 className='font-medium mb-2'>Credentials</h4>
-                    <div className='space-y-2'>
-                      <div>
-                        <span className='font-medium'>Email:</span>
-                        <p className='font-mono text-sm'>{selectedAccount.credentials.email}</p>
-                      </div>
-                      <div>
-                        <span className='font-medium'>Password:</span>
-                        <p className='font-mono text-sm'>{'*'.repeat(selectedAccount.credentials.password?.length || 8)}</p>
-                      </div>
-                      {selectedAccount.credentials.proxy && (
-                        <div>
-                          <span className='font-medium'>Proxy:</span>
-                          <p className='font-mono text-sm'>{selectedAccount.credentials.proxy}</p>
+                    <div className='space-y-2 bg-gray-50 p-3 rounded-md'>
+                      {Object.entries(selectedAccount.credentials).map(([key, value]) => (
+                        <div key={key}>
+                          <span className='font-medium capitalize'>{key}:</span>
+                          <p className='font-mono text-sm break-all'>
+                            {key === 'password' ? '*'.repeat(String(value).length || 8) : String(value)}
+                          </p>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
-          <div className='flex justify-end'>
+          <div className='flex justify-between'>
+             <Button
+              variant='destructive'
+              onClick={() => selectedAccount && resetUsage(selectedAccount.id, { used_today: 0 })}
+              disabled={!selectedAccount || selectedAccount.used_today === 0}
+            >
+              Reset Usage
+            </Button>
             <Button variant='outline' onClick={() => setIsDetailDialogOpen(false)}>
               Close
             </Button>

@@ -42,7 +42,6 @@ export function ProjectsDialogs() {
     setIsEditDialogOpen,
     setIsDeleteDialogOpen,
     setSelectedProject,
-    refreshProjects,
     createProject,
     updateProject,
     deleteProject,
@@ -55,7 +54,7 @@ export function ProjectsDialogs() {
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
       name: '',
-      project_type: '',
+      project_type_code: '',
       initial_parameters: {},
     },
   })
@@ -87,8 +86,8 @@ export function ProjectsDialogs() {
     try {
       await createProject(data)
       createForm.reset()
-    } catch (error) {
-      console.error('Error creating project:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast message
     }
   }
 
@@ -97,8 +96,8 @@ export function ProjectsDialogs() {
 
     try {
       await updateProject(selectedProject.id, data)
-    } catch (error) {
-      console.error('Error updating project:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast message
     }
   }
 
@@ -107,8 +106,8 @@ export function ProjectsDialogs() {
 
     try {
       await deleteProject(selectedProject.id)
-    } catch (error) {
-      console.error('Error deleting project:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast message
     }
   }
 
@@ -124,7 +123,7 @@ export function ProjectsDialogs() {
             </DialogDescription>
           </DialogHeader>
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateProject as any)} className='space-y-4'>
+            <form onSubmit={createForm.handleSubmit(handleCreateProject)} className='space-y-4'>
               <FormField
                 control={createForm.control}
                 name='name'
@@ -140,7 +139,7 @@ export function ProjectsDialogs() {
               />
               <FormField
                 control={createForm.control}
-                name='project_type'
+                name='project_type_code'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Project Type</FormLabel>

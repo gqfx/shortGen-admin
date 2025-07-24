@@ -8,9 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Project } from '@/lib/api'
+import { Project } from '../data/schema'
 import { useProjects } from '../context/projects-context'
-import { IconEdit, IconTrash, IconRefresh, IconEye } from '@tabler/icons-react'
+import { IconEdit, IconTrash, IconRefresh, IconEye, IconCalculator } from '@tabler/icons-react'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
@@ -20,7 +20,13 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const project = row.original as Project
-  const { setSelectedProject, setIsEditDialogOpen, setIsDeleteDialogOpen } = useProjects()
+  const {
+    setSelectedProject,
+    setIsEditDialogOpen,
+    setIsDeleteDialogOpen,
+    regenerateProject,
+    recalculateProjectTasks,
+  } = useProjects()
 
   const handleEdit = () => {
     setSelectedProject(project)
@@ -34,13 +40,17 @@ export function DataTableRowActions<TData>({
 
   const handleView = () => {
     setSelectedProject(project)
-    // Navigate to project details page
+    // This would ideally navigate to a project details page
+    // For now, we can just log it.
     console.log('View project:', project.id)
   }
 
   const handleRegenerate = () => {
-    // Handle project regeneration
-    console.log('Regenerate project:', project.id)
+    regenerateProject(project.id)
+  }
+
+  const handleRecalculate = () => {
+    recalculateProjectTasks(project.id)
   }
 
   return (
@@ -54,24 +64,28 @@ export function DataTableRowActions<TData>({
           <span className='sr-only'>Open menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-[160px]'>
+      <DropdownMenuContent align='end' className='w-[180px]'>
         <DropdownMenuItem onClick={handleView}>
           <IconEye className='mr-2 h-4 w-4' />
           View Details
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleEdit}>
           <IconEdit className='mr-2 h-4 w-4' />
-          Edit
+          Edit Project
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleRegenerate}>
           <IconRefresh className='mr-2 h-4 w-4' />
           Regenerate
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleRecalculate}>
+          <IconCalculator className='mr-2 h-4 w-4' />
+          Recalculate Tasks
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete} className='text-red-600'>
+        <DropdownMenuItem onClick={handleDelete} className='text-red-600 focus:text-red-500'>
           <IconTrash className='mr-2 h-4 w-4' />
-          Delete
+          Delete Project
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

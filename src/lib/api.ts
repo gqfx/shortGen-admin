@@ -1,4 +1,7 @@
 import axios, { AxiosResponse } from 'axios'
+import { Project } from '@/features/projects/data/schema'
+import { CreateProjectFormData, UpdateProjectFormData } from '../features/projects/data/schema'
+import { Task } from '@/features/tasks/data/schema'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : 'http://localhost:8000'
 
@@ -18,13 +21,13 @@ const api = axios.create({
 // Add request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
-    console.log('🚀 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      data: config.data,
-    })
+    // console.log('🚀 API Request:', {
+    //   method: config.method?.toUpperCase(),
+    //   url: config.url,
+    //   baseURL: config.baseURL,
+    //   fullURL: `${config.baseURL}${config.url}`,
+    //   data: config.data,
+    // })
     return config
   },
   (error) => {
@@ -36,12 +39,12 @@ api.interceptors.request.use(
 // Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      url: response.config.url,
-      data: response.data,
-    })
-    return response
+    // console.log('✅ API Response:', {
+    //   status: response.status,
+    //   url: response.config.url,
+    //   data: response.data,
+    // })
+    return response.data
   },
   (error) => {
     console.error('❌ Response Error:', {
@@ -54,153 +57,76 @@ api.interceptors.response.use(
   }
 )
 
-// Project types
-export interface Project {
-  id: number
-  name: string
-  project_type: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  initial_parameters: Record<string, any>
-  inspiration_id: number | null
-  score: number | null
-  score_details: Record<string, any> | null
-  review_notes: string | null
-  used_transform_workflow_id: string | null
-  used_execution_workflow_id: string | null
-  total_tasks: number
-  completed_tasks: number
-  failed_tasks: number
-  output_asset_id: number | null
-  created_at: string
-  updated_at: string
-  tasks?: Task[]
-}
 
-export interface CreateProjectRequest {
-  name: string
-  project_type: string
-  initial_parameters: Record<string, any>
-}
-
-export interface UpdateProjectRequest {
-  name?: string
-  initial_parameters?: Record<string, any>
-  inspiration_id?: number
-  status?: 'pending' | 'processing' | 'completed' | 'failed'
-  score?: number
-  score_details?: Record<string, any>
-  review_notes?: string
-}
-
-// Task types
-export interface Task {
-  id: string
-  project_id: string
-  platform_account_id: string
-  platform_account: {
-    id: string
-    platform: string
-    account_id: string
-    nickname: string
-    avatar_url: string
-  }
-  submit_id: string
-  error_message: string | null
-  started_at: string | null
-  completed_at: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  forecast_generate_cost: number
-  forecast_queue_cost: number
-  task_type: string
-  status: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
-  dependencies: number[]
-  task_output: Record<string, any>
-  task_input: Record<string, any>
-}
-
-export interface CreateTaskRequest {
-  project_id: string
-  platform_account_id: string
-  task_type: string
-  status?: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
-  dependencies?: number[]
-  task_input: Record<string, any>
-  task_output?: Record<string, any>
-  error_message?: string
-}
-
-export interface UpdateTaskRequest {
-  status?: 'waiting' | 'pending' | 'processing' | 'completed' | 'failed'
-  task_output?: Record<string, any>
-  error_message?: string
-}
+// Task types have been moved to `features/tasks/data/schema.ts`
+// We will import them from there when needed.
 
 // Asset types
 export interface Asset {
-  id: number
+  id: string
   name: string
-  description: string
-  asset_type: 'video' | 'image' | 'audio' | 'text'
-  storage_path: string
+  description?: string
+  asset_type: string
+  storage_path?: string
   asset_metadata: Record<string, any>
-  duration_seconds: number | null
-  source: string
-  visibility: 'private' | 'public'
+  duration_seconds?: number
+  source?: string
+  visibility?: string
+  file_hash: string
+  original_filename?: string
   status: string
   created_at: string
   updated_at: string
 }
 
-export interface CreateAssetRequest {
+export interface AssetCreate {
   name: string
-  description: string
-  asset_type: 'video' | 'image' | 'audio' | 'text'
-  storage_path: string
-  asset_metadata: Record<string, any>
-  duration_seconds?: number
-  source: string
-  visibility: 'private' | 'public'
-  status: string
-}
-
-export interface UpdateAssetRequest {
-  name?: string
   description?: string
-  asset_type?: 'video' | 'image' | 'audio' | 'text'
+  asset_type: string
   storage_path?: string
   asset_metadata?: Record<string, any>
   duration_seconds?: number
   source?: string
-  visibility?: 'private' | 'public'
-  status?: string
+  visibility?: string
+  file_hash: string
+  original_filename?: string
+  status: string
+}
+
+export interface AssetUpdate {
+  name?: string
+  description?: string
+  asset_metadata?: Record<string, any>
+  source?: string
+  visibility?: string
 }
 
 // Inspiration types
 export interface Inspiration {
-  id: number
+  id: string
   title: string
-  description: string
-  project_type_code: string
-  source: string
+  description?: string
+  project_type_code?: string
+  source?: string
   parameters: Record<string, any>
   status: string
-  score: number | null
-  score_details: Record<string, any> | null
-  review_notes: string | null
+  score?: number
+  score_details?: Record<string, any>
+  review_notes?: string
   created_at: string
   updated_at: string
 }
 
+// Corresponds to schemas.InspirationCreate
 export interface CreateInspirationRequest {
   title: string
-  description: string
-  project_type_code: string
-  source: string
-  parameters: Record<string, any>
+  description?: string
+  project_type_code?: string
+  source?: string
+  parameters?: Record<string, any>
 }
 
+// Corresponds to schemas.InspirationUpdate
 export interface UpdateInspirationRequest {
   title?: string
   description?: string
@@ -215,44 +141,49 @@ export interface UpdateInspirationRequest {
 
 // Platform Account types
 export interface PlatformAccount {
-  id: number
-  platform: 'dreamina' | 'midjourney' | 'runway'
+  id: string
+  platform: string
   name: string
-  credentials: Record<string, any>
-  status: 'active' | 'inactive'
-  daily_limit: number
+  credentials: { [key: string]: any }
+  status: string
+  daily_limit?: number
   used_today: number
-  last_used_at: string | null
-  is_available: boolean
-  remaining_quota: number
+  last_used_at?: string | null
   created_at: string
   updated_at: string
+  is_available: boolean
+  remaining_quota?: number
 }
 
-export interface CreatePlatformAccountRequest {
-  platform: 'dreamina' | 'midjourney' | 'runway'
+// Corresponds to schemas.platform_account.PlatformAccountCreate
+export interface PlatformAccountCreate {
+  platform: string
   name: string
-  credentials: Record<string, any>
-  status: 'active' | 'inactive'
-  daily_limit: number
+  credentials: { [key: string]: any }
+  daily_limit?: number
 }
 
-export interface UpdatePlatformAccountRequest {
-  platform?: 'dreamina' | 'midjourney' | 'runway'
+// Corresponds to schemas.platform_account.PlatformAccountUpdate
+export interface PlatformAccountUpdate {
   name?: string
-  credentials?: Record<string, any>
-  status?: 'active' | 'inactive'
+  credentials?: { [key: string]: any }
+  status?: string
   daily_limit?: number
+}
+
+// Corresponds to schemas.platform_account.PlatformAccountUsageReset
+export interface PlatformAccountUsageReset {
+  used_today: number
 }
 
 // Worker Config types
 export interface WorkerConfig {
-  id: number
+  id: string
   config_name: string
   config_type: string
-  worker_type: string
+  worker_type?: string
   config_data: Record<string, any>
-  description: string
+  description?: string
   priority: number
   is_active: boolean
   created_at: string
@@ -279,86 +210,69 @@ export interface UpdateWorkerConfigRequest {
   is_active?: boolean
 }
 
+// Corresponds to schemas.worker_config.ConfigAssignmentRequest
+export interface ConfigAssignmentRequest {
+  config_ids: string[]
+}
+
+// Corresponds to schemas.worker_config.TaskConfigAssignment
+export interface TaskConfigAssignment {
+  task_id: string
+  config_id: string
+  assigned_at: string
+}
+
 // WorkflowRegistry types
 export interface WorkflowRegistry {
   id: string
   name: string
-  description: string
-  workflow_type: 'inspiration' | 'transform' | 'execution'
-  version: string
-  config: Record<string, any>
+  description?: string
+  workflow_type: string
+  n8n_webhook_url?: string
   is_active: boolean
   created_at: string
   updated_at: string
 }
 
-export interface CreateWorkflowRegistryRequest {
-  id: string
+// Corresponds to schemas.workflow_registry.WorkflowRegistryCreate
+export interface WorkflowRegistryCreate {
   name: string
-  description: string
-  workflow_type: 'inspiration' | 'transform' | 'execution'
-  version: string
-  config: Record<string, any>
-  is_active: boolean
+  description?: string
+  workflow_type: string
+  n8n_webhook_url?: string
 }
 
-export interface UpdateWorkflowRegistryRequest {
+// Corresponds to schemas.workflow_registry.WorkflowRegistryUpdate
+export interface WorkflowRegistryUpdate {
   name?: string
   description?: string
-  workflow_type?: 'inspiration' | 'transform' | 'execution'
-  version?: string
-  config?: Record<string, any>
-  is_active?: boolean
+  n8n_webhook_url?: string
 }
 
 // ProjectType types
 export interface ProjectType {
   code: string
   name: string
-  description: string
-  inspiration_workflow_id: string | null
-  transform_workflow_id: string | null
-  execution_workflow_id: string | null
+  description?: string
+  inspiration_workflow_id?: string | null
+  transform_workflow_id?: string | null
+  execution_workflow_id?: string | null
   default_parameters: Record<string, any>
   parameter_schema: Record<string, any>
-  category: string
+  category?: string
   sort_order: number
   is_active: boolean
   created_at: string
   updated_at: string
-  inspiration_workflow?: {
-    id: string
-    name: string
-    workflow_type: string
-  }
-  transform_workflow?: {
-    id: string
-    name: string
-    workflow_type: string
-  }
-  execution_workflow?: {
-    id: string
-    name: string
-    workflow_type: string
-  }
+  inspiration_workflow?: Record<string, any>
+  transform_workflow?: Record<string, any>
+  execution_workflow?: Record<string, any>
 }
 
-export interface CreateProjectTypeRequest {
+// Corresponds to schemas.project_type.ProjectTypeCreate
+export interface ProjectTypeCreate {
   code: string
   name: string
-  description: string
-  inspiration_workflow_id?: string
-  transform_workflow_id?: string
-  execution_workflow_id?: string
-  default_parameters: Record<string, any>
-  parameter_schema: Record<string, any>
-  category: string
-  sort_order: number
-  is_active: boolean
-}
-
-export interface UpdateProjectTypeRequest {
-  name?: string
   description?: string
   inspiration_workflow_id?: string
   transform_workflow_id?: string
@@ -370,142 +284,174 @@ export interface UpdateProjectTypeRequest {
   is_active?: boolean
 }
 
+// Corresponds to schemas.project_type.ProjectTypeUpdate
+export interface ProjectTypeUpdate {
+  name?: string
+  description?: string
+  inspiration_workflow_id?: string | null
+  transform_workflow_id?: string | null
+  execution_workflow_id?: string | null
+  default_parameters?: Record<string, any>
+  parameter_schema?: Record<string, any>
+  category?: string
+  sort_order?: number
+  is_active?: boolean
+}
+
 // API Functions
 
 // Projects API
 export const projectsApi = {
-  getAll: (skip = 0, limit = 100): Promise<AxiosResponse<ApiResponse<Project[]>>> =>
+  getAll: (skip = 0, limit = 100): Promise<ApiResponse<Project[]>> =>
     api.get(`/api/projects?skip=${skip}&limit=${limit}`),
-  
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<Project>>> =>
+
+  getById: (id: string): Promise<ApiResponse<Project>> =>
     api.get(`/api/projects/${id}`),
-  
-  create: (data: CreateProjectRequest): Promise<AxiosResponse<ApiResponse<Project>>> =>
+
+  create: (data: CreateProjectFormData): Promise<ApiResponse<Project>> =>
     api.post('/api/projects', data),
-  
-  update: (id: number, data: UpdateProjectRequest): Promise<AxiosResponse<ApiResponse<Project>>> =>
+
+  update: (id: string, data: UpdateProjectFormData): Promise<ApiResponse<Project>> =>
     api.put(`/api/projects/${id}`, data),
-  
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+
+  delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
     api.delete(`/api/projects/${id}`),
-  
-  recalculateTasks: (id: number): Promise<AxiosResponse<ApiResponse<any>>> =>
+
+  recalculateTasks: (id: string): Promise<ApiResponse<Project>> =>
     api.post(`/api/projects/${id}/recalculate-tasks`),
-  
-  regenerate: (id: number, data?: Record<string, any>): Promise<AxiosResponse<ApiResponse<any>>> =>
+
+  regenerate: (id: string, data?: Record<string, any>): Promise<ApiResponse<{ project_id: string; execution_id: string }>> =>
     api.post(`/api/projects/${id}/regenerate`, data),
 }
 
 // Tasks API
 export const tasksApi = {
-  getAll: (skip = 0, limit = 100): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
-    api.get(`/api/tasks?skip=${skip}&limit=${limit}`),
-  
-  getById: (id: string): Promise<AxiosResponse<ApiResponse<Task>>> =>
-    api.get(`/api/tasks/${id}`),
-  
-  create: (data: CreateTaskRequest): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  create: (data: any): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.post('/api/tasks', data),
-  
-  update: (id: string, data: UpdateTaskRequest): Promise<AxiosResponse<ApiResponse<Task>>> =>
-    api.patch(`/api/tasks/${id}`, data),
-  
-  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/api/tasks/${id}`),
-  
-  claim: (taskTypes: string[]): Promise<AxiosResponse<ApiResponse<Task>>> =>
-    api.post('/api/tasks/claim', { task_types: taskTypes }),
-  
+
+  createBatch: (data: any): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
+    api.post('/api/tasks/batch', data),
+
+  updateStatus: (taskId: string, data: any): Promise<AxiosResponse<ApiResponse<Task>>> =>
+    api.patch(`/api/tasks/${taskId}`, data),
+
   getTaskTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
     api.get('/api/tasks/types'),
-  
-  enqueue: (id: string): Promise<AxiosResponse<ApiResponse<Task>>> =>
-    api.post(`/api/tasks/${id}/enqueue`),
+
+  listTasks: (params: { project_id?: string; task_type?: string; skip?: number; limit?: number }): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
+    api.get('/api/tasks', { params }),
+
+  enqueue: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post(`/api/tasks/${taskId}/enqueue`),
+
+  getQueueStatus: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/api/tasks/${taskId}/queue-status`),
+
+  cancel: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post(`/api/tasks/${taskId}/cancel`),
+
+  deleteAllQueues: (): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/api/tasks/delete-all-queues'),
+
+  getQueueInfo: (): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/api/tasks/queue-info'),
+
+  listRedisQueues: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+    api.get('/api/tasks/list-redis-queues'),
+
+  callback: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/api/tasks/callback', data),
+
+  retryMonitoring: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post(`/api/tasks/monitoring/${taskId}/retry`),
 }
 
 // Assets API
 export const assetsApi = {
-  getAll: (skip = 0, limit = 100, assetType?: string, status?: string): Promise<AxiosResponse<ApiResponse<Asset[]>>> => {
+  getByHash: (fileHash: string): Promise<Asset> =>
+    api.get(`/api/assets/by-hash/${fileHash}`),
+
+  create: (data: AssetCreate): Promise<Asset> =>
+    api.post('/api/assets', data),
+
+  getAll: (skip = 0, limit = 100, assetType?: string, status?: string): Promise<Asset[]> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (assetType) params.append('asset_type', assetType)
     if (status) params.append('status', status)
-    return api.get(`/api/assets?${params}`)
+    return api.get(`/api/assets?${params.toString()}`)
   },
-  
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<Asset>>> =>
-    api.get(`/api/assets/${id}`),
-  
-  create: (data: CreateAssetRequest): Promise<AxiosResponse<ApiResponse<Asset>>> =>
-    api.post('/api/assets', data),
-  
-  update: (id: number, data: UpdateAssetRequest): Promise<AxiosResponse<ApiResponse<Asset>>> =>
-    api.put(`/api/assets/${id}`, data),
-  
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/api/assets/${id}`),
-  
-  getByType: (assetType: string, skip = 0, limit = 100): Promise<AxiosResponse<ApiResponse<Asset[]>>> =>
+
+  getById: (assetId: string): Promise<Asset> =>
+    api.get(`/api/assets/${assetId}`),
+
+  update: (assetId: string, data: AssetUpdate): Promise<Asset> =>
+    api.put(`/api/assets/${assetId}`, data),
+
+  delete: (assetId: string): Promise<{ message: string }> =>
+    api.delete(`/api/assets/${assetId}`),
+
+  getByType: (assetType: string, skip = 0, limit = 100): Promise<Asset[]> =>
     api.get(`/api/assets/by-type/${assetType}?skip=${skip}&limit=${limit}`),
 }
 
 // Inspirations API
 export const inspirationsApi = {
-  getAll: (skip = 0, limit = 100, status?: string): Promise<AxiosResponse<ApiResponse<Inspiration[]>>> => {
+  getAll: (skip = 0, limit = 100, status?: string): Promise<Inspiration[]> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (status) params.append('status', status)
-    return api.get(`/api/inspirations?${params}`)
+    return api.get(`/api/inspirations?${params.toString()}`)
   },
-  
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<Inspiration>>> =>
-    api.get(`/api/inspirations/${id}`),
-  
-  create: (data: CreateInspirationRequest): Promise<AxiosResponse<ApiResponse<Inspiration>>> =>
+
+  getById: (inspirationId: string): Promise<Inspiration> =>
+    api.get(`/api/inspirations/${inspirationId}`),
+
+  create: (data: CreateInspirationRequest): Promise<Inspiration> =>
     api.post('/api/inspirations', data),
-  
-  update: (id: number, data: UpdateInspirationRequest): Promise<AxiosResponse<ApiResponse<Inspiration>>> =>
-    api.put(`/api/inspirations/${id}`, data),
-  
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/api/inspirations/${id}`),
-  
-  approve: (id: number, data?: { review_notes?: string; score?: number }): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/api/inspirations/${id}/approve`, data),
-  
-  reject: (id: number, data?: { review_notes?: string }): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/api/inspirations/${id}/reject`, data),
-  
-  regenerate: (id: number, data?: { parameter_overrides?: Record<string, any> }): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/api/inspirations/${id}/regenerate`, data),
+
+  update: (inspirationId: string, data: UpdateInspirationRequest): Promise<Inspiration> =>
+    api.put(`/api/inspirations/${inspirationId}`, data),
+
+  delete: (inspirationId: string): Promise<{ message: string }> =>
+    api.delete(`/api/inspirations/${inspirationId}`),
+
+  approve: (inspirationId: string, data?: { review_notes?: string; score?: number }): Promise<Inspiration> =>
+    api.post(`/api/inspirations/${inspirationId}/approve`, data),
+
+  reject: (inspirationId: string, data?: { review_notes?: string }): Promise<Inspiration> =>
+    api.post(`/api/inspirations/${inspirationId}/reject`, data),
+
+  regenerate: (inspirationId: string, data?: Record<string, any>): Promise<{ inspiration_id: string; execution_id: string }> =>
+    api.post(`/api/inspirations/${inspirationId}/regenerate`, data),
 }
 
 // Platform Accounts API
 export const platformAccountsApi = {
-  getAll: (skip = 0, limit = 100, platform?: string, status?: string): Promise<AxiosResponse<ApiResponse<PlatformAccount[]>>> => {
+  getAll: (skip = 0, limit = 100, platform?: string, status?: string): Promise<ApiResponse<PlatformAccount[]>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (platform) params.append('platform', platform)
     if (status) params.append('status', status)
     return api.get(`/api/platform-accounts?${params}`)
   },
-  
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<PlatformAccount>>> =>
+
+  getById: (id: string): Promise<ApiResponse<PlatformAccount>> =>
     api.get(`/api/platform-accounts/${id}`),
-  
-  create: (data: CreatePlatformAccountRequest): Promise<AxiosResponse<ApiResponse<PlatformAccount>>> =>
+
+  create: (data: PlatformAccountCreate): Promise<ApiResponse<PlatformAccount>> =>
     api.post('/api/platform-accounts', data),
-  
-  update: (id: number, data: UpdatePlatformAccountRequest): Promise<AxiosResponse<ApiResponse<PlatformAccount>>> =>
+
+  update: (id: string, data: PlatformAccountUpdate): Promise<ApiResponse<PlatformAccount>> =>
     api.put(`/api/platform-accounts/${id}`, data),
-  
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+
+  delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
     api.delete(`/api/platform-accounts/${id}`),
-  
-  getAvailable: (platform: string): Promise<AxiosResponse<ApiResponse<PlatformAccount[]>>> =>
+
+  getAvailable: (platform: string): Promise<ApiResponse<PlatformAccount[]>> =>
     api.get(`/api/platform-accounts/available/${platform}`),
-  
-  resetUsage: (id: number, usedToday = 0): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/api/platform-accounts/${id}/reset-usage`, { used_today: usedToday }),
-  
-  getPlatforms: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+
+  resetUsage: (id: string, data: PlatformAccountUsageReset): Promise<ApiResponse<PlatformAccount>> =>
+    api.post(`/api/platform-accounts/${id}/reset-usage`, data),
+
+  getPlatforms: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/platform-accounts/platforms/list'),
 }
 
@@ -519,53 +465,53 @@ export const workerConfigsApi = {
     return api.get(`/api/worker-configs?${params}`)
   },
   
-  getById: (id: number): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
+  getById: (id: string): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
     api.get(`/api/worker-configs/${id}`),
   
   create: (data: CreateWorkerConfigRequest): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
     api.post('/api/worker-configs', data),
   
-  update: (id: number, data: UpdateWorkerConfigRequest): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
+  update: (id: string, data: UpdateWorkerConfigRequest): Promise<AxiosResponse<ApiResponse<WorkerConfig>>> =>
     api.put(`/api/worker-configs/${id}`, data),
   
-  delete: (id: number): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
     api.delete(`/api/worker-configs/${id}`),
   
-  assignToTask: (taskId: number, configIds: number[], overrideData?: Record<string, any>): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post(`/api/worker-configs/tasks/${taskId}/assign`, { config_ids: configIds, override_data: overrideData }),
+  assignToTask: (taskId: string, data: ConfigAssignmentRequest): Promise<AxiosResponse<ApiResponse<TaskConfigAssignment[]>>> =>
+    api.post(`/api/worker-configs/tasks/${taskId}/assign`, data),
   
-  getTaskConfigs: (taskId: number): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getTaskConfigs: (taskId: string): Promise<AxiosResponse<ApiResponse<Record<string, any>>>> =>
     api.get(`/api/worker-configs/tasks/${taskId}/configs`),
 }
 
 // WorkflowRegistry API
 export const workflowRegistryApi = {
-  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<AxiosResponse<ApiResponse<WorkflowRegistry[]>>> => {
+  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<WorkflowRegistry[]> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (workflowType) params.append('workflow_type', workflowType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
     return api.get(`/api/workflow-registry?${params}`)
   },
-  
-  getById: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+
+  getById: (id: string): Promise<WorkflowRegistry> =>
     api.get(`/api/workflow-registry/${id}`),
-  
-  create: (data: CreateWorkflowRegistryRequest): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+
+  create: (data: WorkflowRegistryCreate): Promise<WorkflowRegistry> =>
     api.post('/api/workflow-registry', data),
-  
-  update: (id: string, data: UpdateWorkflowRegistryRequest): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+
+  update: (id: string, data: WorkflowRegistryUpdate): Promise<WorkflowRegistry> =>
     api.put(`/api/workflow-registry/${id}`, data),
-  
-  delete: (id: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+
+  delete: (id: string): Promise<{ message: string }> =>
     api.delete(`/api/workflow-registry/${id}`),
-  
-  activate: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+
+  activate: (id: string): Promise<WorkflowRegistry> =>
     api.post(`/api/workflow-registry/${id}/activate`),
-  
-  deactivate: (id: string): Promise<AxiosResponse<ApiResponse<WorkflowRegistry>>> =>
+
+  deactivate: (id: string): Promise<WorkflowRegistry> =>
     api.post(`/api/workflow-registry/${id}/deactivate`),
-  
-  getTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+
+  getTypes: (): Promise<string[]> =>
     api.get('/api/workflow-registry/types/list'),
 }
 
@@ -581,10 +527,10 @@ export const projectTypesApi = {
   getById: (code: string): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
     api.get(`/api/project-types/${code}`),
   
-  create: (data: CreateProjectTypeRequest): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  create: (data: ProjectTypeCreate): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
     api.post('/api/project-types', data),
   
-  update: (code: string, data: UpdateProjectTypeRequest): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
+  update: (code: string, data: ProjectTypeUpdate): Promise<AxiosResponse<ApiResponse<ProjectType>>> =>
     api.put(`/api/project-types/${code}`, data),
   
   delete: (code: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
@@ -603,73 +549,34 @@ export const projectTypesApi = {
     api.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
 }
 
-// Target Account Analysis types
-export interface TargetAccount {
-  id: string // Changed to string ID as per new API
-  account_id: string // platform account ID (e.g., YouTube channel ID)
-  display_name: string
-  username: string
-  profile_url: string
-  channel_url: string
-  description: string | null
-  avatar_url: string | null
-  is_verified: boolean
-  category: string | null
-  subscriber_count: number
-  is_active: boolean
-  monitor_frequency: 'hourly' | 'daily' | 'weekly'
-  last_crawled_at: string | null
-  video_crawl_limit: number
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  latest_snapshot: AccountSnapshot | null
-}
+// --- Analysis API Types (Updated based on new documentation) ---
 
+// Schemas
 export interface AccountSnapshot {
-  target_account_id: string
-  subscriber_count: number
-  total_videos_count: number
-  hidden_subscriber_count: boolean | null
-  total_views: number
-  collected_at: string
   id: string
+  target_account_id: string
+  subscriber_count?: number
+  total_videos_count?: number
+  hidden_subscriber_count?: boolean
+  total_views?: number
+  collected_at: string
   created_at: string
 }
 
-export interface QuickAddAccountRequest {
-  channel_url: string
-  category?: string
-  video_limit?: number
-  crawl_videos?: boolean
+export interface VideoSnapshot {
+  id: string
+  video_id: string
+  views_count?: number
+  likes_count?: number
+  comments_count?: number
+  favorite_count?: number
+  collected_at: string
+  created_at: string
 }
 
-export interface AccountCrawlRequest {
-  crawl_videos?: boolean
-  video_limit?: number
-}
-
-export interface BatchAccountCrawlRequest {
-  account_ids: string[] // Changed to string IDs
-  crawl_videos?: boolean
-  video_limit?: number
-}
-
-export interface DeleteAccountRequest {
-  force?: boolean
-}
-
-export interface TriggerDownloadRequest {
-  video_ids: string[] // Changed to string IDs
-  priority?: number
-}
-
-export interface MonitoringTaskUpdate {
-  status?: string
-  error_message?: string
-}
-
-export interface UpdateTargetAccountRequest {
+export interface TargetAccount {
+  id: string
+  account_id?: string
   display_name?: string
   username?: string
   profile_url?: string
@@ -679,331 +586,204 @@ export interface UpdateTargetAccountRequest {
   is_verified?: boolean
   category?: string
   subscriber_count?: number
-  is_active?: boolean
-  monitor_frequency?: 'hourly' | 'daily' | 'weekly'
-  video_crawl_limit?: number
-}
-
-// Response types for new API
-export interface QuickAddResponse {
-  account: TargetAccount
-  tasks: Array<{
-    task_id: string
-    task_type: string
-  }>
-}
-
-export interface CrawlResponse {
-  account_id: string
-  tasks: Array<{
-    task_id: string
-    task_type: string
-  }>
-}
-
-export interface BatchCrawlResponse {
-  results: Array<{
-    account_id: string
-    status: 'success' | 'failed'
-    task_count?: number
-    error?: string
-  }>
-}
-
-export interface DownloadResponse {
-  requested_videos: number
-  valid_videos: number
-  invalid_video_ids: string[]
-  tasks: Array<{
-    task_id: string
-    video_id: string
-    status: string
-  }>
-}
-
-export interface MonitoringTask {
-  id: string
-  account_id?: string
-  video_id?: string
-  task_type: string
-  status: string
-  priority?: number
-  error_message?: string
+  is_active: boolean
+  last_crawled_at?: string
+  video_crawl_limit: number
   created_at: string
   updated_at: string
-}
-
-export interface Channel {
-  id: number
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  channel_id: string
-  channel_name: string
-  channel_url: string
-  is_verified: boolean
-  subscriber_count: number
-  created_at: string
-  updated_at: string
-}
-
-export interface CreateChannelRequest {
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  channel_id: string
-  channel_name: string
-  channel_url: string
-  is_verified: boolean
-  subscriber_count: number
-}
-
-export interface TargetAccountStatistics {
-  id: number
-  account_id: number
-  followers_count: number
-  following_count: number
-  total_videos_count: number
-  total_views: number
-  total_likes: number
-  followers_growth: number
-  followers_growth_rate: number
-  collected_at: string
-  created_at: string
-}
-
-export interface CreateAccountStatisticsRequest {
-  followers_count: number
-  following_count: number
-  total_videos_count: number
-  total_views: number
-  total_likes: number
-  collected_at: string
+  deleted_at?: string
+  uploads_playlist_id?: string
+  country?: string
+  published_at?: string
+  is_scheduled?: boolean
+  schedule_interval?: number
+  cron_string?: string
+  latest_snapshot: AccountSnapshot | null
 }
 
 export interface Video {
   id: string
-  account_id: string
-  channel_id: string | null
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  platform_video_id: string
-  video_url: string
-  title: string
-  description: string | null
-  thumbnail_url: string | null
-  duration: number | null
-  video_type: 'long' | 'short' | 'live'
-  is_downloaded: boolean
-  download_status: string | null
-  local_file_path: string | null
-  local_file_size: number | null
-  published_at: string
-  discovered_at: string
-  created_at: string
-  updated_at: string
-  latest_snapshot: VideoSnapshot | null
-}
-
-export interface VideoSnapshot {
+  target_account_id: string
   video_id: string
-  views_count: number
-  likes_count: number
-  comments_count: number
-  favorite_count: number
-  collected_at: string
-  id: string
-  created_at: string
-}
-
-export interface CreateVideoRequest {
-  account_id: number
-  channel_id?: number
-  platform: 'youtube' | 'tiktok' | 'bilibili'
-  platform_video_id: string
   video_url: string
-  title: string
+  asset_id?: string
+  title?: string
   description?: string
   thumbnail_url?: string
   duration?: number
-  video_type: 'long' | 'short' | 'live'
-  published_at: string
-  discovered_at: string
-}
-
-export interface VideoEngagementMetrics {
-  id: number
-  video_id: number
-  views_count: number
-  likes_count: number
-  comments_count: number
-  shares_count: number
-  engagement_rate: number
-  views_growth: number
-  likes_growth: number
-  collected_at: string
+  published_at?: string
+  category_id?: string
+  default_audio_language?: string
+  analysis_results?: Record<string, any>
+  analysis_status?: string
+  analysis_error?: string
+  is_downloaded: boolean
   created_at: string
+  updated_at: string
+  deleted_at?: string
+  latest_snapshot: VideoSnapshot | null
+  asset?: Asset
 }
 
-export interface CreateVideoEngagementRequest {
-  views_count: number
-  likes_count: number
-  comments_count: number
-  shares_count: number
-  collected_at: string
-}
-
-// Video Analysis types
-export interface VideoAnalysisResponse {
+export interface MonitoringTask {
   id: string
-  video_id: string
-  scenes: SceneAnalysis[]
-  summary: string
-  analysis_status: 'pending' | 'processing' | 'completed' | 'failed'
+  task_type: string
+  status: string
+  priority: number
+  dependencies: string[]
+  target_account_id: string
+  video_id?: string
+  error_message?: string
+  started_at?: string
+  completed_at?: string
   created_at: string
   updated_at: string
 }
 
-export interface SceneAnalysis {
-  scene_id: string
-  start_time: number
-  end_time: number
-  thumbnail_url: string
-  description: string
-  confidence: number
+// Request Bodies
+export interface QuickAddAccountRequest {
+  channel_url: string
+  category?: string
+  video_limit?: number
+  crawl_videos?: boolean
+  is_scheduled?: boolean
+  schedule_interval?: number
+  cron_string?: string
 }
 
-// Target Account Analysis API
-export const targetAccountAnalysisApi = {
-  // Accounts
-  getAccounts: (skip = 0, limit = 100, isActive?: boolean, category?: string): Promise<AxiosResponse<ApiResponse<TargetAccount[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    if (isActive !== undefined) params.append('is_active', isActive.toString())
-    if (category) params.append('category', category)
-    return api.get(`/api/analysis/accounts/?${params}`)
-  },
-  
-  getAccountById: (id: string): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.get(`/api/analysis/accounts/${id}`),
-  
-  // Quick add with immediate crawl trigger
-  quickAddAccount: (data: QuickAddAccountRequest): Promise<AxiosResponse<ApiResponse<QuickAddResponse>>> =>
+export interface TriggerDownloadRequest {
+  video_ids: string[]
+  priority?: number
+}
+
+export interface AccountCrawlRequest {
+  crawl_videos?: boolean
+  video_limit?: number
+}
+
+export interface BatchAccountCrawlRequest {
+  account_ids: string[]
+  crawl_videos?: boolean
+  video_limit?: number
+}
+
+// This corresponds to schemas.target_account.TargetAccountUpdate
+export interface TargetAccountUpdate {
+  display_name?: string
+  username?: string
+  profile_url?: string
+  description?: string
+  avatar_url?: string
+  is_active?: boolean
+  category?: string
+  is_scheduled?: boolean
+  schedule_interval?: number
+  cron_string?: string
+  video_crawl_limit?: number
+}
+
+export interface DeleteAccountRequest {
+  force?: boolean
+}
+
+// This corresponds to schemas.monitoring_task.MonitoringTaskUpdate
+export interface MonitoringTaskUpdate {
+  status?: string
+}
+
+
+// --- Analysis API Client ---
+
+export const analysisApi = {
+  /**
+   * 快速添加目标账号并立即触发一次后台数据同步任务.
+   */
+  quickAddAccount: (data: QuickAddAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
     api.post('/api/analysis/accounts/quick-add', data),
-  
-  updateAccount: (id: string, data: UpdateTargetAccountRequest): Promise<AxiosResponse<ApiResponse<TargetAccount>>> =>
-    api.put(`/api/analysis/accounts/${id}`, data),
-  
-  deleteAccount: (id: string, data?: DeleteAccountRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
-    api.delete(`/api/analysis/accounts/${id}`, { data }),
 
-  // Crawl management
-  triggerAccountCrawl: (accountId: string, data?: AccountCrawlRequest): Promise<AxiosResponse<ApiResponse<CrawlResponse>>> =>
-    api.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data || {}),
-  
-  batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<AxiosResponse<ApiResponse<BatchCrawlResponse>>> =>
-    api.post('/api/analysis/accounts/batch-trigger-crawl', data),
-
-  // Data retrieval
-  getAllVideos: (skip = 0, limit = 50, sortBy = 'published_at'): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString(), sort_by: sortBy })
-    return api.get(`/api/analysis/videos/?${params}`)
-  },
-
-  getAccountVideos: (accountId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    return api.get(`/api/analysis/accounts/${accountId}/videos?${params}`)
-  },
-
-  getAccountSnapshots: (accountId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<any[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    return api.get(`/api/analysis/accounts/${accountId}/snapshots?${params}`)
-  },
-
-  // Video management
-  getVideoSnapshots: (videoId: string, skip = 0, limit = 50): Promise<AxiosResponse<ApiResponse<any[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    return api.get(`/api/analysis/videos/${videoId}/snapshots?${params}`)
-  },
-
-  triggerVideoDownload: (data: TriggerDownloadRequest): Promise<AxiosResponse<ApiResponse<DownloadResponse>>> =>
+  /**
+   * 手动创建并入队视频下载任务.
+   */
+  triggerVideoDownload: (data: TriggerDownloadRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
     api.post('/api/analysis/videos/trigger-download', data),
 
-  // Video Analysis endpoints
-  getVideoById: (videoId: string): Promise<AxiosResponse<ApiResponse<Video>>> =>
-    api.get(`/api/analysis/videos/${videoId}`),
+  /**
+   * 手动触发对指定账号的后台数据同步任务.
+   */
+  triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest): Promise<AxiosResponse<ApiResponse<MonitoringTask>>> =>
+    api.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data),
 
-  getVideoAnalysis: (videoId: string): Promise<AxiosResponse<ApiResponse<VideoAnalysisResponse>>> =>
-    api.get(`/api/analysis/videos/${videoId}/analysis`),
+  /**
+   * 批量触发多个账号的后台数据同步任务.
+   */
+  batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
+    api.post('/api/analysis/accounts/batch-trigger-crawl', data),
 
-  triggerVideoLensAnalysis: (videoId: string): Promise<AxiosResponse<ApiResponse<{ job_id: string }>>> =>
+  /**
+   * 获取目标账号列表, 并附带最新的快照数据.
+   */
+  getAccounts: (params: { skip?: number; limit?: number; is_active?: boolean; category?: string }): Promise<ApiResponse<TargetAccount[]>> =>
+    api.get('/api/analysis/accounts', { params }),
+
+  /**
+   * 获取单个目标账号信息, 并附带最新的快照数据.
+   */
+  getAccount: (accountId: string): Promise<ApiResponse<TargetAccount>> =>
+    api.get(`/api/analysis/accounts/${accountId}`),
+
+  /**
+   * 更新目标账号信息.
+   */
+  updateAccount: (accountId: string, data: TargetAccountUpdate): Promise<ApiResponse<TargetAccount>> =>
+    api.put(`/api/analysis/accounts/${accountId}`, data),
+
+  /**
+   * 删除目标账号.
+   */
+  deleteAccount: (accountId: string, data: DeleteAccountRequest): Promise<ApiResponse<{ message: string }>> =>
+    api.delete(`/api/analysis/accounts/${accountId}`, { data }),
+
+  /**
+   * 获取指定账号下的视频列表.
+   */
+  getAccountVideos: (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }): Promise<ApiResponse<Video[]>> =>
+    api.get(`/api/analysis/accounts/${accountId}/videos`, { params }),
+
+  /**
+   * 获取视频列表, 并附带最新的快照数据.
+   */
+  getVideos: (params: { skip?: number; limit?: number; sort_by?: string }): Promise<ApiResponse<Video[]>> =>
+    api.get('/api/analysis/videos', { params }),
+
+  /**
+   * 获取账号的历史快照数据.
+   */
+  getAccountSnapshots: (accountId: string, params: { skip?: number; limit?: number }): Promise<ApiResponse<AccountSnapshot[]>> =>
+    api.get(`/api/analysis/accounts/${accountId}/snapshots`, { params }),
+
+  /**
+   * 获取视频的历史快照数据.
+   */
+  getVideoSnapshots: (videoId: string, params: { skip?: number; limit?: number }): Promise<ApiResponse<VideoSnapshot[]>> =>
+    api.get(`/api/analysis/videos/${videoId}/snapshots`, { params }),
+
+  /**
+   * 触发对指定视频的后台镜头分析任务.
+   */
+  analyzeVideo: (videoId: string): Promise<AxiosResponse<ApiResponse<{ message: string }>>> =>
     api.post(`/api/analysis/videos/${videoId}/analyze`),
 
-  triggerVideoAnalysis: (videoId: string, options?: { priority?: number }): Promise<AxiosResponse<ApiResponse<{ task_id: string; status: string }>>> =>
-    api.post(`/api/analysis/videos/${videoId}/trigger-analysis`, options || {}),
+  /**
+   * 获取监控任务列表.
+   */
+  getTasks: (params: { skip?: number; limit?: number; account_id?: string; video_id?: string; task_type?: string; status?: string }): Promise<ApiResponse<MonitoringTask[]>> =>
+    api.get('/api/analysis/tasks', { params }),
 
-  // Task management
-  getTasks: (skip = 0, limit = 50, accountId?: string, videoId?: string, taskType?: string, status?: string): Promise<AxiosResponse<ApiResponse<MonitoringTask[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    if (accountId) params.append('account_id', accountId)
-    if (videoId) params.append('video_id', videoId)
-    if (taskType) params.append('task_type', taskType)
-    if (status) params.append('status', status)
-    return api.get(`/api/analysis/tasks/?${params}`)
-  },
-
-  updateTask: (taskId: string, data: MonitoringTaskUpdate): Promise<AxiosResponse<ApiResponse<MonitoringTask>>> =>
+  /**
+   * 更新监控任务状态.
+   */
+  updateTask: (taskId: string, data: MonitoringTaskUpdate): Promise<ApiResponse<MonitoringTask>> =>
     api.put(`/api/analysis/tasks/${taskId}`, data),
-
-  // Legacy endpoints (keeping for backward compatibility)
-  // Channels
-  getChannels: (skip = 0, limit = 50, platform?: string): Promise<AxiosResponse<ApiResponse<Channel[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
-    if (platform) params.append('platform', platform)
-    return api.get(`/api/analysis/channels?${params}`)
-  },
-
-  // Videos
-  getVideos: (skip = 0, limit = 50, accountId?: number, channelId?: number, videoType?: string, isDownloaded?: boolean, sortBy = 'published_at'): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString(), sort_by: sortBy })
-    if (accountId) params.append('account_id', accountId.toString())
-    if (channelId) params.append('channel_id', channelId.toString())
-    if (videoType) params.append('video_type', videoType)
-    if (isDownloaded !== undefined) params.append('is_downloaded', isDownloaded.toString())
-    return api.get(`/api/analysis/videos?${params}`)
-  },
-
-  // Statistics (legacy - use getAccountSnapshots for new API)
-  getAccountStatistics: (accountId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<TargetAccountStatistics[]>>> => {
-    const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
-    return api.get(`/api/analysis/accounts/${accountId}/statistics?${params}`)
-  },
-
-  getGrowthTrends: (accountId: number, days = 7): Promise<AxiosResponse<ApiResponse<{
-    followers_trend: number
-    videos_trend: number
-    avg_daily_growth: number
-    total_growth_rate: number
-    analysis_period_days: number
-    data_points: number
-  }>>> => {
-    const params = new URLSearchParams({ days: days.toString() })
-    return api.get(`/api/analysis/accounts/${accountId}/growth-trends?${params}`)
-  },
-
-  getVideoEngagementMetrics: (videoId: number, days = 30, limit = 100): Promise<AxiosResponse<ApiResponse<VideoEngagementMetrics[]>>> => {
-    const params = new URLSearchParams({ days: days.toString(), limit: limit.toString() })
-    return api.get(`/api/analysis/videos/${videoId}/engagement-metrics?${params}`)
-  },
-
-  getTrendingVideos: (accountId?: number, metric = 'views_count', days = 7, limit = 10): Promise<AxiosResponse<ApiResponse<Video[]>>> => {
-    const params = new URLSearchParams({ metric, days: days.toString(), limit: limit.toString() })
-    if (accountId) params.append('account_id', accountId.toString())
-    return api.get(`/api/analysis/videos/trending?${params}`)
-  },
-
-  getAnalyticsSummary: (accountId: number): Promise<AxiosResponse<ApiResponse<{
-    account: TargetAccount
-    latest_stats: TargetAccountStatistics
-    recent_videos: Video[]
-    growth_trends: any
-    engagement_analysis: any
-  }>>> =>
-    api.get(`/api/analysis/accounts/${accountId}/analytics-summary`),
 }
 
 export default api

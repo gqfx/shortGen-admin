@@ -29,18 +29,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 // Form schemas
 const createInspirationSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  project_type_code: z.string().min(1, 'Project type is required'),
-  source: z.string().min(1, 'Source is required'),
-  parameters: z.record(z.any()).optional().default({}),
+  description: z.string().optional(),
+  project_type_code: z.string().optional(),
+  source: z.string().optional(),
+  parameters: z.record(z.any()).optional(),
 })
 
 const updateInspirationSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  project_type_code: z.string().min(1, 'Project type is required'),
-  source: z.string().min(1, 'Source is required'),
-  parameters: z.record(z.any()).optional().default({}),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  project_type_code: z.string().optional(),
+  source: z.string().optional(),
+  parameters: z.record(z.any()).optional(),
 })
 
 type CreateInspirationFormData = z.infer<typeof createInspirationSchema>
@@ -75,6 +75,7 @@ export function InspirationDialogs() {
     deleteInspiration,
     approveInspiration,
     rejectInspiration,
+    regenerateInspiration,
   } = useInspirations()
 
   const createForm = useForm<CreateInspirationFormData>({
@@ -104,9 +105,9 @@ export function InspirationDialogs() {
     if (selectedInspiration && isEditDialogOpen) {
       editForm.reset({
         title: selectedInspiration.title,
-        description: selectedInspiration.description,
-        project_type_code: selectedInspiration.project_type_code,
-        source: selectedInspiration.source,
+        description: selectedInspiration.description || '',
+        project_type_code: selectedInspiration.project_type_code || '',
+        source: selectedInspiration.source || '',
         parameters: selectedInspiration.parameters || {},
       })
     }
@@ -156,6 +157,15 @@ export function InspirationDialogs() {
       await rejectInspiration(selectedInspiration.id, { review_notes: 'Rejected' })
     } catch (error) {
       console.error('Failed to reject inspiration:', error)
+    }
+  }
+
+  const handleRegenerate = async () => {
+    if (!selectedInspiration) return
+    try {
+      await regenerateInspiration(selectedInspiration.id)
+    } catch (error) {
+      console.error('Failed to regenerate inspiration:', error)
     }
   }
 
@@ -407,13 +417,20 @@ export function InspirationDialogs() {
                     <p className='mt-1'>{selectedInspiration.review_notes}</p>
                   </div>
                 )}
-                {selectedInspiration.status === 'pending' && (
+                {(selectedInspiration.status === 'pending' || selectedInspiration.status === 'rejected') && (
                   <div className='flex space-x-2 pt-4'>
-                    <Button onClick={handleApprove} className='bg-green-600 hover:bg-green-700'>
-                      Approve
-                    </Button>
-                    <Button onClick={handleReject} variant='destructive'>
-                      Reject
+                    {selectedInspiration.status === 'pending' && (
+                      <>
+                        <Button onClick={handleApprove} className='bg-green-600 hover:bg-green-700'>
+                          Approve
+                        </Button>
+                        <Button onClick={handleReject} variant='destructive'>
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    <Button onClick={handleRegenerate} variant='outline'>
+                      Regenerate
                     </Button>
                   </div>
                 )}

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { IconCloud, IconPlus, IconEdit, IconTrash, IconRefresh, IconEye } from '@tabler/icons-react'
+import { PlatformAccount } from '@/lib/api'
 import PlatformAccountsProvider, { usePlatformAccounts } from './context/platform-accounts-context'
 import { PlatformAccountDialogs } from './components/platform-account-dialogs'
 
@@ -46,19 +47,20 @@ function PlatformAccountsContent() {
     setIsEditDialogOpen,
     setIsDeleteDialogOpen,
     setIsDetailDialogOpen,
+    refreshAccounts,
   } = usePlatformAccounts()
 
-  const handleEdit = (account: any) => {
+  const handleEdit = (account: PlatformAccount) => {
     setSelectedAccount(account)
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (account: any) => {
+  const handleDelete = (account: PlatformAccount) => {
     setSelectedAccount(account)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleViewDetails = (account: any) => {
+  const handleViewDetails = (account: PlatformAccount) => {
     setSelectedAccount(account)
     setIsDetailDialogOpen(true)
   }
@@ -81,10 +83,16 @@ function PlatformAccountsContent() {
               Manage external platform accounts and API credentials for content generation.
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <IconPlus className='mr-2 h-4 w-4' />
-            Add Account
-          </Button>
+          <div className='flex items-center space-x-2'>
+            <Button onClick={() => refreshAccounts()} variant='outline' size='sm'>
+              <IconRefresh className='mr-2 h-4 w-4' />
+              Refresh
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <IconPlus className='mr-2 h-4 w-4' />
+              Add Account
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -157,7 +165,7 @@ function PlatformAccountsContent() {
                     </div>
                     <div className='flex justify-between'>
                       <span>Daily Limit:</span>
-                      <span>{account.daily_limit}</span>
+                      <span>{account.daily_limit ?? 'N/A'}</span>
                     </div>
                     <div className='flex justify-between'>
                       <span>Used Today:</span>
@@ -165,7 +173,7 @@ function PlatformAccountsContent() {
                     </div>
                     <div className='flex justify-between'>
                       <span>Remaining:</span>
-                      <span>{account.remaining_quota}</span>
+                      <span>{account.remaining_quota ?? 'N/A'}</span>
                     </div>
                     <div className='flex justify-between'>
                       <span>Available:</span>

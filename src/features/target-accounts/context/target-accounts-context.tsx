@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { 
-  TargetAccount, 
-  QuickAddAccountRequest, 
-  UpdateTargetAccountRequest,
+import {
+  TargetAccount,
+  QuickAddAccountRequest,
+  TargetAccountUpdate,
   Video,
-  targetAccountAnalysisApi,
-  ApiResponse 
+  analysisApi,
+  AccountCrawlRequest,
+  BatchAccountCrawlRequest,
+  TriggerDownloadRequest,
 } from '@/lib/api'
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
@@ -36,8 +38,8 @@ interface TargetAccountsContextType {
   // Actions
   fetchTargetAccounts: () => Promise<void>
   createTargetAccount: (data: QuickAddAccountRequest) => Promise<TargetAccount | null>
-  updateTargetAccount: (id: string, data: UpdateTargetAccountRequest) => Promise<TargetAccount | null>
-  deleteTargetAccount: (id: string, force?: boolean) => Promise<boolean>
+  updateTargetAccount: (id: string, data: TargetAccountUpdate) => Promise<TargetAccount | null>
+  deleteTargetAccount: (id: string) => Promise<boolean>
   setFilters: (filters: Partial<TargetAccountsContextType['filters']>) => void
   setPagination: (pagination: Partial<TargetAccountsContextType['pagination']>) => void
   resetFilters: () => void
@@ -49,10 +51,10 @@ interface TargetAccountsContextType {
   handleBrowserNavigation: () => void
   
   // New enhanced actions
-  triggerAccountCrawl: (accountId: string, options?: { crawl_videos?: boolean; video_limit?: number }) => Promise<boolean>
-  batchTriggerCrawl: (accountIds: string[], options?: { crawl_videos?: boolean; video_limit?: number }) => Promise<boolean>
-  getAccountVideos: (accountId: string) => Promise<Video[] | null>
-  triggerVideoDownload: (videoIds: string[], priority?: number) => Promise<boolean>
+  triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest) => Promise<boolean>
+  batchTriggerCrawl: (data: BatchAccountCrawlRequest) => Promise<boolean>
+  getAccountVideos: (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }) => Promise<Video[] | null>
+  triggerVideoDownload: (data: TriggerDownloadRequest) => Promise<boolean>
 }
 
 const TargetAccountsContext = createContext<TargetAccountsContextType | undefined>(undefined)
@@ -87,21 +89,23 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
       setLoading(true)
       setError(null)
       
-      const response = await targetAccountAnalysisApi.getAccounts(
-        pagination.skip,
-        pagination.limit,
-        filters.isActive,
-        filters.category
-      )
-      
-      if (response.data.code === 0) {
-        setTargetAccounts(response.data.data)
+      const response = await analysisApi.getAccounts({
+        skip: pagination.skip,
+        limit: pagination.limit,
+        is_active: filters.isActive,
+        category: filters.category,
+      })
+
+      if (response.code === 0) {
+        setTargetAccounts(response.data)
+        // Assuming the API does not return total count, we might need to adjust this
+        // For now, we'll just use the length of the returned array
         setPaginationState(prev => ({
           ...prev,
-          total: response.data.data.length
+          total: response.data.length,
         }))
       } else {
-        setError(response.data.msg || 'Failed to fetch target accounts')
+        setError(response.msg || 'Failed to fetch target accounts')
       }
     } catch (error) {
       const errorMessage = handleServerError(error)
@@ -111,16 +115,16 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     } finally {
       setLoading(false)
     }
-  }, [pagination, filters])
+  }, [pagination.skip, pagination.limit, filters.isActive, filters.category])
 
   const createTargetAccount = useCallback(async (data: QuickAddAccountRequest): Promise<TargetAccount | null> => {
     try {
-      const response = await targetAccountAnalysisApi.quickAddAccount(data)
-      
+      const response = await analysisApi.quickAddAccount(data)
+
       if (response.data.code === 0) {
-        toast.success('Target account added and crawl tasks created successfully')
+        toast.success('Target account added successfully')
         await fetchTargetAccounts()
-        return response.data.data.account
+        return response.data.data
       } else {
         toast.error(response.data.msg || 'Failed to create target account')
         return null
@@ -132,16 +136,16 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [fetchTargetAccounts])
 
-  const updateTargetAccount = useCallback(async (id: string, data: UpdateTargetAccountRequest): Promise<TargetAccount | null> => {
+  const updateTargetAccount = useCallback(async (id: string, data: TargetAccountUpdate): Promise<TargetAccount | null> => {
     try {
-      const response = await targetAccountAnalysisApi.updateAccount(id, data)
-      
-      if (response.data.code === 0) {
+      const response = await analysisApi.updateAccount(id, data)
+
+      if (response.code === 0) {
         toast.success('Target account updated successfully')
         await fetchTargetAccounts()
-        return response.data.data
+        return response.data
       } else {
-        toast.error(response.data.msg || 'Failed to update target account')
+        toast.error(response.msg || 'Failed to update target account')
         return null
       }
     } catch (error) {
@@ -151,16 +155,17 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [fetchTargetAccounts])
 
-  const deleteTargetAccount = useCallback(async (id: string, force = false): Promise<boolean> => {
+  const deleteTargetAccount = useCallback(async (id: string): Promise<boolean> => {
     try {
-      const response = await targetAccountAnalysisApi.deleteAccount(id, { force })
-      
-      if (response.data.code === 0) {
+      // The new API expects an empty object for the body if no specific options are needed.
+      const response = await analysisApi.deleteAccount(id, {})
+
+      if (response.code === 0) {
         toast.success('Target account deleted successfully')
         await fetchTargetAccounts()
         return true
       } else {
-        toast.error(response.data.msg || 'Failed to delete target account')
+        toast.error(response.msg || 'Failed to delete target account')
         return false
       }
     } catch (error) {
@@ -171,13 +176,12 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
   }, [fetchTargetAccounts])
 
   // New enhanced methods
-  const triggerAccountCrawl = useCallback(async (accountId: string, options?: { crawl_videos?: boolean; video_limit?: number }): Promise<boolean> => {
+  const triggerAccountCrawl = useCallback(async (accountId: string, data: AccountCrawlRequest): Promise<boolean> => {
     try {
-      const response = await targetAccountAnalysisApi.triggerAccountCrawl(accountId, options)
-      
+      const response = await analysisApi.triggerAccountCrawl(accountId, data)
+
       if (response.data.code === 0) {
-        const taskCount = response.data.data.tasks.length
-        toast.success(`Created ${taskCount} crawl tasks for account ${accountId}`)
+        toast.success(`Successfully triggered crawl for account ${accountId}. Task ID: ${response.data.data.id}`)
         return true
       } else {
         toast.error(response.data.msg || 'Failed to trigger crawl')
@@ -190,17 +194,12 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [])
 
-  const batchTriggerCrawl = useCallback(async (accountIds: string[], options?: { crawl_videos?: boolean; video_limit?: number }): Promise<boolean> => {
+  const batchTriggerCrawl = useCallback(async (data: BatchAccountCrawlRequest): Promise<boolean> => {
     try {
-      const response = await targetAccountAnalysisApi.batchTriggerCrawl({
-        account_ids: accountIds,
-        ...options
-      })
-      
+      const response = await analysisApi.batchTriggerCrawl(data)
+
       if (response.data.code === 0) {
-        const results = response.data.data.results
-        const successCount = results.filter(r => r.status === 'success').length
-        toast.success(`Processed ${accountIds.length} accounts, ${successCount} successful`)
+        toast.success(response.data.data.message)
         return true
       } else {
         toast.error(response.data.msg || 'Failed to trigger batch crawl')
@@ -213,14 +212,14 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [])
 
-  const getAccountVideos = useCallback(async (accountId: string): Promise<Video[] | null> => {
+  const getAccountVideos = useCallback(async (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }): Promise<Video[] | null> => {
     try {
-      const response = await targetAccountAnalysisApi.getAccountVideos(accountId)
-      
-      if (response.data.code === 0) {
-        return response.data.data
+      const response = await analysisApi.getAccountVideos(accountId, params)
+
+      if (response.code === 0) {
+        return response.data
       } else {
-        toast.error(response.data.msg || 'Failed to fetch account videos')
+        toast.error(response.msg || 'Failed to fetch account videos')
         return null
       }
     } catch (error) {
@@ -230,16 +229,12 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [])
 
-  const triggerVideoDownload = useCallback(async (videoIds: string[], priority = 10): Promise<boolean> => {
+  const triggerVideoDownload = useCallback(async (data: TriggerDownloadRequest): Promise<boolean> => {
     try {
-      const response = await targetAccountAnalysisApi.triggerVideoDownload({
-        video_ids: videoIds,
-        priority
-      })
-      
+      const response = await analysisApi.triggerVideoDownload(data)
+
       if (response.data.code === 0) {
-        const { valid_videos, requested_videos } = response.data.data
-        toast.success(`Created ${valid_videos} download tasks out of ${requested_videos} requested`)
+        toast.success(response.data.data.message)
         return true
       } else {
         toast.error(response.data.msg || 'Failed to trigger video download')

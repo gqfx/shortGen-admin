@@ -10,7 +10,7 @@ import { IconSettings, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggle
 import ProjectTypesProvider, { useProjectTypes } from './context/project-types-context'
 import { ProjectTypesDialogs } from './components/project-types-dialogs'
 
-const getCategoryColor = (category: string) => {
+const getCategoryColor = (category?: string) => {
   switch (category) {
     case 'video':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'

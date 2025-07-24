@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +11,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -34,32 +33,33 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { IconCheck, IconX, IconToggleLeft, IconToggleRight } from '@tabler/icons-react'
+import { useQuery } from '@tanstack/react-query'
+import { workflowRegistryApi } from '@/lib/api'
 
-const createWorkflowSchema = z.object({
-  id: z.string().min(1, 'Workflow ID is required'),
+const workflowSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  workflow_type: z.enum(['inspiration', 'transform', 'execution'], {
-    required_error: 'Workflow type is required',
-  }),
-  version: z.string().min(1, 'Version is required'),
-  config: z.string().min(1, 'Configuration is required'),
-  is_active: z.boolean().default(true),
+  description: z.string().optional(),
+  workflow_type: z.string().min(1, 'Workflow type is required'),
+  n8n_webhook_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 })
 
-const updateWorkflowSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  workflow_type: z.enum(['inspiration', 'transform', 'execution'], {
-    required_error: 'Workflow type is required',
-  }),
-  version: z.string().min(1, 'Version is required'),
-  config: z.string().min(1, 'Configuration is required'),
-  is_active: z.boolean().default(true),
+const createWorkflowSchema = workflowSchema
+const updateWorkflowSchema = workflowSchema.pick({
+  name: true,
+  description: true,
+  n8n_webhook_url: true,
 })
 
 type CreateWorkflowValues = z.infer<typeof createWorkflowSchema>
 type UpdateWorkflowValues = z.infer<typeof updateWorkflowSchema>
+
+const useWorkflowTypes = () => {
+  const { data: workflowTypes = [], isLoading } = useQuery({
+    queryKey: ['workflow-types'],
+    queryFn: () => workflowRegistryApi.getTypes(),
+  })
+  return { workflowTypes, isLoading }
+}
 
 const getWorkflowTypeColor = (type: string) => {
   switch (type) {
@@ -93,17 +93,15 @@ export function WorkflowRegistryDialogs() {
     setSelectedWorkflow,
   } = useWorkflowRegistry()
 
-  const [configDisplayValue, setConfigDisplayValue] = useState('')
+  const { workflowTypes, isLoading: isLoadingTypes } = useWorkflowTypes()
 
   const createForm = useForm<CreateWorkflowValues>({
     resolver: zodResolver(createWorkflowSchema),
     defaultValues: {
-      id: '',
       name: '',
       description: '',
-      version: '1.0.0',
-      config: '{}',
-      is_active: true,
+      workflow_type: '',
+      n8n_webhook_url: '',
     },
   })
 
@@ -112,39 +110,19 @@ export function WorkflowRegistryDialogs() {
     defaultValues: {
       name: '',
       description: '',
-      version: '1.0.0',
-      config: '{}',
-      is_active: true,
+      n8n_webhook_url: '',
     },
   })
 
   const handleCreateSubmit = async (values: CreateWorkflowValues) => {
-    try {
-      const configObj = JSON.parse(values.config)
-      await createWorkflow({
-        ...values,
-        config: configObj,
-      })
-      createForm.reset()
-    } catch (error) {
-      console.error('Invalid JSON in config:', error)
-      createForm.setError('config', { message: 'Invalid JSON format' })
-    }
+    await createWorkflow(values)
+    createForm.reset()
   }
 
   const handleUpdateSubmit = async (values: UpdateWorkflowValues) => {
     if (!selectedWorkflow) return
-    try {
-      const configObj = JSON.parse(values.config)
-      await updateWorkflow(selectedWorkflow.id, {
-        ...values,
-        config: configObj,
-      })
-      updateForm.reset()
-    } catch (error) {
-      console.error('Invalid JSON in config:', error)
-      updateForm.setError('config', { message: 'Invalid JSON format' })
-    }
+    await updateWorkflow(selectedWorkflow.id, values)
+    updateForm.reset()
   }
 
   const handleDeleteConfirm = async () => {
@@ -165,23 +143,14 @@ export function WorkflowRegistryDialogs() {
   // Update form when selectedWorkflow changes
   React.useEffect(() => {
     if (selectedWorkflow && isEditDialogOpen) {
-      const configStr = JSON.stringify(selectedWorkflow.config, null, 2)
       updateForm.reset({
         name: selectedWorkflow.name,
-        description: selectedWorkflow.description,
-        workflow_type: selectedWorkflow.workflow_type,
-        version: selectedWorkflow.version,
-        config: configStr,
-        is_active: selectedWorkflow.is_active,
+        description: selectedWorkflow.description || '',
+        n8n_webhook_url: selectedWorkflow.n8n_webhook_url || '',
       })
     }
   }, [selectedWorkflow, isEditDialogOpen, updateForm])
 
-  React.useEffect(() => {
-    if (selectedWorkflow && isDetailDialogOpen) {
-      setConfigDisplayValue(JSON.stringify(selectedWorkflow.config, null, 2))
-    }
-  }, [selectedWorkflow, isDetailDialogOpen])
 
   return (
     <>
@@ -196,35 +165,6 @@ export function WorkflowRegistryDialogs() {
           </DialogHeader>
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(handleCreateSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={createForm.control}
-                  name="id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Workflow ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., dreamina_video_gen_v1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={createForm.control}
-                  name="version"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Version</FormLabel>
-                      <FormControl>
-                        <Input placeholder="1.0.0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
               <FormField
                 control={createForm.control}
                 name="name"
@@ -252,9 +192,13 @@ export function WorkflowRegistryDialogs() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="inspiration">Inspiration</SelectItem>
-                        <SelectItem value="transform">Transform</SelectItem>
-                        <SelectItem value="execution">Execution</SelectItem>
+                        {isLoadingTypes ? (
+                          <SelectItem value="loading" disabled>Loading types...</SelectItem>
+                        ) : (
+                          workflowTypes.map((type: string) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -282,36 +226,14 @@ export function WorkflowRegistryDialogs() {
 
               <FormField
                 control={createForm.control}
-                name="config"
+                name="n8n_webhook_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Configuration (JSON)</FormLabel>
+                    <FormLabel>n8n Webhook URL</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder='{"platform": "dreamina", "model": "video_gen_model"}'
-                        className="min-h-[120px] font-mono text-sm"
-                        {...field}
-                      />
+                      <Input placeholder="https://n8n.example.com/webhook/..." {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={createForm.control}
-                name="is_active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Active Status</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Enable this workflow for use in the system
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -338,27 +260,6 @@ export function WorkflowRegistryDialogs() {
           </DialogHeader>
           <Form {...updateForm}>
             <form onSubmit={updateForm.handleSubmit(handleUpdateSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Workflow ID</Label>
-                  <Input value={selectedWorkflow?.id || ''} disabled className="bg-muted" />
-                  <div className="text-xs text-muted-foreground mt-1">ID cannot be changed</div>
-                </div>
-                <FormField
-                  control={updateForm.control}
-                  name="version"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Version</FormLabel>
-                      <FormControl>
-                        <Input placeholder="1.0.0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
               <FormField
                 control={updateForm.control}
                 name="name"
@@ -373,28 +274,11 @@ export function WorkflowRegistryDialogs() {
                 )}
               />
 
-              <FormField
-                control={updateForm.control}
-                name="workflow_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Workflow Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select workflow type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="inspiration">Inspiration</SelectItem>
-                        <SelectItem value="transform">Transform</SelectItem>
-                        <SelectItem value="execution">Execution</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div>
+                <Label>Workflow Type</Label>
+                <Input value={selectedWorkflow?.workflow_type || ''} disabled className="bg-muted" />
+                <div className="text-xs text-muted-foreground mt-1">Type cannot be changed after creation</div>
+              </div>
 
               <FormField
                 control={updateForm.control}
@@ -416,36 +300,14 @@ export function WorkflowRegistryDialogs() {
 
               <FormField
                 control={updateForm.control}
-                name="config"
+                name="n8n_webhook_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Configuration (JSON)</FormLabel>
+                    <FormLabel>n8n Webhook URL</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder='{"platform": "dreamina", "model": "video_gen_model"}'
-                        className="min-h-[120px] font-mono text-sm"
-                        {...field}
-                      />
+                      <Input placeholder="https://n8n.example.com/webhook/..." {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={updateForm.control}
-                name="is_active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Active Status</FormLabel>
-                      <div className="text-sm text-muted-foreground">
-                        Enable this workflow for use in the system
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -494,10 +356,6 @@ export function WorkflowRegistryDialogs() {
                   <Label className="text-sm font-medium">Workflow ID</Label>
                   <div className="text-sm text-muted-foreground font-mono">{selectedWorkflow.id}</div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Version</Label>
-                  <div className="text-sm text-muted-foreground">{selectedWorkflow.version}</div>
-                </div>
               </div>
               
               <div>
@@ -506,12 +364,10 @@ export function WorkflowRegistryDialogs() {
               </div>
               
               <div>
-                <Label className="text-sm font-medium">Configuration</Label>
-                <pre className="mt-1 p-3 bg-muted rounded-md text-xs overflow-auto max-h-[200px] font-mono">
-                  {configDisplayValue}
-                </pre>
+                <Label className="text-sm font-medium">n8n Webhook URL</Label>
+                <div className="text-sm text-muted-foreground font-mono">{selectedWorkflow.n8n_webhook_url || 'Not set'}</div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <Label className="text-sm font-medium">Created</Label>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { tasksApi, Task } from '@/lib/api'
+import { tasksApi } from '@/lib/api'
+import { Task } from '@/features/tasks/data/schema'
 import { toast } from 'sonner'
 import useDialogState from '@/hooks/use-dialog-state'
-import { CreateTaskRequest, UpdateTaskRequest } from '@/lib/api'
 
 type TasksDialogType = 'create' | 'update' | 'delete' | 'import' | 'detail'
 
@@ -28,8 +28,6 @@ interface TasksContextType {
   // API operations
   createTask: (data: unknown) => Promise<void>
   updateTask: (id: string, data: unknown) => Promise<void>
-  deleteTask: (id: string) => Promise<void>
-  claimTasks: (taskTypes: string[]) => Promise<void>
   enqueueTask: (id: string) => Promise<void>
   refreshTasks: () => void
 }
@@ -49,18 +47,18 @@ export default function TasksProvider({ children }: Props) {
   const { data: apiResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const response = await tasksApi.getAll(0, 100)
+      const response = await tasksApi.listTasks({})
       return response
     },
     retry: false,
     refetchOnWindowFocus: false,
   })
 
-  const tasks = apiResponse?.data?.data || []
+  const tasks = apiResponse?.data.data || []
 
   // Create task mutation
   const createMutation = useMutation({
-    mutationFn: (data: unknown) => tasksApi.create(data as CreateTaskRequest),
+    mutationFn: (data: unknown) => tasksApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       toast.success('Task created successfully')
@@ -75,7 +73,7 @@ export default function TasksProvider({ children }: Props) {
   // Update task mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: unknown }) =>
-      tasksApi.update(id, data as UpdateTaskRequest),
+      tasksApi.updateStatus(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       toast.success('Task updated successfully')
@@ -88,33 +86,6 @@ export default function TasksProvider({ children }: Props) {
     },
   })
 
-  // Delete task mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => tasksApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Task deleted successfully')
-      setOpen(null)
-      setCurrentRow(null)
-    },
-    onError: (error: Error) => {
-      const apiError = error as ApiError
-      toast.error(`Failed to delete task: ${apiError.response?.data?.msg || apiError.message}`)
-    },
-  })
-
-  // Claim tasks mutation
-  const claimMutation = useMutation({
-    mutationFn: (taskTypes: string[]) => tasksApi.claim(taskTypes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Tasks claimed successfully')
-    },
-    onError: (error: Error) => {
-      const apiError = error as ApiError
-      toast.error(`Failed to claim tasks: ${apiError.response?.data?.msg || apiError.message}`)
-    },
-  })
 
   // Enqueue task mutation
   const enqueueMutation = useMutation({
@@ -141,13 +112,6 @@ export default function TasksProvider({ children }: Props) {
     await updateMutation.mutateAsync({ id, data })
   }
 
-  const deleteTask = async (id: string) => {
-    await deleteMutation.mutateAsync(id)
-  }
-
-  const claimTasks = async (taskTypes: string[]) => {
-    await claimMutation.mutateAsync(taskTypes)
-  }
 
   const enqueueTask = async (id: string) => {
     await enqueueMutation.mutateAsync(id)
@@ -165,8 +129,6 @@ export default function TasksProvider({ children }: Props) {
         error,
         createTask,
         updateTask,
-        deleteTask,
-        claimTasks,
         enqueueTask,
         refreshTasks,
       }}

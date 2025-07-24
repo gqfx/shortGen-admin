@@ -6,9 +6,11 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconAdjustments, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye } from '@tabler/icons-react'
+import { IconAdjustments, IconPlus, IconEdit, IconTrash, IconToggleLeft, IconToggleRight, IconEye, IconClipboardCheck } from '@tabler/icons-react'
 import WorkerConfigsProvider, { useWorkerConfigs } from './context/worker-configs-context'
 import { WorkerConfigDialogs } from './components/worker-config-dialogs'
+import { WorkerConfigAssignmentDialog } from './components/worker-config-assignment-dialog'
+import { WorkerConfig } from '@/lib/api'
 
 const getConfigTypeColor = (type: string) => {
   switch (type) {
@@ -49,31 +51,32 @@ function WorkerConfigsContent() {
     setIsDeleteDialogOpen,
     setIsDetailDialogOpen,
     updateConfig,
+    isAssignDialogOpen,
+    setIsAssignDialogOpen,
   } = useWorkerConfigs()
 
-  const handleEdit = (config: any) => {
+  const handleEdit = (config: WorkerConfig) => {
     setSelectedConfig(config)
     setIsEditDialogOpen(true)
   }
 
-  const handleDelete = (config: any) => {
+  const handleDelete = (config: WorkerConfig) => {
     setSelectedConfig(config)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleViewDetails = (config: any) => {
+  const handleViewDetails = (config: WorkerConfig) => {
     setSelectedConfig(config)
     setIsDetailDialogOpen(true)
   }
 
-  const handleToggleActive = async (config: any) => {
+  const handleToggleActive = async (config: WorkerConfig) => {
     try {
       await updateConfig(config.id, {
-        ...config,
         is_active: !config.is_active,
       })
-    } catch (error) {
-      console.error('Failed to toggle config status:', error)
+    } catch (_error) {
+      // Error is already handled by the context's toast messages
     }
   }
 
@@ -99,6 +102,10 @@ function WorkerConfigsContent() {
             <IconPlus className='mr-2 h-4 w-4' />
             Add Configuration
           </Button>
+          <Button onClick={() => setIsAssignDialogOpen(true)} variant="outline">
+            <IconClipboardCheck className='mr-2 h-4 w-4' />
+            Assign to Task
+          </Button>
         </div>
 
         {isLoading ? (
@@ -123,9 +130,9 @@ function WorkerConfigsContent() {
                       <IconAdjustments className='h-5 w-5 text-muted-foreground' />
                       <Badge 
                         variant='secondary' 
-                        className={getWorkerTypeColor(config.worker_type)}
+                        className={getWorkerTypeColor(config.worker_type || '')}
                       >
-                        {config.worker_type}
+                        {config.worker_type || 'N/A'}
                       </Badge>
                       <Badge 
                         variant='outline' 
@@ -173,7 +180,7 @@ function WorkerConfigsContent() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <CardTitle className='text-lg mb-2'>{config.config_name || config.name}</CardTitle>
+                  <CardTitle className='text-lg mb-2'>{config.config_name}</CardTitle>
                   <CardDescription className='mb-4'>
                     {config.description}
                   </CardDescription>
@@ -189,8 +196,8 @@ function WorkerConfigsContent() {
                       </span>
                     </div>
                     <div className='flex justify-between'>
-                      <span>Version:</span>
-                      <span>{config.version || '1.0'}</span>
+                      <span></span>
+                      <span></span>
                     </div>
                   </div>
                 </CardContent>
@@ -201,6 +208,10 @@ function WorkerConfigsContent() {
       </Main>
 
       <WorkerConfigDialogs />
+      <WorkerConfigAssignmentDialog
+        isAssignDialogOpen={isAssignDialogOpen}
+        setIsAssignDialogOpen={setIsAssignDialogOpen}
+      />
     </>
   )
 }

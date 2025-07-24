@@ -8,9 +8,6 @@ import {
   IconAdjustments,
   IconGitBranch,
   IconUsers,
-  IconVideo,
-  IconChartLine,
-  IconDeviceDesktop,
 } from '@tabler/icons-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -101,16 +98,6 @@ export const sidebarData: SidebarData = {
           title: 'Monitoring Tasks',
           url: '/monitoring-tasks',
           icon: IconChecklist,
-        },
-        {
-          title: 'Videos',
-          url: '/target-videos',
-          icon: IconVideo,
-        },
-        {
-          title: 'Statistics',
-          url: '/target-statistics',
-          icon: IconChartLine,
         },
       ],
     },

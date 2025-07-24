@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { projectTypesApi, ProjectType } from '@/lib/api'
+import { projectTypesApi, ProjectType, ProjectTypeCreate, ProjectTypeUpdate } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface ProjectTypesContextType {
@@ -9,7 +9,9 @@ interface ProjectTypesContextType {
   error: any
   selectedProjectType: ProjectType | null
   setSelectedProjectType: React.Dispatch<React.SetStateAction<ProjectType | null>>
-  
+  categories: string[]
+  isLoadingCategories: boolean
+
   // Dialog states
   isCreateDialogOpen: boolean
   setIsCreateDialogOpen: (open: boolean) => void
@@ -19,10 +21,10 @@ interface ProjectTypesContextType {
   setIsDeleteDialogOpen: (open: boolean) => void
   isDetailDialogOpen: boolean
   setIsDetailDialogOpen: (open: boolean) => void
-  
+
   // API operations
-  createProjectType: (data: any) => Promise<void>
-  updateProjectType: (code: string, data: any) => Promise<void>
+  createProjectType: (data: ProjectTypeCreate) => Promise<void>
+  updateProjectType: (code: string, data: ProjectTypeUpdate) => Promise<void>
   deleteProjectType: (code: string) => Promise<void>
   activateProjectType: (code: string) => Promise<void>
   deactivateProjectType: (code: string) => Promise<void>
@@ -65,9 +67,18 @@ export default function ProjectTypesProvider({ children }: Props) {
   const projectTypes = apiResponse?.data?.data || []
   console.log('📊 Processed project types:', projectTypes)
 
+  // Fetch categories
+  const { data: categoriesResponse, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['project-type-categories'],
+    queryFn: () => projectTypesApi.getCategories(),
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+  const categories = categoriesResponse?.data?.data || []
+
   // Create project type mutation
   const createMutation = useMutation({
-    mutationFn: (data: any) => projectTypesApi.create(data),
+    mutationFn: (data: ProjectTypeCreate) => projectTypesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-types'] })
       toast.success('Project type created successfully')
@@ -80,7 +91,7 @@ export default function ProjectTypesProvider({ children }: Props) {
 
   // Update project type mutation
   const updateMutation = useMutation({
-    mutationFn: ({ code, data }: { code: string; data: any }) => projectTypesApi.update(code, data),
+    mutationFn: ({ code, data }: { code: string; data: ProjectTypeUpdate }) => projectTypesApi.update(code, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-types'] })
       toast.success('Project type updated successfully')
@@ -147,11 +158,11 @@ export default function ProjectTypesProvider({ children }: Props) {
     refetch()
   }
 
-  const createProjectType = async (data: any) => {
+  const createProjectType = async (data: ProjectTypeCreate) => {
     await createMutation.mutateAsync(data)
   }
 
-  const updateProjectType = async (code: string, data: any) => {
+  const updateProjectType = async (code: string, data: ProjectTypeUpdate) => {
     await updateMutation.mutateAsync({ code, data })
   }
 
@@ -179,6 +190,8 @@ export default function ProjectTypesProvider({ children }: Props) {
         error,
         selectedProjectType,
         setSelectedProjectType,
+        categories,
+        isLoadingCategories,
         isCreateDialogOpen,
         setIsCreateDialogOpen,
         isEditDialogOpen,

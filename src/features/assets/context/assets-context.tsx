@@ -37,23 +37,10 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Fetch assets
-  const { data: apiResponse, isLoading, refetch } = useQuery({
+  const { data: assets = [], isLoading, refetch } = useQuery<Asset[]>({
     queryKey: ['assets'],
-    queryFn: async () => {
-      console.log('🔄 Fetching assets from API...')
-      try {
-        const response = await assetsApi.getAll(0, 100)
-        console.log('✅ Assets API Response:', response.data)
-        return response
-      } catch (err) {
-        console.error('❌ Assets API Error:', err)
-        throw err
-      }
-    },
+    queryFn: () => assetsApi.getAll(0, 100),
   })
-
-  const assets = apiResponse?.data?.data || []
-  console.log('📊 Processed assets:', assets)
 
   const refreshAssets = () => {
     refetch()
