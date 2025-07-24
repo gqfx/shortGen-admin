@@ -1,21 +1,27 @@
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { ArrowLeft, Home, ChevronRight, RefreshCw, Menu } from 'lucide-react'
+import { Home, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { AccountDetailProvider, useAccountDetail } from '../context/account-detail-context'
 import { AccountStatistics } from './account-statistics'
 import { VideoFilters } from './video-filters'
 import { VideoList } from './video-list'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { ChevronsUpDown } from 'lucide-react'
+
 
 function AccountDetailContent() {
-  const { accountId } = useParams({ from: '/target-accounts/$accountId' })
+  const { accountId: _accountId } = useParams({ from: '/target-accounts/$accountId' })
   const navigate = useNavigate()
-  const { account, loading, error, refreshAccountData } = useAccountDetail()
-  const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { account, loading, error } = useAccountDetail()
+  const { isMobile } = useResponsive()
   const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
 
   const handleBack = () => {
@@ -28,10 +34,6 @@ function AccountDetailContent() {
 
   const handleAccountsClick = () => {
     navigate({ to: '/target-accounts' })
-  }
-
-  const handleRefresh = async () => {
-    await refreshAccountData()
   }
 
   // Keyboard navigation support
@@ -53,10 +55,6 @@ function AccountDetailContent() {
             event.preventDefault()
             handleHomeClick()
             break
-          case 'r':
-            event.preventDefault()
-            handleRefresh()
-            break
         }
       }
 
@@ -67,7 +65,7 @@ function AccountDetailContent() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleBack, handleHomeClick, handleRefresh])
+  }, [handleBack, handleHomeClick])
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,49 +105,27 @@ function AccountDetailContent() {
           </span>
         </nav>
 
-        {/* Responsive Header Section */}
-        <div className={`flex flex-col ${isDesktop ? 'lg:flex-row lg:items-center lg:justify-between' : ''} gap-4`}>
-          <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
-            <Button
-              variant="outline"
-              size={isMobile ? "default" : "sm"}
-              onClick={handleBack}
-              className={`${touchTargetSize} flex items-center gap-2 ${isMobile ? 'w-full justify-center' : ''}`}
-              aria-label="Go back to target accounts list"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span className={isMobile ? '' : 'hidden sm:inline'}>Back to Accounts</span>
-              <span className={isMobile ? 'hidden' : 'sm:hidden'}>Back</span>
+        <Collapsible defaultOpen className="w-full">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex justify-between items-center px-4 py-2">
+              <h2 className="text-lg font-semibold">Account Overview</h2>
+              <ChevronsUpDown className="h-4 w-4" />
             </Button>
-            <div className={isMobile ? 'text-center' : ''}>
-              <h1 
-                className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold`}
-                id="account-detail-title"
-              >
-                {loading ? 'Loading...' : account?.display_name || 'Account Detail'}
-              </h1>
-              <p 
-                className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground mt-1`}
-                aria-describedby="account-detail-title"
-              >
-                {loading ? `Account ID: ${accountId}` : `@${account?.username || 'unknown'}`}
-              </p>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            {/* Account Statistics Section */}
+            <AccountStatistics 
+              account={account} 
+              loading={loading}
+              className={isMobile ? 'mb-4' : 'mb-6'}
+            />
+
+            {/* Last Updated Info */}
+            <div className="text-sm text-muted-foreground px-4">
+              Last Updated: {account?.updated_at ? new Date(account.updated_at).toLocaleString() : 'N/A'}
             </div>
-          </div>
-          <div className={`flex items-center ${touchSpacing} ${isMobile ? 'justify-center' : ''}`}>
-            <Button
-              variant="outline"
-              size={isMobile ? "default" : "sm"}
-              onClick={handleRefresh}
-              disabled={loading}
-              className={`${touchTargetSize} flex items-center gap-2 ${isMobile ? 'px-6' : ''}`}
-              aria-label={loading ? 'Refreshing account data' : 'Refresh account data'}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-              <span className={isMobile ? '' : 'hidden sm:inline'}>Refresh</span>
-            </Button>
-          </div>
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <Separator className={isMobile ? 'my-4' : ''} />
 
@@ -165,80 +141,15 @@ function AccountDetailContent() {
           </Card>
         )}
 
-        {/* Account Statistics Section */}
-        <AccountStatistics 
-          account={account} 
-          loading={loading}
-          className={isMobile ? 'mb-4' : 'mb-6'}
-        />
-
-        {/* Video Filters Section */}
-        <VideoFilters />
-
-        {/* Responsive Main Content Layout */}
-        {isDesktop ? (
-          <div className="grid gap-6 lg:grid-cols-12">
-            {/* Left Column - Video Management */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Video Management Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Video Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Additional video management tools and analytics will be available here
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Quick Actions */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* Quick Actions Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Quick actions will be available once account data is loaded
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        ) : (
-          /* Mobile/Tablet Stacked Layout */
-          <div className="space-y-4">
-            {/* Quick Actions Card - Moved to top on mobile */}
-            <Card>
-              <CardHeader className={touchPadding}>
-                <CardTitle className={isMobile ? 'text-lg' : ''}>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className={touchPadding}>
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
-                  Quick actions will be available once account data is loaded
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Video Management Section */}
-            <Card>
-              <CardHeader className={touchPadding}>
-                <CardTitle className={isMobile ? 'text-lg' : ''}>Video Management</CardTitle>
-              </CardHeader>
-              <CardContent className={touchPadding}>
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
-                  Additional video management tools and analytics will be available here
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Full Width Section for Video List */}
-        <VideoList />
+        {/* Full Width Section for Video List with Filters */}
+        <Card>
+          <CardHeader>
+            <VideoFilters />
+          </CardHeader>
+          <CardContent>
+            <VideoList />
+          </CardContent>
+        </Card>
       </main>
     </div>
   )

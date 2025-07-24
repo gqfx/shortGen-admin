@@ -125,7 +125,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
     queryKey: ['taskTypes'],
     queryFn: async () => {
       const res = await tasksApi.getTaskTypes()
-      return res.data.data || []
+      return res.data || []
     },
   })
 
@@ -133,7 +133,7 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
     queryKey: ['projects'],
     queryFn: async () => {
       const res = await projectsApi.getAll(0, 100)
-      return res.data.data || []
+      return res.data || []
     },
   })
 

@@ -1,15 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { 
-  Users, 
-  Calendar, 
-  Video, 
-  Eye, 
-  Clock, 
-  FileText,
-  TrendingUp,
-  CheckCircle
+import {
+  Users,
+  Calendar,
+  Video,
+  Eye,
+  Clock
 } from 'lucide-react'
 import { TargetAccount } from '@/lib/api'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
@@ -20,92 +16,6 @@ interface AccountStatisticsProps {
   className?: string
 }
 
-interface StatCardProps {
-  title: string
-  value: string | number
-  icon: React.ReactNode
-  loading?: boolean
-  placeholder?: string
-  description?: string
-  trend?: {
-    value: number
-    isPositive: boolean
-  }
-}
-
-function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  loading = false, 
-  placeholder = 'N/A',
-  description,
-  trend 
-}: StatCardProps) {
-  const { isMobile } = useResponsive()
-  const { touchPadding } = useTouchFriendly()
-  
-  const cardId = `stat-${title.toLowerCase().replace(/\s+/g, '-')}`
-  const valueText = loading ? 'Loading' : (value || placeholder).toString()
-  
-  return (
-    <Card 
-      className="h-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200" 
-      role="region" 
-      aria-labelledby={`${cardId}-title`}
-      aria-describedby={`${cardId}-description`}
-      tabIndex={0}
-    >
-      <CardContent className={isMobile ? touchPadding : "p-4 sm:p-6"}>
-        <div className={`flex items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'}`}>
-          <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-            <div className="text-muted-foreground" aria-hidden="true">{icon}</div>
-            <p 
-              id={`${cardId}-title`}
-              className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}
-            >
-              {title}
-            </p>
-          </div>
-          {trend && (
-            <div 
-              className={`flex items-center space-x-1 ${isMobile ? 'text-xs' : 'text-xs'} ${
-                trend.isPositive ? 'text-green-600' : 'text-red-600'
-              }`}
-              aria-label={`Trend: ${trend.isPositive ? 'positive' : 'negative'} ${trend.value} percent`}
-            >
-              <TrendingUp className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} aria-hidden="true" />
-              <span aria-hidden="true">{trend.isPositive ? '+' : ''}{trend.value}%</span>
-            </div>
-          )}
-        </div>
-        <div className="space-y-1">
-          {loading ? (
-            <Skeleton className={`${isMobile ? 'h-6 w-20' : 'h-8 w-24'}`} aria-label="Loading statistic value" />
-          ) : (
-            <div 
-              className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}
-              aria-label={`${title}: ${valueText}`}
-            >
-              {value || placeholder}
-            </div>
-          )}
-          {description && !loading && (
-            <p 
-              id={`${cardId}-description`}
-              className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground line-clamp-2`}
-            >
-              {description}
-            </p>
-          )}
-          {loading && description && (
-            <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} aria-label="Loading description" />
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
 
 function formatNumber(num: number): string {
   if (num >= 1000000) {
@@ -152,200 +62,71 @@ function getRelativeTime(dateString: string | null): string {
 }
 
 export function AccountStatistics({ account, loading = false, className }: AccountStatisticsProps) {
-  const { isMobile, isTablet } = useResponsive()
-  const { touchPadding, touchSpacing } = useTouchFriendly()
-  
+  useResponsive()
+  useTouchFriendly()
+
+  const latest_snapshot = account?.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+
   const accountAge = account?.published_at ?
     Math.floor((new Date().getTime() - new Date(account.published_at).getTime()) / (1000 * 60 * 60 * 24)) : 0
 
+  const statItems = [
+    {
+      title: "Subscribers",
+      value: latest_snapshot?.subscriber_count ? formatNumber(latest_snapshot.subscriber_count) : 'N/A',
+      icon: <Users className="h-4 w-4" />,
+      description: latest_snapshot?.subscriber_count ? `${latest_snapshot.subscriber_count.toLocaleString()} total subscribers` : undefined,
+    },
+    {
+      title: "Account Created",
+      value: formatDate(account?.published_at || null),
+      icon: <Calendar className="h-4 w-4" />,
+      description: account?.published_at ? `${accountAge} days ago` : undefined,
+    },
+    {
+      title: "Total Videos",
+      value: latest_snapshot?.total_videos_count ? formatNumber(latest_snapshot.total_videos_count) : 'N/A',
+      icon: <Video className="h-4 w-4" />,
+      description: latest_snapshot?.total_videos_count ? `${latest_snapshot.total_videos_count.toLocaleString()} videos` : "Videos in this account",
+    },
+    {
+      title: "Total Views",
+      value: latest_snapshot?.total_views ? formatNumber(latest_snapshot.total_views) : 'N/A',
+      icon: <Eye className="h-4 w-4" />,
+      description: "Across all videos",
+    },
+    {
+      title: "Last Crawled",
+      value: getRelativeTime(account?.last_crawled_at || null),
+      icon: <Clock className="h-4 w-4" />,
+      description: account?.last_crawled_at ? formatDate(account.last_crawled_at) : 'Never crawled',
+    }
+  ];
+
   return (
-    <div className={className}>
-      {/* Account Overview Card */}
-      <Card className={isMobile ? 'mb-4' : 'mb-6'} role="region" aria-labelledby="account-overview-title">
-        <CardHeader className={isMobile ? touchPadding : ''}>
-          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center justify-between'}`}>
-            <CardTitle 
-              id="account-overview-title"
-              className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}
-            >
-              <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} aria-hidden="true" />
-              <span className={isMobile ? 'text-base' : ''}>Account Overview</span>
-            </CardTitle>
-            {account?.is_verified && (
-              <Badge 
-                variant="secondary" 
-                className={`flex items-center ${isMobile ? 'space-x-1 self-start' : 'space-x-1'}`}
-                aria-label="This account is verified"
-              >
-                <CheckCircle className="h-3 w-3" aria-hidden="true" />
-                <span className={isMobile ? 'text-xs' : ''}>Verified</span>
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className={isMobile ? touchPadding : ''}>
-          <div className={`space-y-${isMobile ? '3' : '4'}`}>
-            {/* Account Name and Username */}
-            <div className="space-y-2">
+    <Card className={className}>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-2">
+          {statItems.map((item, index) => (
+            <div key={index} className="flex flex-col space-y-1">
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                {item.icon}
+                <p className="text-sm font-medium">{item.title}</p>
+              </div>
               {loading ? (
-                <>
-                  <Skeleton className={`${isMobile ? 'h-5 w-40' : 'h-6 w-48'}`} />
-                  <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
-                </>
+                <Skeleton className="h-8 w-24" />
               ) : (
-                <>
-                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>
-                    {account?.display_name || 'Unknown Account'}
-                  </h3>
-                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
-                    @{account?.username || 'unknown'}
-                  </p>
-                </>
+                <div className="text-2xl font-bold">{item.value}</div>
+              )}
+              {loading ? (
+                <Skeleton className="h-4 w-full" />
+              ) : (
+                <p className="text-xs text-muted-foreground">{item.description}</p>
               )}
             </div>
-            
-            {/* Account Description */}
-            <div className="space-y-2">
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
-                Description
-              </p>
-              {loading ? (
-                <div className="space-y-2">
-                  <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} />
-                  <Skeleton className={`${isMobile ? 'h-3 w-3/4' : 'h-4 w-3/4'}`} />
-                </div>
-              ) : (
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'} leading-relaxed`}>
-                  {account?.description || 'No description available'}
-                </p>
-              )}
-            </div>
-
-            {/* Category and Status */}
-            <div className={`flex flex-wrap ${touchSpacing}`}>
-              {loading ? (
-                <>
-                  <Skeleton className={`${isMobile ? 'h-5 w-14' : 'h-6 w-16'}`} />
-                  <Skeleton className={`${isMobile ? 'h-5 w-14' : 'h-6 w-16'}`} />
-                </>
-              ) : (
-                <>
-                  {account?.category && (
-                    <Badge variant="outline" className={isMobile ? 'text-xs px-2 py-1' : ''}>
-                      {account.category}
-                    </Badge>
-                  )}
-                  <Badge 
-                    variant={account?.is_active ? 'default' : 'secondary'}
-                    className={isMobile ? 'text-xs px-2 py-1' : ''}
-                  >
-                    {account?.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Responsive Statistics Grid */}
-      <div 
-        className={`grid gap-${isMobile ? '3' : '4'} ${
-          isMobile ? 'grid-cols-2' : isTablet ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'
-        }`}
-        role="region"
-        aria-label="Account statistics"
-      >
-        {/* Subscriber Count */}
-        <StatCard
-          title="Subscribers"
-          value={account?.latest_snapshot?.subscriber_count ? formatNumber(account.latest_snapshot.subscriber_count) : 'N/A'}
-          icon={<Users className="h-4 w-4" />}
-          loading={loading}
-          description={account?.latest_snapshot?.subscriber_count ? `${account.latest_snapshot.subscriber_count.toLocaleString()} total subscribers` : undefined}
-        />
-
-        {/* Account Creation Date */}
-        <StatCard
-          title="Account Created"
-          value={formatDate(account?.published_at || null)}
-          icon={<Calendar className="h-4 w-4" />}
-          loading={loading}
-          description={account?.published_at ? `${accountAge} days ago` : undefined}
-        />
-
-        {/* Total Videos (placeholder - would come from API) */}
-        <StatCard
-          title="Total Videos"
-          value={account?.latest_snapshot?.total_videos_count ? formatNumber(account.latest_snapshot.total_videos_count) : 'N/A'}
-          icon={<Video className="h-4 w-4" />}
-          loading={loading}
-          placeholder="Loading..."
-          description={account?.latest_snapshot?.total_videos_count ? `${account.latest_snapshot.total_videos_count.toLocaleString()} videos in this account` : "Videos in this account"}
-        />
-
-        {/* Total Views (placeholder - would come from API) */}
-        <StatCard
-          title="Total Views"
-          value={account?.latest_snapshot?.total_views ? formatNumber(account.latest_snapshot.total_views) : 'N/A'}
-          icon={<Eye className="h-4 w-4" />}
-          loading={loading}
-          placeholder="Loading..."
-          description="Across all videos"
-        />
-
-        {/* Last Crawled */}
-        <StatCard
-          title="Last Crawled"
-          value={getRelativeTime(account?.last_crawled_at || null)}
-          icon={<Clock className="h-4 w-4" />}
-          loading={loading}
-          description={account?.last_crawled_at ? formatDate(account.last_crawled_at) : 'Never crawled'}
-        />
-
-      </div>
-
-      {/* Additional Information Card */}
-      <Card className={isMobile ? 'mt-4' : 'mt-6'} role="region" aria-labelledby="account-details-title">
-        <CardHeader className={isMobile ? touchPadding : ''}>
-          <CardTitle 
-            id="account-details-title"
-            className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}
-          >
-            <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} aria-hidden="true" />
-            <span className={isMobile ? 'text-base' : ''}>Account Details</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className={isMobile ? touchPadding : ''}>
-          <div className={`grid gap-${isMobile ? '3' : '4'} ${isMobile ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
-            <div className="space-y-2">
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
-                Account ID
-              </p>
-              {loading ? (
-                <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
-              ) : (
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-mono bg-muted px-2 py-1 rounded break-all`}>
-                  {account?.account_id || 'N/A'}
-                </p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>
-                Last Updated
-              </p>
-              {loading ? (
-                <Skeleton className={`${isMobile ? 'h-3 w-28' : 'h-4 w-32'}`} />
-              ) : (
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
-                  {formatDate(account?.updated_at || null)}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

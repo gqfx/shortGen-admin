@@ -49,14 +49,14 @@ interface AccountDetailContextType {
   setPagination: (pagination: Partial<AccountDetailContextType['pagination']>) => void
 }
 
-interface VideoFilters {
+export interface VideoFilters {
   dateRange?: {
     start: string
     end: string
   }
   status?: 'all' | 'downloaded' | 'not_downloaded' | 'analyzed'
-  videoType?: 'all' | 'long' | 'short' | 'live'
   searchQuery?: string
+  sortBy?: 'views_desc' | 'date_desc'
 }
 
 const AccountDetailContext = createContext<AccountDetailContextType | undefined>(undefined)
@@ -221,6 +221,12 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     // TODO: Add other filters from currentFilters here
     setComponentVideos(filtered)
   }, [allVideos, currentFilters])
+
+  useEffect(() => {
+    if (currentFilters.sortBy) {
+      fetchAccountVideos(accountId, { sort_by: currentFilters.sortBy })
+    }
+  }, [currentFilters.sortBy, accountId, fetchAccountVideos])
 
   useEffect(() => {
     setComponentVideos(storeVideos)

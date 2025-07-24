@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 interface WorkflowRegistryContextType {
   workflows: WorkflowRegistry[]
   isLoading: boolean
-  error: any
+  error: Error | null
   selectedWorkflow: WorkflowRegistry | null
   setSelectedWorkflow: React.Dispatch<React.SetStateAction<WorkflowRegistry | null>>
   
@@ -44,25 +44,22 @@ export default function WorkflowRegistryProvider({ children }: Props) {
   const queryClient = useQueryClient()
 
   // Fetch workflows
-  const { data: apiResponse, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['workflow-registry'],
     queryFn: async () => {
-      console.log('🔄 Fetching workflows from API...')
       try {
-        const response = await workflowRegistryApi.getAll(0, 100)
-        console.log('✅ Workflows API Response:', response)
-        return response
+        return await workflowRegistryApi.getAll(0, 100)
       } catch (err) {
-        console.error('❌ Workflows API Error:', err)
-        throw err
+        const error = err as Error & { response?: { data?: { msg?: string } } };
+        toast.error(`Failed to fetch workflows: ${error.response?.data?.msg || error.message}`)
+        throw error
       }
     },
     retry: false,
     refetchOnWindowFocus: false,
   })
 
-  const workflows = apiResponse || []
-  console.log('📊 Processed workflows:', workflows)
+  const workflows = data?.data || []
 
   // Create workflow mutation
   const createMutation = useMutation({
@@ -72,7 +69,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       toast.success('Workflow created successfully')
       setIsCreateDialogOpen(false)
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { msg?: string } } }) => {
       toast.error(`Failed to create workflow: ${error.response?.data?.msg || error.message}`)
     },
   })
@@ -86,7 +83,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       setIsEditDialogOpen(false)
       setSelectedWorkflow(null)
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { msg?: string } } }) => {
       toast.error(`Failed to update workflow: ${error.response?.data?.msg || error.message}`)
     },
   })
@@ -100,7 +97,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       setIsDeleteDialogOpen(false)
       setSelectedWorkflow(null)
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { msg?: string } } }) => {
       toast.error(`Failed to delete workflow: ${error.response?.data?.msg || error.message}`)
     },
   })
@@ -112,7 +109,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       queryClient.invalidateQueries({ queryKey: ['workflow-registry'] })
       toast.success('Workflow activated successfully')
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { msg?: string } } }) => {
       toast.error(`Failed to activate workflow: ${error.response?.data?.msg || error.message}`)
     },
   })
@@ -124,7 +121,7 @@ export default function WorkflowRegistryProvider({ children }: Props) {
       queryClient.invalidateQueries({ queryKey: ['workflow-registry'] })
       toast.success('Workflow deactivated successfully')
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { msg?: string } } }) => {
       toast.error(`Failed to deactivate workflow: ${error.response?.data?.msg || error.message}`)
     },
   })

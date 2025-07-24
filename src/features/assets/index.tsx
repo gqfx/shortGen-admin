@@ -6,14 +6,15 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconPhoto, IconVideo, IconMusic, IconFileText, IconPlus, IconEdit, IconTrash, IconDownload } from '@tabler/icons-react'
+import { IconPhoto, IconVideo, IconMusic, IconFileText, IconPlus, IconEdit, IconTrash, IconDownload, IconCopy } from '@tabler/icons-react'
 import AssetsProvider, { useAssets } from './context/assets-context'
+import { toast } from 'sonner'
 
 function AssetsContent() {
   const { assets, isLoading } = useAssets()
 
   const getAssetIcon = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'video': return IconVideo
       case 'image': return IconPhoto
       case 'audio': return IconMusic
@@ -23,13 +24,19 @@ function AssetsContent() {
   }
 
   const getAssetTypeBadgeColor = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'video': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
       case 'image': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
       case 'audio': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
       case 'text': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
     }
+  }
+
+  const handleCopy = (text: string, fieldName: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    toast.success(`${fieldName} copied to clipboard`)
   }
 
   return (
@@ -95,29 +102,47 @@ function AssetsContent() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <CardTitle className='text-lg mb-2'>{asset.name}</CardTitle>
-                    <CardDescription className='mb-4'>
-                      {asset.description}
+                    <CardTitle className='text-lg mb-2 truncate' title={asset.name}>{asset.name}</CardTitle>
+                    <CardDescription className='mb-4 h-10 overflow-hidden'>
+                      {asset.description || 'No description available.'}
                     </CardDescription>
                     <div className='space-y-2 text-sm text-muted-foreground'>
-                      <div className='flex justify-between'>
-                        <span>Source:</span>
-                        <span>{asset.source}</span>
-                      </div>
-                      <div className='flex justify-between'>
-                        <span>Status:</span>
-                        <Badge variant='outline'>{asset.status}</Badge>
-                      </div>
-                      <div className='flex justify-between'>
-                        <span>Visibility:</span>
-                        <span className='capitalize'>{asset.visibility}</span>
-                      </div>
+                      {asset.storage_path && (
+                        <div className='flex items-center justify-between'>
+                          <span className='font-semibold'>Storage:</span>
+                          <div className='flex items-center gap-2'>
+                            <span className='truncate max-w-40' title={asset.storage_path}>{asset.storage_path}</span>
+                            <Button variant='ghost' size='icon' className='h-6 w-6' onClick={() => handleCopy(asset.storage_path!, 'Storage Path')}>
+                              <IconCopy className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {asset.source && (
+                        <div className='flex items-center justify-between'>
+                          <span className='font-semibold'>Source:</span>
+                          <div className='flex items-center gap-2'>
+                            <span className='truncate max-w-40' title={asset.source}>{asset.source}</span>
+                            <Button variant='ghost' size='icon' className='h-6 w-6' onClick={() => handleCopy(asset.source!, 'Source URL')}>
+                              <IconCopy className='h-4 w-4' />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       {asset.duration_seconds && (
                         <div className='flex justify-between'>
-                          <span>Duration:</span>
+                          <span className='font-semibold'>Duration:</span>
                           <span>{Math.floor(asset.duration_seconds / 60)}m {asset.duration_seconds % 60}s</span>
                         </div>
                       )}
+                      <div className='flex justify-between'>
+                        <span className='font-semibold'>Created:</span>
+                        <span>{new Date(asset.created_at).toLocaleString()}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span className='font-semibold'>Status:</span>
+                        <Badge variant='outline'>{asset.status}</Badge>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

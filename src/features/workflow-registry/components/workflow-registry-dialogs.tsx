@@ -54,7 +54,7 @@ type CreateWorkflowValues = z.infer<typeof createWorkflowSchema>
 type UpdateWorkflowValues = z.infer<typeof updateWorkflowSchema>
 
 const useWorkflowTypes = () => {
-  const { data: workflowTypes = [], isLoading } = useQuery({
+  const { data: workflowTypes = [], isLoading } = useQuery<string[], Error>({
     queryKey: ['workflow-types'],
     queryFn: () => workflowRegistryApi.getTypes(),
   })
@@ -90,7 +90,6 @@ export function WorkflowRegistryDialogs() {
     deleteWorkflow,
     activateWorkflow,
     deactivateWorkflow,
-    setSelectedWorkflow,
   } = useWorkflowRegistry()
 
   const { workflowTypes, isLoading: isLoadingTypes } = useWorkflowTypes()

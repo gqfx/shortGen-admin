@@ -10,7 +10,8 @@ import {
   Square,
   Loader2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Copy
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,6 +24,7 @@ import { Video } from '@/lib/api'
 import { toast } from 'sonner'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 import { useAccessibility } from '@/hooks/use-accessibility'
+import { VideoDetailDialog } from './video-detail-dialog'
 
 interface VideoListProps {
   className?: string
@@ -51,6 +53,7 @@ export function VideoList({ className }: VideoListProps) {
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set())
   const [batchOperationResult, setBatchOperationResult] = useState<BatchOperationResult | null>(null)
   const [showBatchResult, setShowBatchResult] = useState(false)
+  const [detailVideo, setDetailVideo] = useState<Video | null>(null)
 
   // Batch selection handlers
   const handleSelectAll = useCallback(() => {
@@ -171,7 +174,7 @@ export function VideoList({ className }: VideoListProps) {
         triggerBatchDownload([video.id])
         break
       case 'view':
-        // navigate({ to: '/target-videos/$videoId', params: { videoId: video.id } })
+        setDetailVideo(video)
         break
     }
   }, [triggerBatchDownload, navigate])
@@ -261,150 +264,159 @@ export function VideoList({ className }: VideoListProps) {
   }
 
   return (
-    <Card className={className}>
-      <CardHeader className={isMobile ? touchPadding : ''}>
-        <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
-          <CardTitle className={isMobile ? 'text-base' : ''}>
-            Videos ({videos.length})
-            {videos.length > 0 && !isMobile && (
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                • {videos.filter(v => !v.is_downloaded).length} downloadable
-              </span>
-            )}
-            {videos.length > 0 && isMobile && (
-              <div className="text-xs font-normal text-muted-foreground mt-1">
-                {videos.filter(v => !v.is_downloaded).length} downloadable
-              </div>
-            )}
-          </CardTitle>
-          
-          {/* Responsive Batch Selection Controls */}
-          <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
-            {!isMobile && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{selectedCount} selected</span>
-              </div>
-            )}
-            
-            <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
-              <Button
-                variant="outline"
-                size={isMobile ? "default" : "sm"}
-                onClick={allSelected ? handleClearSelection : handleSelectAll}
-                className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
-                title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
-                aria-label={allSelected ? `Clear all ${videos.length} video selections` : `Select all ${videos.length} videos`}
-              >
-                {allSelected ? (
-                  <>
-                    <Square className="h-4 w-4" aria-hidden="true" />
-                    <span className="ml-2">Clear All</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckSquare className="h-4 w-4" aria-hidden="true" />
-                    <span className="ml-2">Select All</span>
-                  </>
-                )}
-              </Button>
-              
-              {selectedCount > 0 && (
-                <Button
-                  variant="default"
-                  size={isMobile ? "default" : "sm"}
-                  onClick={handleBatchDownload}
-                  disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
-                  className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
-                  title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
-                  aria-label={`Download ${selectedDownloadableCount} selected videos out of ${selectedCount} total selected`}
-                >
-                  {loadingStates.batchDownload ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Download className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  <span className="ml-2">
-                    Download ({selectedDownloadableCount})
-                    {isMobile && selectedCount > selectedDownloadableCount && (
-                      <span className="text-xs opacity-75 ml-1">
-                        of {selectedCount}
-                      </span>
-                    )}
-                  </span>
-                </Button>
+    <>
+      <Card className={className}>
+        <CardHeader className={isMobile ? touchPadding : ''}>
+          <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'items-center justify-between'}`}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>
+              Videos ({videos.length})
+              {videos.length > 0 && !isMobile && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  • {videos.filter(v => !v.is_downloaded).length} downloadable
+                </span>
               )}
-            </div>
-            
-            {isMobile && (
-              <div className="text-xs text-muted-foreground text-center">
-                {selectedCount} selected
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Batch Operation Progress/Results */}
-        {loadingStates.batchDownload && (
-          <div className="mt-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Processing batch download...
-            </div>
-            <Progress value={undefined} className="h-2" />
-          </div>
-        )}
-        
-        {showBatchResult && batchOperationResult && (
-          <Alert className={`mt-4 ${batchOperationResult.failed > 0 ? 'border-destructive' : 'border-green-500'}`}>
-            <div className="flex items-center gap-2">
-              {batchOperationResult.failed > 0 ? (
-                <AlertCircle className="h-4 w-4 text-destructive" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              )}
-              <AlertDescription>
-                <div className="space-y-1">
-                  <div>
-                    Batch operation completed: {batchOperationResult.success} successful, {batchOperationResult.failed} failed out of {batchOperationResult.total} total
-                  </div>
-                  {batchOperationResult.errors.length > 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      Errors: {batchOperationResult.errors.join(', ')}
-                    </div>
-                  )}
+              {videos.length > 0 && isMobile && (
+                <div className="text-xs font-normal text-muted-foreground mt-1">
+                  {videos.filter(v => !v.is_downloaded).length} downloadable
                 </div>
-              </AlertDescription>
+              )}
+            </CardTitle>
+            
+            {/* Responsive Batch Selection Controls */}
+            <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
+              {!isMobile && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{selectedCount} selected</span>
+                </div>
+              )}
+              
+              <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
+                <Button
+                  variant="outline"
+                  size={isMobile ? "default" : "sm"}
+                  onClick={allSelected ? handleClearSelection : handleSelectAll}
+                  className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
+                  title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
+                  aria-label={allSelected ? `Clear all ${videos.length} video selections` : `Select all ${videos.length} videos`}
+                >
+                  {allSelected ? (
+                    <>
+                      <Square className="h-4 w-4" aria-hidden="true" />
+                      <span className="ml-2">Clear All</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="h-4 w-4" aria-hidden="true" />
+                      <span className="ml-2">Select All</span>
+                    </>
+                  )}
+                </Button>
+                
+                {selectedCount > 0 && (
+                  <Button
+                    variant="default"
+                    size={isMobile ? "default" : "sm"}
+                    onClick={handleBatchDownload}
+                    disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
+                    className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
+                    title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
+                    aria-label={`Download ${selectedDownloadableCount} selected videos out of ${selectedCount} total selected`}
+                  >
+                    {loadingStates.batchDownload ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span className="ml-2">
+                      Download ({selectedDownloadableCount})
+                      {isMobile && selectedCount > selectedDownloadableCount && (
+                        <span className="text-xs opacity-75 ml-1">
+                          of {selectedCount}
+                        </span>
+                      )}
+                    </span>
+                  </Button>
+                )}
+              </div>
+              
+              {isMobile && (
+                <div className="text-xs text-muted-foreground text-center">
+                  {selectedCount} selected
+                </div>
+              )}
             </div>
-          </Alert>
-        )}
-      </CardHeader>
-      
-      <CardContent>
-        {videos.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No videos found for this account
           </div>
-        ) : (
-          <div className="h-[600px]">
-            <List
-              height={600}
-              itemCount={videos.length}
-              itemSize={230}
-              width="100%"
-              itemData={{
-                videos,
-                selectedVideoIds,
-                handleVideoSelect,
-                handleVideoAction,
-                handleThumbnailClick,
-              }}
-            >
-              {Row}
-            </List>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          
+          {/* Batch Operation Progress/Results */}
+          {loadingStates.batchDownload && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing batch download...
+              </div>
+              <Progress value={undefined} className="h-2" />
+            </div>
+          )}
+          
+          {showBatchResult && batchOperationResult && (
+            <Alert className={`mt-4 ${batchOperationResult.failed > 0 ? 'border-destructive' : 'border-green-500'}`}>
+              <div className="flex items-center gap-2">
+                {batchOperationResult.failed > 0 ? (
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                )}
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <div>
+                      Batch operation completed: {batchOperationResult.success} successful, {batchOperationResult.failed} failed out of {batchOperationResult.total} total
+                    </div>
+                    {batchOperationResult.errors.length > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        Errors: {batchOperationResult.errors.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
+        </CardHeader>
+        
+        <CardContent>
+          {videos.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No videos found for this account
+            </div>
+          ) : (
+            <div className="h-[600px]">
+              <List
+                height={600}
+                itemCount={videos.length}
+                itemSize={150}
+                width="100%"
+                itemData={{
+                  videos,
+                  selectedVideoIds,
+                  handleVideoSelect,
+                  handleVideoAction,
+                  handleThumbnailClick,
+                }}
+              >
+                {Row}
+              </List>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {detailVideo && (
+        <VideoDetailDialog
+          video={detailVideo}
+          open={!!detailVideo}
+          onOpenChange={(open) => !open && setDetailVideo(null)}
+        />
+      )}
+    </>
   )
 }
 
@@ -496,7 +508,7 @@ function VideoItem({
           <Button
             variant="outline"
             size="sm"
-            // onClick={() => onAction(video, 'view')}
+            onClick={() => onAction(video, 'view')}
             className="flex items-center gap-1"
           >
             View Details
@@ -506,6 +518,19 @@ function VideoItem({
         return null
     }
   }
+
+  const handleCopyLink = useCallback(async () => {
+    if (!video.video_url) {
+      toast.error('No video link available to copy.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(video.video_url)
+      toast.success('Video link copied to clipboard!')
+    } catch {
+      toast.error('Failed to copy video link.')
+    }
+  }, [video.video_url])
 
   const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return 'Unknown'
@@ -620,6 +645,16 @@ function VideoItem({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Actions for ${video.title}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLink}
+              className="flex items-center gap-1"
+              aria-label={`Copy link for ${video.title}`}
+              disabled={!video.video_url}
+            >
+              <Copy className="h-4 w-4" aria-hidden="true" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"

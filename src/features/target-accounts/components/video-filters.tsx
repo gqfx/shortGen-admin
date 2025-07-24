@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Search, Filter, X, Calendar, Video, Download } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -13,17 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAccountDetail } from '../context/account-detail-context'
-
-// Re-export the VideoFilters interface from context for consistency
-export interface VideoFilters {
-  dateRange?: {
-    start: string
-    end: string
-  }
-  status?: 'all' | 'downloaded' | 'not_downloaded' | 'analyzed'
-  videoType?: 'all' | 'long' | 'short' | 'live'
-  searchQuery?: string
-}
+import type { VideoFilters } from '../context/account-detail-context'
 
 /**
  * VideoFilters Component
@@ -32,7 +21,6 @@ export interface VideoFilters {
  * Features:
  * - Search functionality for video titles
  * - Status filtering (all, downloaded, not downloaded, analyzed)
- * - Video type filtering (all, long, short, live)
  * - Date range filtering for published dates
  * - Clear filters functionality
  * - Expandable/collapsible interface
@@ -53,15 +41,13 @@ export function VideoFilters() {
     { value: 'analyzed', label: 'Analyzed', icon: Filter },
   ]
 
-  // Video type options
-  const videoTypeOptions = [
-    { value: 'all', label: 'All Types' },
-    { value: 'long', label: 'Long Form' },
-    { value: 'short', label: 'Short Form' },
-    { value: 'live', label: 'Live Stream' },
+  // Sort options
+  const sortOptions = [
+    { value: 'views_desc', label: 'Most Views' },
+    { value: 'date_desc', label: 'Newest First' },
   ]
 
-  const updateFilter = (key: keyof VideoFilters, value: any) => {
+  const updateFilter = (key: keyof VideoFilters, value: VideoFilters[keyof VideoFilters]) => {
     const newFilters = { ...localFilters, [key]: value }
     setLocalFilters(newFilters)
     
@@ -73,18 +59,20 @@ export function VideoFilters() {
 
   const updateDateRange = (field: 'start' | 'end', value: string) => {
     const newDateRange = {
+      start: '',
+      end: '',
       ...localFilters.dateRange,
       [field]: value
     }
-    updateFilter('dateRange', newDateRange)
+    updateFilter('dateRange', newDateRange as { start: string; end: string; })
   }
 
   const clearAllFilters = () => {
     const emptyFilters: VideoFilters = {
       dateRange: undefined,
       status: 'all',
-      videoType: 'all',
-      searchQuery: ''
+      searchQuery: '',
+      sortBy: 'views_desc'
     }
     setLocalFilters(emptyFilters)
     
@@ -105,24 +93,24 @@ export function VideoFilters() {
 
   const hasActiveFilters = 
     (localFilters.status && localFilters.status !== 'all') ||
-    (localFilters.videoType && localFilters.videoType !== 'all') ||
     (localFilters.searchQuery && localFilters.searchQuery.trim()) ||
-    (localFilters.dateRange && (localFilters.dateRange.start || localFilters.dateRange.end))
+    (localFilters.dateRange && (localFilters.dateRange.start || localFilters.dateRange.end)) ||
+    (localFilters.sortBy && localFilters.sortBy !== 'views_desc')
 
   const getActiveFilterCount = () => {
     let count = 0
     if (localFilters.status && localFilters.status !== 'all') count++
-    if (localFilters.videoType && localFilters.videoType !== 'all') count++
     if (localFilters.searchQuery && localFilters.searchQuery.trim()) count++
     if (localFilters.dateRange && (localFilters.dateRange.start || localFilters.dateRange.end)) count++
+    if (localFilters.sortBy && localFilters.sortBy !== 'views_desc') count++
     return count
   }
 
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-3">
+    <div className="mb-6">
+      <div className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <h3 className="text-lg font-medium flex items-center gap-2">
             <Filter className="h-5 w-5" />
             Video Filters
             {getActiveFilterCount() > 0 && (
@@ -130,7 +118,7 @@ export function VideoFilters() {
                 {getActiveFilterCount()}
               </Badge>
             )}
-          </CardTitle>
+          </h3>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
               <Button
@@ -153,9 +141,9 @@ export function VideoFilters() {
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4">
+      <div className="space-y-4">
         {/* Always visible: Search and quick filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search Input */}
@@ -192,17 +180,17 @@ export function VideoFilters() {
             </SelectContent>
           </Select>
 
-          {/* Video Type Filter */}
+          {/* Sort By Filter */}
           <Select
-            value={localFilters.videoType || 'all'}
-            onValueChange={(value) => updateFilter('videoType', value as VideoFilters['videoType'])}
+            value={localFilters.sortBy || 'views_desc'}
+            onValueChange={(value) => updateFilter('sortBy', value as VideoFilters['sortBy'])}
             disabled={loading}
           >
-            <SelectTrigger className="w-[150px]" aria-label="Filter by video type">
-              <SelectValue placeholder="Video type" />
+            <SelectTrigger className="w-[180px]" aria-label="Sort by">
+              <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              {videoTypeOptions.map(option => (
+              {sortOptions.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -267,26 +255,26 @@ export function VideoFilters() {
                   {localFilters.status && localFilters.status !== 'all' && (
                     <Badge variant="secondary" className="flex items-center gap-1">
                       Status: {statusOptions.find(s => s.value === localFilters.status)?.label}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={() => updateFilter('status', 'all')}
                       />
                     </Badge>
                   )}
-                  {localFilters.videoType && localFilters.videoType !== 'all' && (
+                  {localFilters.sortBy && localFilters.sortBy !== 'views_desc' && (
                     <Badge variant="secondary" className="flex items-center gap-1">
-                      Type: {videoTypeOptions.find(t => t.value === localFilters.videoType)?.label}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => updateFilter('videoType', 'all')}
+                      Sort: {sortOptions.find(s => s.value === localFilters.sortBy)?.label}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => updateFilter('sortBy', 'views_desc')}
                       />
                     </Badge>
                   )}
                   {localFilters.searchQuery && localFilters.searchQuery.trim() && (
                     <Badge variant="secondary" className="flex items-center gap-1">
                       Search: "{localFilters.searchQuery}"
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={() => updateFilter('searchQuery', '')}
                       />
                     </Badge>
@@ -294,8 +282,8 @@ export function VideoFilters() {
                   {localFilters.dateRange && (localFilters.dateRange.start || localFilters.dateRange.end) && (
                     <Badge variant="secondary" className="flex items-center gap-1">
                       Date: {localFilters.dateRange.start || '...'} to {localFilters.dateRange.end || '...'}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={clearDateRange}
                       />
                     </Badge>
@@ -305,7 +293,7 @@ export function VideoFilters() {
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

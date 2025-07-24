@@ -137,7 +137,7 @@ export default function WorkerConfigsProvider({ children }: WorkerConfigsProvide
     try {
       const response = await workerConfigsApi.getTaskConfigs(taskId)
       toast.success('Task configurations fetched successfully')
-      return response.data.data
+      return response.data.data as Record<string, WorkerConfig>
     } catch (error) {
       const apiError = error as ApiError
       toast.error(`Failed to fetch task configurations: ${apiError.response?.data?.msg || apiError.message}`)

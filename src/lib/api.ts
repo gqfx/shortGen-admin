@@ -31,7 +31,7 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
-    console.error('❌ Request Error:', error)
+    // console.error('❌ Request Error:', error)
     return Promise.reject(error)
   }
 )
@@ -47,12 +47,12 @@ api.interceptors.response.use(
     return response.data
   },
   (error) => {
-    console.error('❌ Response Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      message: error.message,
-      data: error.response?.data,
-    })
+    // console.error('❌ Response Error:', {
+    //   status: error.response?.status,
+    //   url: error.config?.url,
+    //   message: error.message,
+    //   data: error.response?.data,
+    // })
     return Promise.reject(error)
   }
 )
@@ -68,7 +68,7 @@ export interface Asset {
   description?: string
   asset_type: string
   storage_path?: string
-  asset_metadata: Record<string, any>
+  asset_metadata: Record<string, unknown>
   duration_seconds?: number
   source?: string
   visibility?: string
@@ -84,7 +84,7 @@ export interface AssetCreate {
   description?: string
   asset_type: string
   storage_path?: string
-  asset_metadata?: Record<string, any>
+  asset_metadata?: Record<string, unknown>
   duration_seconds?: number
   source?: string
   visibility?: string
@@ -96,7 +96,7 @@ export interface AssetCreate {
 export interface AssetUpdate {
   name?: string
   description?: string
-  asset_metadata?: Record<string, any>
+  asset_metadata?: Record<string, unknown>
   source?: string
   visibility?: string
 }
@@ -108,10 +108,10 @@ export interface Inspiration {
   description?: string
   project_type_code?: string
   source?: string
-  parameters: Record<string, any>
+  parameters: Record<string, unknown>
   status: string
   score?: number
-  score_details?: Record<string, any>
+  score_details?: Record<string, unknown>
   review_notes?: string
   created_at: string
   updated_at: string
@@ -123,7 +123,7 @@ export interface CreateInspirationRequest {
   description?: string
   project_type_code?: string
   source?: string
-  parameters?: Record<string, any>
+  parameters?: Record<string, unknown>
 }
 
 // Corresponds to schemas.InspirationUpdate
@@ -132,19 +132,26 @@ export interface UpdateInspirationRequest {
   description?: string
   project_type_code?: string
   source?: string
-  parameters?: Record<string, any>
+  parameters?: Record<string, unknown>
   status?: string
   score?: number
-  score_details?: Record<string, any>
+  score_details?: Record<string, unknown>
   review_notes?: string
 }
 
 // Platform Account types
+export interface PlatformAccountCredentials {
+  email?: string
+  password?: string
+  proxy?: string
+  [key: string]: unknown
+}
+
 export interface PlatformAccount {
   id: string
   platform: string
   name: string
-  credentials: { [key: string]: any }
+  credentials: PlatformAccountCredentials
   status: string
   daily_limit?: number
   used_today: number
@@ -159,14 +166,14 @@ export interface PlatformAccount {
 export interface PlatformAccountCreate {
   platform: string
   name: string
-  credentials: { [key: string]: any }
+  credentials: PlatformAccountCredentials
   daily_limit?: number
 }
 
 // Corresponds to schemas.platform_account.PlatformAccountUpdate
 export interface PlatformAccountUpdate {
   name?: string
-  credentials?: { [key: string]: any }
+  credentials?: PlatformAccountCredentials
   status?: string
   daily_limit?: number
 }
@@ -182,7 +189,7 @@ export interface WorkerConfig {
   config_name: string
   config_type: string
   worker_type?: string
-  config_data: Record<string, any>
+  config_data: Record<string, unknown>
   description?: string
   priority: number
   is_active: boolean
@@ -194,7 +201,7 @@ export interface CreateWorkerConfigRequest {
   config_name: string
   config_type: string
   worker_type: string
-  config_data: Record<string, any>
+  config_data: Record<string, unknown>
   description: string
   priority: number
   is_active: boolean
@@ -204,7 +211,7 @@ export interface UpdateWorkerConfigRequest {
   config_name?: string
   config_type?: string
   worker_type?: string
-  config_data?: Record<string, any>
+  config_data?: Record<string, unknown>
   description?: string
   priority?: number
   is_active?: boolean
@@ -257,16 +264,16 @@ export interface ProjectType {
   inspiration_workflow_id?: string | null
   transform_workflow_id?: string | null
   execution_workflow_id?: string | null
-  default_parameters: Record<string, any>
-  parameter_schema: Record<string, any>
+  default_parameters: Record<string, unknown>
+  parameter_schema: Record<string, unknown>
   category?: string
   sort_order: number
   is_active: boolean
   created_at: string
   updated_at: string
-  inspiration_workflow?: Record<string, any>
-  transform_workflow?: Record<string, any>
-  execution_workflow?: Record<string, any>
+  inspiration_workflow?: Record<string, unknown>
+  transform_workflow?: Record<string, unknown>
+  execution_workflow?: Record<string, unknown>
 }
 
 // Corresponds to schemas.project_type.ProjectTypeCreate
@@ -277,8 +284,8 @@ export interface ProjectTypeCreate {
   inspiration_workflow_id?: string
   transform_workflow_id?: string
   execution_workflow_id?: string
-  default_parameters?: Record<string, any>
-  parameter_schema?: Record<string, any>
+  default_parameters?: Record<string, unknown>
+  parameter_schema?: Record<string, unknown>
   category?: string
   sort_order?: number
   is_active?: boolean
@@ -291,8 +298,8 @@ export interface ProjectTypeUpdate {
   inspiration_workflow_id?: string | null
   transform_workflow_id?: string | null
   execution_workflow_id?: string | null
-  default_parameters?: Record<string, any>
-  parameter_schema?: Record<string, any>
+  default_parameters?: Record<string, unknown>
+  parameter_schema?: Record<string, unknown>
   category?: string
   sort_order?: number
   is_active?: boolean
@@ -320,49 +327,49 @@ export const projectsApi = {
   recalculateTasks: (id: string): Promise<ApiResponse<Project>> =>
     api.post(`/api/projects/${id}/recalculate-tasks`),
 
-  regenerate: (id: string, data?: Record<string, any>): Promise<ApiResponse<{ project_id: string; execution_id: string }>> =>
+  regenerate: (id: string, data?: Record<string, unknown>): Promise<ApiResponse<{ project_id: string; execution_id: string }>> =>
     api.post(`/api/projects/${id}/regenerate`, data),
 }
 
 // Tasks API
 export const tasksApi = {
-  create: (data: any): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  create: (data: unknown): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.post('/api/tasks', data),
 
-  createBatch: (data: any): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
+  createBatch: (data: unknown): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
     api.post('/api/tasks/batch', data),
 
-  updateStatus: (taskId: string, data: any): Promise<AxiosResponse<ApiResponse<Task>>> =>
+  updateStatus: (taskId: string, data: unknown): Promise<AxiosResponse<ApiResponse<Task>>> =>
     api.patch(`/api/tasks/${taskId}`, data),
 
-  getTaskTypes: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
+  getTaskTypes: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/tasks/types'),
 
   listTasks: (params: { project_id?: string; task_type?: string; skip?: number; limit?: number }): Promise<AxiosResponse<ApiResponse<Task[]>>> =>
     api.get('/api/tasks', { params }),
 
-  enqueue: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  enqueue: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.post(`/api/tasks/${taskId}/enqueue`),
 
-  getQueueStatus: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getQueueStatus: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.get(`/api/tasks/${taskId}/queue-status`),
 
-  cancel: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  cancel: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.post(`/api/tasks/${taskId}/cancel`),
 
-  deleteAllQueues: (): Promise<AxiosResponse<ApiResponse<any>>> =>
+  deleteAllQueues: (): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.post('/api/tasks/delete-all-queues'),
 
-  getQueueInfo: (): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getQueueInfo: (): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.get('/api/tasks/queue-info'),
 
   listRedisQueues: (): Promise<AxiosResponse<ApiResponse<string[]>>> =>
     api.get('/api/tasks/list-redis-queues'),
 
-  callback: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  callback: (data: unknown): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.post('/api/tasks/callback', data),
 
-  retryMonitoring: (taskId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  retryMonitoring: (taskId: string): Promise<AxiosResponse<ApiResponse<unknown>>> =>
     api.post(`/api/tasks/monitoring/${taskId}/retry`),
 }
 
@@ -374,7 +381,7 @@ export const assetsApi = {
   create: (data: AssetCreate): Promise<Asset> =>
     api.post('/api/assets', data),
 
-  getAll: (skip = 0, limit = 100, assetType?: string, status?: string): Promise<Asset[]> => {
+  getAll: (skip = 0, limit = 100, assetType?: string, status?: string): Promise<ApiResponse<Asset[]>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (assetType) params.append('asset_type', assetType)
     if (status) params.append('status', status)
@@ -420,7 +427,7 @@ export const inspirationsApi = {
   reject: (inspirationId: string, data?: { review_notes?: string }): Promise<Inspiration> =>
     api.post(`/api/inspirations/${inspirationId}/reject`, data),
 
-  regenerate: (inspirationId: string, data?: Record<string, any>): Promise<{ inspiration_id: string; execution_id: string }> =>
+  regenerate: (inspirationId: string, data?: Record<string, unknown>): Promise<{ inspiration_id: string; execution_id: string }> =>
     api.post(`/api/inspirations/${inspirationId}/regenerate`, data),
 }
 
@@ -480,13 +487,13 @@ export const workerConfigsApi = {
   assignToTask: (taskId: string, data: ConfigAssignmentRequest): Promise<AxiosResponse<ApiResponse<TaskConfigAssignment[]>>> =>
     api.post(`/api/worker-configs/tasks/${taskId}/assign`, data),
   
-  getTaskConfigs: (taskId: string): Promise<AxiosResponse<ApiResponse<Record<string, any>>>> =>
+  getTaskConfigs: (taskId: string): Promise<AxiosResponse<ApiResponse<Record<string, unknown>>>> =>
     api.get(`/api/worker-configs/tasks/${taskId}/configs`),
 }
 
 // WorkflowRegistry API
 export const workflowRegistryApi = {
-  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<WorkflowRegistry[]> => {
+  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<ApiResponse<WorkflowRegistry[]>> => {
     const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
     if (workflowType) params.append('workflow_type', workflowType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
@@ -569,6 +576,7 @@ export interface VideoSnapshot {
   views_count?: number
   likes_count?: number
   comments_count?: number
+  shares_count?: number
   favorite_count?: number
   collected_at: string
   created_at: string
@@ -598,7 +606,7 @@ export interface TargetAccount {
   is_scheduled?: boolean
   schedule_interval?: number
   cron_string?: string
-  latest_snapshot: AccountSnapshot | null
+  snapshots: AccountSnapshot[]
 }
 
 export interface Video {
@@ -610,11 +618,12 @@ export interface Video {
   title?: string
   description?: string
   thumbnail_url?: string
+  local_video_url?: string
   duration?: number
   published_at?: string
   category_id?: string
   default_audio_language?: string
-  analysis_results?: Record<string, any>
+  analysis_results?: Record<string, unknown>
   analysis_status?: string
   analysis_error?: string
   is_downloaded: boolean

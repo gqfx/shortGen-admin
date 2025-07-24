@@ -2,6 +2,12 @@ import { createContext, useContext, ReactNode, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Asset, assetsApi } from '@/lib/api'
 
+interface AssetsApiResponse {
+  code: number;
+  msg: string;
+  data: Asset[];
+}
+
 interface AssetsContextType {
   assets: Asset[]
   isLoading: boolean
@@ -37,9 +43,10 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   // Fetch assets
-  const { data: assets = [], isLoading, refetch } = useQuery<Asset[]>({
+  const { data: assets, isLoading, refetch } = useQuery<AssetsApiResponse, Error, Asset[]>({
     queryKey: ['assets'],
     queryFn: () => assetsApi.getAll(0, 100),
+    select: (response) => (response?.data && Array.isArray(response.data) ? response.data : []),
   })
 
   const refreshAssets = () => {
@@ -49,7 +56,7 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
   return (
     <AssetsContext.Provider
       value={{
-        assets,
+        assets: assets || [],
         isLoading,
         selectedAsset,
         isCreateDialogOpen,

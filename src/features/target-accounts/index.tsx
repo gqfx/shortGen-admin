@@ -429,9 +429,11 @@ function TargetAccountsContent() {
                 </div>
               )}
               
-              {filteredAccounts.map((account) => (
-                <Card 
-                  key={account.id} 
+              {filteredAccounts.map((account) => {
+                const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+                return (
+                <Card
+                  key={account.id}
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => handleAccountClick(account)}
                 >
@@ -446,7 +448,7 @@ function TargetAccountsContent() {
                             className={touchTargetSize}
                           />
                         </div>
-                        <Avatar 
+                        <Avatar
                           className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} cursor-pointer hover:ring-2 hover:ring-primary/20 focus:ring-2 focus:ring-primary focus:outline-none transition-all duration-200`}
                           onClick={(e) => handleAvatarClick(e, account)}
                           onKeyDown={(e) => {
@@ -490,7 +492,7 @@ function TargetAccountsContent() {
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleDelete(account)}
                               className="text-destructive"
                             >
@@ -526,8 +528,8 @@ function TargetAccountsContent() {
                       <div>
                         <span className="text-muted-foreground">Subscribers:</span>
                         <div className="mt-1 font-medium">
-                          {account.latest_snapshot ? 
-                            (account.latest_snapshot.subscriber_count ?? 0).toLocaleString() : 
+                          {latest_snapshot ?
+                            (latest_snapshot.subscriber_count ?? 0).toLocaleString() :
                             'N/A'
                           }
                         </div>
@@ -535,8 +537,8 @@ function TargetAccountsContent() {
                       <div>
                         <span className="text-muted-foreground">Videos:</span>
                         <div className="mt-1 font-medium">
-                          {account.latest_snapshot ? 
-                            (account.latest_snapshot.total_videos_count ?? 0).toLocaleString() : 
+                          {latest_snapshot ?
+                            (latest_snapshot.total_videos_count ?? 0).toLocaleString() :
                             'N/A'
                           }
                         </div>
@@ -549,7 +551,7 @@ function TargetAccountsContent() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           ) : (
             /* Desktop Table Layout */
@@ -575,9 +577,11 @@ function TargetAccountsContent() {
                 </TableRow>
               </TableHeader>
               <TableBody role="rowgroup">
-                {filteredAccounts.map((account, index) => (
-                  <TableRow 
-                    key={account.id} 
+                {filteredAccounts.map((account, index) => {
+                  const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+                  return (
+                  <TableRow
+                    key={account.id}
                     className="cursor-pointer hover:bg-muted/50 focus:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset"
                     onClick={() => handleAccountClick(account)}
                     onKeyDown={(e) => {
@@ -588,7 +592,7 @@ function TargetAccountsContent() {
                     }}
                     tabIndex={0}
                     role="row"
-                    aria-label={`Account ${account.display_name}, ${account.is_active ? 'active' : 'inactive'}, ${account.latest_snapshot?.subscriber_count || 0} subscribers`}
+                    aria-label={`Account ${account.display_name}, ${account.is_active ? 'active' : 'inactive'}, ${latest_snapshot?.subscriber_count || 0} subscribers`}
                     aria-rowindex={index + 2}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()} role="gridcell">
@@ -602,7 +606,7 @@ function TargetAccountsContent() {
                     </TableCell>
                     <TableCell role="gridcell">
                       <div className="flex items-center space-x-3" id={`account-${account.id}-info`}>
-                        <Avatar 
+                        <Avatar
                           className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary/20 focus:ring-2 focus:ring-primary focus:outline-none transition-all duration-200"
                           onClick={(e) => handleAvatarClick(e, account)}
                           onKeyDown={(e) => {
@@ -640,27 +644,27 @@ function TargetAccountsContent() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {account.latest_snapshot ? (
+                      {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(account.latest_snapshot.subscriber_count ?? 0).toLocaleString()}
+                          {(latest_snapshot.subscriber_count ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {account.latest_snapshot ? (
+                      {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(account.latest_snapshot.total_videos_count ?? 0).toLocaleString()}
+                          {(latest_snapshot.total_videos_count ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {account.latest_snapshot ? (
+                      {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(account.latest_snapshot.total_views ?? 0).toLocaleString()}
+                          {(latest_snapshot.total_views ?? 0).toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -702,7 +706,7 @@ function TargetAccountsContent() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           )}
