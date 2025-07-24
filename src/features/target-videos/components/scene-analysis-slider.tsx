@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react'
+import { useAccessibility } from '@/hooks/use-accessibility'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -51,6 +52,7 @@ export function SceneAnalysisSlider({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const sceneRefs = useRef<(HTMLDivElement | null)[]>([])
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { announceStatus } = useAccessibility()
 
   // Format time display
   const formatTime = useCallback((seconds: number): string => {
@@ -146,6 +148,7 @@ export function SceneAnalysisSlider({
         event.preventDefault()
         const focusedScene = scenes[focusedIndex]
         if (focusedScene) {
+          announceStatus(`Navigating to scene ${focusedIndex + 1}: ${focusedScene.description}`)
           onSceneClick?.(focusedScene)
           onTimeNavigate?.(focusedScene.startTime)
         }
@@ -161,6 +164,13 @@ export function SceneAnalysisSlider({
         setFocusedIndex(lastIndex)
         scrollToScene(lastIndex)
         break
+      case 'Escape':
+        event.preventDefault()
+        // Remove focus from the slider
+        if (event.currentTarget) {
+          (event.currentTarget as HTMLElement).blur()
+        }
+        break
     }
   }, [scenes, focusedIndex, onSceneClick, onTimeNavigate, scrollToScene])
 
@@ -169,6 +179,7 @@ export function SceneAnalysisSlider({
     setFocusedIndex(index)
     setLastSyncTime(Date.now()) // Update sync time to prevent auto-sync interference
     
+    announceStatus(`Selected scene ${index + 1}: ${scene.description}`)
     onSceneClick?.(scene)
     onTimeNavigate?.(scene.startTime)
     
@@ -508,16 +519,17 @@ export function SceneAnalysisSlider({
               </Badge>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" role="group" aria-label="Scene navigation controls">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={scrollLeft}
                 disabled={isScrolling}
                 className="h-8 w-8 p-0 touch-manipulation"
-                aria-label="Scroll left"
+                aria-label="Scroll scenes left"
+                title="Scroll scenes left"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
               </Button>
               <Button
                 variant="outline"
@@ -525,9 +537,10 @@ export function SceneAnalysisSlider({
                 onClick={scrollRight}
                 disabled={isScrolling}
                 className="h-8 w-8 p-0 touch-manipulation"
-                aria-label="Scroll right"
+                aria-label="Scroll scenes right"
+                title="Scroll scenes right"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -538,8 +551,9 @@ export function SceneAnalysisSlider({
             onKeyDown={handleKeyDown}
             tabIndex={0}
             role="listbox"
-            aria-label="Scene analysis slider"
+            aria-label={`Scene analysis slider with ${scenes.length} scenes`}
             aria-activedescendant={`scene-${focusedIndex}`}
+            aria-describedby="scene-navigation-help"
           >
             <ScrollArea orientation="horizontal" className="w-full">
               <div
@@ -584,7 +598,7 @@ export function SceneAnalysisSlider({
                           )}>
                             <img
                               src={scene.thumbnailUrl}
-                              alt={`Scene ${index + 1}: ${scene.description}`}
+                              alt={`Scene ${index + 1} thumbnail: ${scene.description}`}
                               className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                               loading="lazy"
                               onError={(e) => {
@@ -594,7 +608,9 @@ export function SceneAnalysisSlider({
                                 if (parent) {
                                   const placeholder = document.createElement('div')
                                   placeholder.className = 'w-full h-full flex items-center justify-center bg-muted'
-                                  placeholder.innerHTML = '<svg class="w-8 h-8 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg>'
+                                  placeholder.setAttribute('role', 'img')
+                                  placeholder.setAttribute('aria-label', 'Scene thumbnail failed to load')
+                                  placeholder.innerHTML = '<svg class="w-8 h-8 text-muted-foreground" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg>'
                                   parent.appendChild(placeholder)
                                 }
                               }}
@@ -612,7 +628,7 @@ export function SceneAnalysisSlider({
 
                             {/* Scene number badge */}
                             <div className="absolute top-2 left-2">
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="secondary" className="text-xs" aria-label={`Scene number ${index + 1}`}>
                                 {index + 1}
                               </Badge>
                             </div>
@@ -622,6 +638,7 @@ export function SceneAnalysisSlider({
                               <Badge 
                                 variant={scene.confidence > 0.8 ? "default" : "secondary"}
                                 className="text-xs"
+                                aria-label={`Analysis confidence: ${Math.round(scene.confidence * 100)} percent`}
                               >
                                 {Math.round(scene.confidence * 100)}%
                               </Badge>
@@ -629,7 +646,11 @@ export function SceneAnalysisSlider({
 
                             {/* Duration badge */}
                             <div className="absolute bottom-2 right-2">
-                              <Badge variant="outline" className="text-xs bg-black/60 text-white border-white/20">
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs bg-black/60 text-white border-white/20"
+                                aria-label={`Scene duration: ${getSceneDuration(scene.startTime, scene.endTime)}`}
+                              >
                                 {getSceneDuration(scene.startTime, scene.endTime)}
                               </Badge>
                             </div>
@@ -640,8 +661,11 @@ export function SceneAnalysisSlider({
                         <div className="space-y-2">
                           {/* Time range */}
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span className="font-mono">
+                            <Clock className="w-3 h-3" aria-hidden="true" />
+                            <span 
+                              className="font-mono"
+                              aria-label={`Scene time range from ${formatTime(scene.startTime)} to ${formatTime(scene.endTime)}`}
+                            >
                               {formatTimeRange(scene.startTime, scene.endTime)}
                             </span>
                           </div>
@@ -690,8 +714,18 @@ export function SceneAnalysisSlider({
           </div>
 
           {/* Keyboard navigation hint */}
-          <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-            Use arrow keys to navigate, Enter/Space to select, Home/End to jump to first/last scene
+          <div 
+            className="text-xs text-muted-foreground text-center pt-2 border-t"
+            role="note"
+            aria-label="Keyboard navigation instructions"
+            id="scene-navigation-help"
+          >
+            <div className="flex flex-wrap justify-center gap-4 text-xs">
+              <span><kbd className="px-1 py-0.5 bg-muted rounded text-xs">←→</kbd> Navigate</span>
+              <span><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> Select</span>
+              <span><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Home/End</kbd> First/Last</span>
+              <span><kbd className="px-1 py-0.5 bg-muted rounded text-xs">Esc</kbd> Exit</span>
+            </div>
           </div>
         </div>
       </CardContent>

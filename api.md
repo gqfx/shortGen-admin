@@ -1,2003 +1,1920 @@
-# ShortsGen API 详细文档
+# Short Video Automation Platform API Documentation
 
-## 基础信息
-- **API 标题**: Short Video Automation Platform API
-- **版本**: 1.0.0
-- **描述**: 用于管理视频生成项目、资源和任务的API
-- **基础URL**: http://localhost:8000
+This document provides a detailed overview of all available API endpoints for the Short Video Automation Platform.
 
-## 重要更新说明
-- **2024年最新**: 所有API端点都支持带或不带尾随斜杠的访问方式
-- **新增**: 工作流注册管理API (`/api/workflow-registry`)
-- **新增**: 项目类型管理API (`/api/project-types`)
-- **新增**: 目标账号分析管理API (`/api/target-account-analysis`) - 支持yt-dlp爬虫Worker数据管理
-- **更新**: 平台账号查询响应现包含完整的凭证信息（包括代理配置）
-- **新增**: 完整的CRUD服务层，支持批量操作和增长率自动计算
+## Table of Contents
 
-## 通用响应格式
-所有API响应都使用统一的Response格式：
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {}
-}
-```
+- [Assets](#assets)
+- [Inspirations](#inspirations)
+- [Platform Accounts](#platform-accounts)
+- [Project Types](#project-types)
+- [Projects](#projects)
+- [Analysis](#analysis)
+- [Tasks](#tasks)
+- [Webhooks](#webhooks)
+- [Worker Configs](#worker-configs)
+- [Workflow Registry](#workflow-registry)
 
-**响应代码说明:**
-- `0`: 成功
-- `1`: 无内容
-- `404`: 资源未找到
-- `400`: 请求参数错误
-- `500`: 服务器内部错误
-- `-1`: 通用失败
+---
 
-## API 接口详情
+## Assets
 
-### 1. 项目管理 (/api/projects)
+**Prefix**: `/api/assets`
 
-#### 1.1 创建项目
-- **POST** `/api/projects`
-- **功能**: 创建新项目并自动生成任务图
-
-**请求体:**
-```json
-{
-  "name": "string",
-  "project_type": "string",
-  "initial_parameters": {
-    "key": "value"
-  }
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "name": "测试项目",
-    "project_type": "video_generation",
-    "status": "pending",
-    "initial_parameters": {},
-    "inspiration_id": null,
-    "score": null,
-    "score_details": null,
-    "review_notes": null,
-    "used_transform_workflow_id": null,
-    "used_execution_workflow_id": null,
-    "total_tasks": 0,
-    "completed_tasks": 0,
-    "failed_tasks": 0,
-    "output_asset_id": null,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00",
-    "tasks": []
-  }
-}
-```
-
-#### 1.2 获取项目列表
-- **GET** `/api/projects?skip=0&limit=100`
-
-**查询参数:**
-- `skip`: 跳过记录数 (默认: 0)
-- `limit`: 限制记录数 (默认: 100)
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
-    {
-      "id": 1,
-      "name": "测试项目",
-      "project_type": "video_generation",
-      "status": "pending",
-      "total_tasks": 5,
-      "completed_tasks": 2,
-      "failed_tasks": 0,
-      "created_at": "2023-01-01T00:00:00",
-      "updated_at": "2023-01-01T00:00:00"
-    }
-  ]
-}
-```
-
-#### 1.3 获取项目详情
-- **GET** `/api/projects/{project_id}`
-
-**路径参数:**
-- `project_id`: 项目ID (整数)
-
-**响应**: 同创建项目响应格式
-
-#### 1.4 更新项目
-- **PUT** `/api/projects/{project_id}`
-
-**请求体:**
-```json
-{
-  "name": "string (可选)",
-  "initial_parameters": {},
-  "inspiration_id": 1,
-  "status": "pending|processing|completed|failed",
-  "score": 4.5,
-  "score_details": {},
-  "review_notes": "string"
-}
-```
-
-**状态转换规则:**
-- `pending` → `processing`, `failed`
-- `processing` → `completed`, `failed`
-- `completed` → `processing`
-- `failed` → `pending`, `processing`
-
-#### 1.5 删除项目
-- **DELETE** `/api/projects/{project_id}`
-
-**响应:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Project deleted successfully"
-  }
-}
-```
-
-#### 1.6 重算任务数量
-- **POST** `/api/projects/{project_id}/recalculate-tasks`
-
-#### 1.7 重新生成项目
-- **POST** `/api/projects/{project_id}/regenerate`
-
-**请求体 (可选):**
-```json
-{
-  "key": "value"
-}
-```
-
-**响应:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Project regeneration workflow triggered",
-    "project_id": 1,
-    "execution_id": "workflow_exec_123"
-  }
-}
-```
-
-### 2. 任务管理 (/api/tasks)
-
-#### 2.1 创建任务
-- **POST** `/api/tasks`
-
-**请求体:**
-```json
-{
-  "project_id": 1,
-  "task_type": "string",
-  "status": "waiting|pending|processing|completed|failed",
-  "dependencies": [1, 2, 3],
-  "task_output": {},
-  "platform_account_id": 1,
-  "commit_id": "string",
-  "error_message": "string"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "project_id": 1,
-    "task_type": "video_generation",
-    "status": "waiting",
-    "dependencies": [1, 2],
-    "task_output": null,
-    "platform_account_id": 1,
-    "commit_id": null,
-    "error_message": null,
-    "started_at": null,
-    "completed_at": null,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 2.2 批量创建任务
-- **POST** `/api/tasks/batch`
-
-**请求体:**
-```json
-{
-  "tasks": [
-    {
-      "project_id": 1,
-      "task_type": "video_generation",
-      "status": "waiting"
-    },
-    {
-      "project_id": 1,
-      "task_type": "audio_generation",
-      "status": "waiting",
-      "dependencies": [1]
-    }
-  ]
-}
-```
-
-#### 2.3 认领任务
-- **POST** `/api/tasks/claim`
-
-**请求体:**
-```json
-{
-  "task_types": ["video_generation", "audio_generation"]
-}
-```
-
-**响应 (有可用任务):**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "task_type": "video_generation",
-    "status": "processing",
-    "project_id": 1
-  }
-}
-```
-
-**响应 (无可用任务):**
-```json
-{
-  "code": 1,
-  "msg": "No pending tasks available for the given types.",
-  "data": null
-}
-```
-
-#### 2.4 批量更新任务
-- **PATCH** `/api/tasks/batch-update`
-
-**请求体:**
-```json
-{
-  "commit_ids": ["commit_123", "commit_456"],
-  "status": "completed",
-  "task_output": {
-    "result": "success"
-  },
-  "error_message": null
-}
-```
-
-#### 2.5 通过commit_id更新任务
-- **PATCH** `/api/tasks/update-by-commit-id`
-
-**请求体:**
-```json
-{
-  "commit_id": "commit_123",
-  "status": "completed",
-  "task_output": {
-    "video_url": "https://example.com/video.mp4"
-  }
-}
-```
-
-#### 2.6 更新任务状态
-- **PATCH** `/api/tasks/{task_id}`
-
-**请求体:**
-```json
-{
-  "status": "completed",
-  "task_output": {},
-  "error_message": "string"
-}
-```
-
-#### 2.7 获取任务列表
-- **GET** `/api/tasks?skip=0&limit=100`
-
-### 3. 资源管理 (/api/assets)
-
-#### 3.1 创建资源
-- **POST** `/api/assets`
-
-**请求体:**
-```json
-{
-  "name": "string",
-  "description": "string",
-  "asset_type": "video|image|audio|text",
-  "storage_path": "string",
-  "asset_metadata": {},
-  "duration_seconds": 120.5,
-  "source": "string",
-  "visibility": "private|public",
-  "status": "PENDING_ANALYSIS"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "name": "测试视频",
-    "description": "这是一个测试视频",
-    "asset_type": "video",
-    "storage_path": "/storage/videos/test.mp4",
+### GET `/api/assets/by-hash/{file_hash}`
+- **Description**: 根据文件hash查询asset信息，用于去重检查 (Query asset information by file hash for deduplication).
+- **Path Parameters**:
+  - `file_hash` (string): The hash of the file.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "asset_type": "string",
+    "storage_path": "string (optional)",
     "asset_metadata": {
-      "resolution": "1920x1080",
-      "fps": 30
+      "additionalProp1": {}
     },
-    "duration_seconds": 120.5,
-    "source": "ai_generated",
-    "visibility": "private",
-    "status": "PENDING_ANALYSIS",
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+    "duration_seconds": "number (optional)",
+    "source": "string (optional)",
+    "visibility": "string (optional)",
+    "file_hash": "string",
+    "original_filename": "string (optional)",
+    "status": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   }
-}
-```
+  ```
 
-#### 3.2 获取资源列表
-- **GET** `/api/assets?skip=0&limit=100&asset_type=video&status=ACTIVE`
+### POST `/api/assets`
+- **Description**: 创建新的资源，支持基于hash的去重检查 (Create a new asset, with support for deduplication based on hash).
+- **Request Body**: `schemas.AssetCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "asset_type": "string",
+    "storage_path": "string (optional)",
+    "asset_metadata": {
+      "additionalProp1": {}
+    },
+    "duration_seconds": "number (optional)",
+    "source": "string (optional)",
+    "visibility": "string (optional)",
+    "file_hash": "string",
+    "original_filename": "string (optional)",
+    "status": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-**查询参数:**
-- `skip`: 跳过记录数
-- `limit`: 限制记录数
-- `asset_type`: 资源类型筛选
-- `status`: 状态筛选
+### GET `/api/assets`
+- **Description**: 获取资源列表，支持类型和状态筛选 (List assets with optional filtering by type and status).
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `asset_type` (string, optional): Filter by asset type.
+  - `status` (string, optional): Filter by asset status.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "name": "string",
+      "description": "string (optional)",
+      "asset_type": "string",
+      "storage_path": "string (optional)",
+      "asset_metadata": {
+        "additionalProp1": {}
+      },
+      "duration_seconds": "number (optional)",
+      "source": "string (optional)",
+      "visibility": "string (optional)",
+      "file_hash": "string",
+      "original_filename": "string (optional)",
+      "status": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ]
+  ```
 
-#### 3.3 获取资源详情
-- **GET** `/api/assets/{asset_id}`
+### GET `/api/assets/{asset_id}`
+- **Description**: 获取指定资源详情 (Get details of a specific asset).
+- **Path Parameters**:
+  - `asset_id` (int): The ID of the asset.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "asset_type": "string",
+    "storage_path": "string (optional)",
+    "asset_metadata": {
+      "additionalProp1": {}
+    },
+    "duration_seconds": "number (optional)",
+    "source": "string (optional)",
+    "visibility": "string (optional)",
+    "file_hash": "string",
+    "original_filename": "string (optional)",
+    "status": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-#### 3.4 更新资源
-- **PUT** `/api/assets/{asset_id}`
+### PUT `/api/assets/{asset_id}`
+- **Description**: 更新资源信息 (Update asset information).
+- **Path Parameters**:
+  - `asset_id` (int): The ID of the asset.
+- **Request Body**: `schemas.AssetUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "asset_type": "string",
+    "storage_path": "string (optional)",
+    "asset_metadata": {
+      "additionalProp1": {}
+    },
+    "duration_seconds": "number (optional)",
+    "source": "string (optional)",
+    "visibility": "string (optional)",
+    "file_hash": "string",
+    "original_filename": "string (optional)",
+    "status": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "name": "string",
-  "description": "string",
-  "asset_type": "string",
-  "storage_path": "string",
-  "asset_metadata": {},
-  "duration_seconds": 120.5,
-  "source": "string",
-  "visibility": "string",
-  "status": "string"
-}
-```
+### DELETE `/api/assets/{asset_id}`
+- **Description**: 删除资源 (Delete an asset).
+- **Path Parameters**:
+  - `asset_id` (int): The ID of the asset.
+- **Response**: A confirmation message.
 
-#### 3.5 删除资源
-- **DELETE** `/api/assets/{asset_id}`
+### GET `/api/assets/by-type/{asset_type}`
+- **Description**: 根据资源类型获取资源列表 (Get a list of assets by asset type).
+- **Path Parameters**:
+  - `asset_type` (string): The type of the asset.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "name": "string",
+      "description": "string (optional)",
+      "asset_type": "string",
+      "storage_path": "string (optional)",
+      "asset_metadata": {
+        "additionalProp1": {}
+      },
+      "duration_seconds": "number (optional)",
+      "source": "string (optional)",
+      "visibility": "string (optional)",
+      "file_hash": "string",
+      "original_filename": "string (optional)",
+      "status": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ]
+  ```
 
-#### 3.6 按类型获取资源
-- **GET** `/api/assets/by-type/{asset_type}?skip=0&limit=100`
+---
 
-### 4. 创意管理 (/api/inspirations)
+## Inspirations
 
-#### 4.1 创建创意
-- **POST** `/api/inspirations`
+**Prefix**: `/api/inspirations`
 
-**请求体:**
-```json
-{
-  "title": "string",
-  "description": "string",
-  "project_type_code": "string",
-  "source": "string",
-  "parameters": {}
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "title": "创意标题",
-    "description": "创意描述",
-    "project_type_code": "video_gen",
-    "source": "user_input",
+### POST `/api/inspirations`
+- **Description**: 创建新的创意灵感并触发n8n工作流 (Create a new inspiration and trigger an n8n workflow).
+- **Request Body**: `schemas.InspirationCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "title": "string",
+    "description": "string (optional)",
+    "project_type_code": "string (optional)",
+    "source": "string (optional)",
     "parameters": {
-      "style": "modern"
+      "additionalProp1": {}
     },
-    "status": "draft",
-    "score": null,
-    "score_details": null,
-    "review_notes": null,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+    "status": "string",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   }
-}
-```
+  ```
 
-#### 4.2 获取创意列表
-- **GET** `/api/inspirations?skip=0&limit=100&status=draft`
+### GET `/api/inspirations`
+- **Description**: 获取创意列表，支持状态筛选 (List inspirations with optional filtering by status).
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `status` (string, optional): Filter by inspiration status.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "title": "string",
+      "description": "string (optional)",
+      "project_type_code": "string (optional)",
+      "source": "string (optional)",
+      "parameters": {
+        "additionalProp1": {}
+      },
+      "status": "string",
+      "score": "number (optional)",
+      "score_details": {
+        "additionalProp1": {}
+      },
+      "review_notes": "string (optional)",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ]
+  ```
 
-#### 4.3 获取创意详情
-- **GET** `/api/inspirations/{inspiration_id}`
+### GET `/api/inspirations/{inspiration_id}`
+- **Description**: 获取指定创意详情 (Get details of a specific inspiration).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "title": "string",
+    "description": "string (optional)",
+    "project_type_code": "string (optional)",
+    "source": "string (optional)",
+    "parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-#### 4.4 更新创意
-- **PUT** `/api/inspirations/{inspiration_id}`
+### PUT `/api/inspirations/{inspiration_id}`
+- **Description**: 更新创意信息 (Update inspiration information).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Request Body**: `schemas.InspirationUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "title": "string",
+    "description": "string (optional)",
+    "project_type_code": "string (optional)",
+    "source": "string (optional)",
+    "parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "title": "string",
-  "description": "string",
-  "project_type_code": "string",
-  "source": "string",
-  "parameters": {},
-  "status": "string",
-  "score": 4.5,
-  "score_details": {},
-  "review_notes": "string"
-}
-```
+### DELETE `/api/inspirations/{inspiration_id}`
+- **Description**: 删除创意 (Delete an inspiration).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Response**: A confirmation message.
 
-#### 4.5 删除创意
-- **DELETE** `/api/inspirations/{inspiration_id}`
+### POST `/api/inspirations/{inspiration_id}/approve`
+- **Description**: 审核通过创意并触发项目创建工作流 (Approve an inspiration and trigger the project creation workflow).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Request Body** (optional): `approval_data` (dict) - e.g., `{"review_notes": "Looks good", "score": 95}`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "title": "string",
+    "description": "string (optional)",
+    "project_type_code": "string (optional)",
+    "source": "string (optional)",
+    "parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-#### 4.6 审核通过创意
-- **POST** `/api/inspirations/{inspiration_id}/approve`
+### POST `/api/inspirations/{inspiration_id}/reject`
+- **Description**: 拒绝创意 (Reject an inspiration).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Request Body** (optional): `rejection_data` (dict) - e.g., `{"review_notes": "Not a good fit"}`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "title": "string",
+    "description": "string (optional)",
+    "project_type_code": "string (optional)",
+    "source": "string (optional)",
+    "parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-**请求体 (可选):**
-```json
-{
-  "review_notes": "string",
-  "score": 4.5
-}
-```
+### POST `/api/inspirations/{inspiration_id}/regenerate`
+- **Description**: 重新生成创意 (Regenerate an inspiration).
+- **Path Parameters**:
+  - `inspiration_id` (int): The ID of the inspiration.
+- **Request Body** (optional): `regeneration_params` (dict) - Parameters for regeneration.
+- **Response**: A confirmation message with `inspiration_id` and `execution_id`.
 
-#### 4.7 拒绝创意
-- **POST** `/api/inspirations/{inspiration_id}/reject`
+---
 
-**请求体 (可选):**
-```json
-{
-  "review_notes": "string"
-}
-```
+## Platform Accounts
 
-#### 4.8 重新生成创意
-- **POST** `/api/inspirations/{inspiration_id}/regenerate`
+**Prefix**: `/api/platform-accounts`
 
-**请求体 (可选):**
-```json
-{
-  "parameter_overrides": {}
-}
-```
-
-### 5. 平台账号管理 (/api/platform-accounts)
-
-#### 5.1 创建平台账号
-- **POST** `/api/platform-accounts`
-
-**请求体:**
-```json
-{
-  "platform": "dreamina|midjourney|runway",
-  "name": "账号标识名称",
-  "credentials": {
-    "api_key": "string",
-    "secret": "string"
-  },
-  "status": "active|inactive",
-  "daily_limit": 100
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "platform": "dreamina",
-    "name": "dreamina_account_1",
+### POST `/api/platform-accounts`
+- **Description**: Create a new platform account.
+- **Request Body**: `schemas.platform_account.PlatformAccountCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "platform": "string",
+    "name": "string",
     "credentials": {
-      "api_key": "***masked***"
+      "additionalProp1": {}
     },
-    "status": "active",
-    "daily_limit": 100,
-    "used_today": 0,
-    "last_used_at": null,
-    "is_available": true,
-    "remaining_quota": 100,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+    "status": "string",
+    "daily_limit": "integer (optional)",
+    "used_today": "integer",
+    "last_used_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_available": "boolean",
+    "remaining_quota": "integer (optional)"
   }
-}
-```
+  ```
 
-#### 5.2 获取账号列表
-- **GET** `/api/platform-accounts?skip=0&limit=100&platform=dreamina&status=active`
-
-**查询参数:**
-- `skip`: 跳过记录数
-- `limit`: 限制记录数
-- `platform`: 平台筛选
-- `status`: 状态筛选
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
+### GET `/api/platform-accounts`
+- **Description**: List platform accounts with optional filtering.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `platform` (string, optional): Filter by platform name (e.g., "youtube").
+  - `status` (string, optional): Filter by account status (e.g., "active").
+- **Response**:
+  ```json
+  [
     {
-      "id": 1,
-      "platform": "dreamina",
-      "name": "dreamina_account_1",
-      "status": "active",
-      "daily_limit": 100,
-      "used_today": 25,
-      "is_available": true,
-      "remaining_quota": 75,
-      "created_at": "2023-01-01T00:00:00"
-    }
-  ]
-}
-```
-
-#### 5.3 获取账号详情
-- **GET** `/api/platform-accounts/{account_id}`
-
-#### 5.4 更新账号
-- **PUT** `/api/platform-accounts/{account_id}`
-
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "platform": "string",
-  "name": "string",
-  "credentials": {},
-  "status": "string",
-  "daily_limit": 100
-}
-```
-
-#### 5.5 删除账号
-- **DELETE** `/api/platform-accounts/{account_id}`
-
-#### 5.6 获取可用账号
-- **GET** `/api/platform-accounts/available/{platform}`
-
-**响应:** 返回指定平台的所有可用账号列表
-
-#### 5.7 重置使用量
-- **POST** `/api/platform-accounts/{account_id}/reset-usage`
-
-**请求体:**
-```json
-{
-  "used_today": 0
-}
-```
-
-#### 5.8 获取平台列表
-- **GET** `/api/platform-accounts/platforms/list`
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": ["dreamina", "midjourney", "runway"]
-}
-```
-
-### 6. Worker配置管理 (/api/worker-configs)
-
-#### 6.1 创建Worker配置
-- **POST** `/api/worker-configs`
-
-**请求体:**
-```json
-{
-  "config_name": "video_worker_config",
-  "config_type": "execution",
-  "worker_type": "video_generator",
-  "config_data": {
-    "max_concurrent": 3,
-    "timeout": 300
-  },
-  "description": "视频生成器配置",
-  "priority": 10,
-  "is_active": true
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "config_name": "video_worker_config",
-    "config_type": "execution",
-    "worker_type": "video_generator",
-    "config_data": {
-      "max_concurrent": 3,
-      "timeout": 300
-    },
-    "description": "视频生成器配置",
-    "priority": 10,
-    "is_active": true,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 6.2 获取配置列表
-- **GET** `/api/worker-configs?worker_type=video_generator&config_type=execution&is_active=true&skip=0&limit=100`
-
-**查询参数:**
-- `worker_type`: Worker类型筛选
-- `config_type`: 配置类型筛选
-- `is_active`: 是否激活筛选
-- `skip`: 跳过记录数
-- `limit`: 限制记录数
-
-#### 6.3 获取配置详情
-- **GET** `/api/worker-configs/{config_id}`
-
-#### 6.4 更新配置
-- **PUT** `/api/worker-configs/{config_id}`
-
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "config_name": "string",
-  "config_type": "string",
-  "worker_type": "string",
-  "config_data": {},
-  "description": "string",
-  "priority": 10,
-  "is_active": true
-}
-```
-
-#### 6.5 删除配置
-- **DELETE** `/api/worker-configs/{config_id}`
-
-**注意**: 这是软删除，会将`is_active`设置为`false`
-
-#### 6.6 为任务分配配置
-- **POST** `/api/worker-configs/tasks/{task_id}/assign`
-
-**请求体:**
-```json
-{
-  "config_ids": [1, 2, 3],
-  "override_data": {
-    "custom_param": "value"
-  }
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
-    {
-      "id": 1,
-      "task_id": 5,
-      "config_id": 1,
-      "override_data": {
-        "custom_param": "value"
-      },
-      "created_at": "2023-01-01T00:00:00"
-    }
-  ]
-}
-```
-
-#### 6.7 获取任务配置
-- **GET** `/api/worker-configs/tasks/{task_id}/configs`
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "task_id": 5,
-    "configs": [
-      {
-        "config_name": "video_worker_config",
-        "config_data": {
-          "max_concurrent": 3,
-          "timeout": 300,
-          "custom_param": "value"
-        }
-      }
-    ]
-  }
-}
-```
-
-### 7. Webhook接口 (/api/webhooks)
-
-#### 7.1 创意工作流Webhook
-- **POST** `/api/webhooks/n8n/inspiration/{inspiration_id}`
-
-**请求体:**
-```json
-{
-  "status": "success|failed",
-  "data": {
-    "title": "AI生成的标题",
-    "description": "AI生成的描述",
-    "parameters": {},
-    "score": 4.5,
-    "error": "错误信息"
-  },
-  "executionId": "n8n_exec_123"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Inspiration webhook processed",
-    "inspiration_id": 1,
-    "status": "success"
-  }
-}
-```
-
-#### 7.2 项目创建Webhook
-- **POST** `/api/webhooks/n8n/project_creation/{inspiration_id}`
-
-**请求体:**
-```json
-{
-  "status": "success|failed",
-  "project": {
-    "name": "项目名称",
-    "project_type": "video_generation",
-    "initial_parameters": {}
-  },
-  "tasks": [
-    {
-      "task_type": "video_generation",
-      "status": "waiting",
-      "dependencies": [],
-      "task_output": {},
-      "platform_account_id": 1,
-      "commit_id": "task_commit_123"
-    }
-  ],
-  "executionId": "n8n_exec_456"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Project created successfully",
-    "project_id": 5,
-    "tasks_created": 3
-  }
-}
-```
-
-#### 7.3 项目执行Webhook
-- **POST** `/api/webhooks/n8n/project_execution/{project_id}`
-
-**请求体:**
-```json
-{
-  "status": "success|failed",
-  "task_updates": [
-    {
-      "task_id": 1,
-      "status": "completed",
-      "task_output": {
-        "video_url": "https://example.com/video.mp4"
-      },
-      "error_message": null,
-      "commit_id": "task_commit_789"
-    }
-  ],
-  "project_updates": {
-    "status": "processing"
-  },
-  "executionId": "n8n_exec_789"
-}
-```
-
-#### 7.4 任务更新Webhook
-- **POST** `/api/webhooks/n8n/task_update/{task_id}`
-
-**请求体:**
-```json
-{
-  "status": "completed|failed|processing",
-  "task_output": {
-    "result_url": "https://example.com/result.mp4"
-  },
-  "error_message": "错误信息",
-  "commit_id": "task_commit_final"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Task webhook processed",
-    "task_id": 1,
-    "status": "completed"
-  }
-}
-```
-
-## 错误处理
-
-### 常见错误响应
-
-#### 资源未找到 (404)
-```json
-{
-  "code": 404,
-  "msg": "Project not found",
-  "data": null
-}
-```
-
-#### 参数错误 (400)
-```json
-{
-  "code": 400,
-  "msg": "Invalid status transition from completed to pending",
-  "data": null
-}
-```
-
-#### 服务器错误 (500)
-```json
-{
-  "code": 500,
-  "msg": "Error processing webhook",
-  "data": null
-}
-```
-
-#### 无内容 (1)
-```json
-{
-  "code": 1,
-  "msg": "No pending tasks available for the given types.",
-  "data": null
-}
-```
-
-## 特性说明
-
-### 1. 逻辑删除
-- 所有删除操作都是逻辑删除，通过设置`deleted_at`字段实现
-- 查询时会自动过滤已删除的记录
-
-### 2. 任务依赖管理
-- 支持任务间依赖关系定义
-- 创建任务时会验证依赖是否会造成循环依赖
-- 任务完成时会自动触发依赖任务的处理
-
-### 3. 状态转换控制
-- 项目和任务状态转换有严格的业务规则控制
-- 不允许的状态转换会返回400错误
-
-### 4. n8n工作流集成
-- 创意、项目生成都会触发对应的n8n工作流
-- 通过webhook接收工作流执行结果并更新数据
-- 支持异步工作流执行
-
-### 5. Worker认领机制
-- 支持多Worker并发安全的任务认领
-- 使用数据库锁确保任务不会被重复认领
-- 支持按任务类型认领
-
-### 6. 平台账号可用性管理
-- 支持每日使用量限制
-- 自动判断账号可用性状态
-- 实时计算剩余配额
-
-### 7. 配置管理
-- 支持Worker配置的动态管理
-- 支持任务级别的配置覆盖
-- 支持配置优先级排序
-
-## 使用示例
-
-### 创建完整的项目流程
-
-1. **创建创意**
-```bash
-curl -X POST "http://localhost:8000/api/inspirations" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "AI短视频创意",
-    "description": "关于科技的短视频",
-    "project_type_code": "tech_video",
-    "source": "user_input"
-  }'
-```
-
-2. **审核通过创意**
-```bash
-curl -X POST "http://localhost:8000/api/inspirations/1/approve" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "review_notes": "创意不错，可以制作",
-    "score": 4.5
-  }'
-```
-
-3. **Worker认领任务**
-```bash
-curl -X POST "http://localhost:8000/api/tasks/claim" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "task_types": ["video_generation", "audio_generation"]
-  }'
-```
-
-4. **更新任务状态**
-```bash
-curl -X PATCH "http://localhost:8000/api/tasks/update-by-commit-id" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "commit_id": "task_commit_123",
-    "status": "completed",
-    "task_output": {
-      "video_url": "https://example.com/video.mp4"
-    }
-  }'
-```
-
-### 8. 工作流注册管理 (/api/workflow-registry)
-
-#### 8.1 创建工作流
-- **POST** `/api/workflow-registry`
-- **功能**: 注册新的工作流配置
-
-**请求体:**
-```json
-{
-  "id": "dreamina_video_gen_v1",
-  "name": "Dreamina视频生成工作流",
-  "description": "使用Dreamina平台生成视频的完整工作流",
-  "workflow_type": "execution",
-  "version": "1.0.0",
-  "config": {
-    "platform": "dreamina",
-    "model": "video_gen_model",
-    "parameters": {
-      "duration": 30,
-      "quality": "HD"
-    }
-  },
-  "is_active": true
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": "dreamina_video_gen_v1",
-    "name": "Dreamina视频生成工作流",
-    "description": "使用Dreamina平台生成视频的完整工作流",
-    "workflow_type": "execution",
-    "version": "1.0.0",
-    "config": {
-      "platform": "dreamina",
-      "model": "video_gen_model",
-      "parameters": {
-        "duration": 30,
-        "quality": "HD"
-      }
-    },
-    "is_active": true,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 8.2 获取工作流列表
-- **GET** `/api/workflow-registry?skip=0&limit=100&workflow_type=execution&is_active=true`
-- **功能**: 获取工作流注册列表，支持按类型和状态过滤
-
-**查询参数:**
-- `skip`: 跳过的记录数（分页）
-- `limit`: 返回的记录数限制
-- `workflow_type`: 工作流类型过滤 (inspiration, transform, execution)
-- `is_active`: 是否激活状态过滤 (true/false)
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
-    {
-      "id": "dreamina_video_gen_v1",
-      "name": "Dreamina视频生成工作流",
-      "description": "使用Dreamina平台生成视频的完整工作流",
-      "workflow_type": "execution",
-      "version": "1.0.0",
-      "is_active": true,
-      "created_at": "2023-01-01T00:00:00"
-    }
-  ]
-}
-```
-
-#### 8.3 获取工作流详情
-- **GET** `/api/workflow-registry/{workflow_id}`
-- **功能**: 获取指定工作流的详细配置信息
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": "dreamina_video_gen_v1",
-    "name": "Dreamina视频生成工作流",
-    "description": "使用Dreamina平台生成视频的完整工作流",
-    "workflow_type": "execution",
-    "version": "1.0.0",
-    "config": {
-      "platform": "dreamina",
-      "model": "video_gen_model",
-      "parameters": {
-        "duration": 30,
-        "quality": "HD"
-      }
-    },
-    "is_active": true,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 8.4 更新工作流
-- **PUT** `/api/workflow-registry/{workflow_id}`
-- **功能**: 更新工作流配置信息
-
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "name": "更新后的工作流名称",
-  "description": "更新后的描述",
-  "workflow_type": "execution",
-  "version": "1.1.0",
-  "config": {
-    "platform": "dreamina",
-    "model": "video_gen_model_v2",
-    "parameters": {
-      "duration": 60,
-      "quality": "4K"
-    }
-  },
-  "is_active": true
-}
-```
-
-#### 8.5 删除工作流
-- **DELETE** `/api/workflow-registry/{workflow_id}`
-- **功能**: 软删除工作流（逻辑删除）
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Workflow deleted successfully"
-  }
-}
-```
-
-#### 8.6 激活工作流
-- **POST** `/api/workflow-registry/{workflow_id}/activate`
-- **功能**: 激活指定的工作流
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": "dreamina_video_gen_v1",
-    "name": "Dreamina视频生成工作流",
-    "is_active": true,
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 8.7 停用工作流
-- **POST** `/api/workflow-registry/{workflow_id}/deactivate`
-- **功能**: 停用指定的工作流
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": "dreamina_video_gen_v1",
-    "name": "Dreamina视频生成工作流",
-    "is_active": false,
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 8.8 获取工作流类型列表
-- **GET** `/api/workflow-registry/types/list`
-- **功能**: 获取系统中所有的工作流类型
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
-    "inspiration",
-    "transform", 
-    "execution"
-  ]
-}
-```
-
-### 9. 项目类型管理 (/api/project-types)
-
-#### 9.1 创建项目类型
-- **POST** `/api/project-types`
-- **功能**: 创建新的项目类型配置
-
-**请求体:**
-```json
-{
-  "code": "tech_video_short",
-  "name": "科技短视频",
-  "description": "科技类短视频项目类型",
-  "inspiration_workflow_id": "tech_inspiration_v1",
-  "transform_workflow_id": "script_transform_v1", 
-  "execution_workflow_id": "dreamina_video_gen_v1",
-  "default_parameters": {
-    "duration": 30,
-    "style": "modern",
-    "target_audience": "general"
-  },
-  "parameter_schema": {
-    "type": "object",
-    "properties": {
-      "duration": {
-        "type": "integer",
-        "minimum": 15,
-        "maximum": 60
-      },
-      "style": {
-        "type": "string",
-        "enum": ["modern", "classic", "trendy"]
+      "platform": "string",
+      "name": "string",
+      "status": "string",
+      "daily_limit": "integer (optional)",
+      "used_today": "integer",
+      "is_available": "boolean",
+      "remaining_quota": "integer (optional)",
+      "id": "string",
+      "created_at": "datetime",
+      "credentials": {
+        "additionalProp1": {},
+        "additionalProp2": {},
+        "additionalProp3": {}
       }
     }
-  },
-  "category": "video",
-  "sort_order": 10,
-  "is_active": true
-}
-```
+  ]
+  ```
 
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "code": "tech_video_short",
-    "name": "科技短视频",
-    "description": "科技类短视频项目类型",
-    "inspiration_workflow_id": "tech_inspiration_v1",
-    "transform_workflow_id": "script_transform_v1",
-    "execution_workflow_id": "dreamina_video_gen_v1",
+### GET `/api/platform-accounts/{account_id}`
+- **Description**: Get a specific platform account by ID.
+- **Path Parameters**:
+  - `account_id` (int): The ID of the platform account.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "platform": "string",
+    "name": "string",
+    "credentials": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "daily_limit": "integer (optional)",
+    "used_today": "integer",
+    "last_used_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_available": "boolean",
+    "remaining_quota": "integer (optional)"
+  }
+  ```
+
+### PUT `/api/platform-accounts/{account_id}`
+- **Description**: Update a platform account.
+- **Path Parameters**:
+  - `account_id` (int): The ID of the platform account.
+- **Request Body**: `schemas.platform_account.PlatformAccountUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "platform": "string",
+    "name": "string",
+    "credentials": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "daily_limit": "integer (optional)",
+    "used_today": "integer",
+    "last_used_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_available": "boolean",
+    "remaining_quota": "integer (optional)"
+  }
+  ```
+
+### DELETE `/api/platform-accounts/{account_id}`
+- **Description**: Logically delete a platform account.
+- **Path Parameters**:
+  - `account_id` (int): The ID of the platform account.
+- **Response**: A confirmation message.
+
+### GET `/api/platform-accounts/available/{platform}`
+- **Description**: Get available accounts for a specific platform.
+- **Path Parameters**:
+  - `platform` (string): The platform name.
+- **Response**:
+  ```json
+  [
+    {
+      "platform": "string",
+      "name": "string",
+      "status": "string",
+      "daily_limit": "integer (optional)",
+      "used_today": "integer",
+      "is_available": "boolean",
+      "remaining_quota": "integer (optional)",
+      "id": "string",
+      "created_at": "datetime",
+      "credentials": {
+        "additionalProp1": {},
+        "additionalProp2": {},
+        "additionalProp3": {}
+      }
+    }
+  ]
+  ```
+
+### POST `/api/platform-accounts/{account_id}/reset-usage`
+- **Description**: Reset the daily usage count for a platform account.
+- **Path Parameters**:
+  - `account_id` (int): The ID of the platform account.
+- **Request Body**: `schemas.platform_account.PlatformAccountUsageReset`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "platform": "string",
+    "name": "string",
+    "credentials": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "daily_limit": "integer (optional)",
+    "used_today": "integer",
+    "last_used_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "is_available": "boolean",
+    "remaining_quota": "integer (optional)"
+  }
+  ```
+
+### GET `/api/platform-accounts/platforms/list`
+- **Description**: Get a list of all unique platforms.
+- **Response**: `List[string]`
+
+---
+
+## Project Types
+
+**Prefix**: `/api/project-types`
+
+### POST `/api/project-types`
+- **Description**: Create a new project type.
+- **Request Body**: `schemas.project_type.ProjectTypeCreate`
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
     "default_parameters": {
-      "duration": 30,
-      "style": "modern",
-      "target_audience": "general"
+      "additionalProp1": {}
     },
     "parameter_schema": {
-      "type": "object",
-      "properties": {
-        "duration": {
-          "type": "integer",
-          "minimum": 15,
-          "maximum": 60
-        },
-        "style": {
-          "type": "string", 
-          "enum": ["modern", "classic", "trendy"]
-        }
-      }
+      "additionalProp1": {}
     },
-    "category": "video",
-    "sort_order": 10,
-    "is_active": true,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   }
-}
-```
+  ```
 
-#### 9.2 获取项目类型列表
-- **GET** `/api/project-types?skip=0&limit=100&category=video&is_active=true`
-- **功能**: 获取项目类型列表，支持按分类和状态过滤
-
-**查询参数:**
-- `skip`: 跳过的记录数（分页）
-- `limit`: 返回的记录数限制
-- `category`: 项目类型分类过滤
-- `is_active`: 是否激活状态过滤 (true/false)
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
+### GET `/api/project-types`
+- **Description**: List project types with optional filtering.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `category` (string, optional): Filter by category.
+  - `is_active` (bool, optional): Filter by active status.
+- **Response**:
+  ```json
+  [
     {
-      "code": "tech_video_short",
-      "name": "科技短视频",
-      "description": "科技类短视频项目类型",
-      "category": "video",
-      "sort_order": 10,
-      "is_active": true,
-      "created_at": "2023-01-01T00:00:00"
+      "code": "string",
+      "name": "string",
+      "description": "string (optional)",
+      "category": "string (optional)",
+      "sort_order": "integer",
+      "is_active": "boolean",
+      "created_at": "datetime"
     }
   ]
-}
-```
+  ```
 
-#### 9.3 获取项目类型详情
-- **GET** `/api/project-types/{project_type_code}`
-- **功能**: 获取指定项目类型的详细信息及关联工作流详情
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success", 
-  "data": {
-    "code": "tech_video_short",
-    "name": "科技短视频",
-    "description": "科技类短视频项目类型",
-    "inspiration_workflow_id": "tech_inspiration_v1",
-    "transform_workflow_id": "script_transform_v1",
-    "execution_workflow_id": "dreamina_video_gen_v1",
+### GET `/api/project-types/{project_type_code}`
+- **Description**: Get project type by code with workflow details.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
     "default_parameters": {
-      "duration": 30,
-      "style": "modern"
+      "additionalProp1": {}
     },
     "parameter_schema": {
-      "type": "object",
-      "properties": {
-        "duration": {"type": "integer"},
-        "style": {"type": "string"}
-      }
+      "additionalProp1": {}
     },
-    "category": "video",
-    "sort_order": 10,
-    "is_active": true,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00",
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime",
     "inspiration_workflow": {
-      "id": "tech_inspiration_v1",
-      "name": "科技创意生成工作流",
-      "workflow_type": "inspiration"
+      "additionalProp1": {}
     },
     "transform_workflow": {
-      "id": "script_transform_v1", 
-      "name": "脚本转换工作流",
-      "workflow_type": "transform"
+      "additionalProp1": {}
     },
     "execution_workflow": {
-      "id": "dreamina_video_gen_v1",
-      "name": "Dreamina视频生成工作流",
-      "workflow_type": "execution"
+      "additionalProp1": {}
     }
   }
-}
-```
+  ```
 
-#### 9.4 更新项目类型
-- **PUT** `/api/project-types/{project_type_code}`
-- **功能**: 更新项目类型配置信息
-
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "name": "更新后的科技短视频",
-  "description": "更新后的描述",
-  "inspiration_workflow_id": "tech_inspiration_v2",
-  "default_parameters": {
-    "duration": 45,
-    "style": "trendy"
-  },
-  "category": "video",
-  "sort_order": 15,
-  "is_active": true
-}
-```
-
-#### 9.5 删除项目类型
-- **DELETE** `/api/project-types/{project_type_code}`
-- **功能**: 软删除项目类型（逻辑删除）
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "message": "Project type deleted successfully"
-  }
-}
-```
-
-#### 9.6 激活项目类型
-- **POST** `/api/project-types/{project_type_code}/activate`
-- **功能**: 激活指定的项目类型
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "code": "tech_video_short",
-    "name": "科技短视频",
-    "is_active": true,
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 9.7 停用项目类型
-- **POST** `/api/project-types/{project_type_code}/deactivate`
-- **功能**: 停用指定的项目类型
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "code": "tech_video_short",
-    "name": "科技短视频", 
-    "is_active": false,
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-#### 9.8 获取项目类型分类列表
-- **GET** `/api/project-types/categories/list`
-- **功能**: 获取系统中所有的项目类型分类
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
-    "video",
-    "audio",
-    "image"
-  ]
-}
-```
-
-#### 9.9 更新项目类型排序
-- **PUT** `/api/project-types/{project_type_code}/sort-order?sort_order=20`
-- **功能**: 更新项目类型的显示排序
-
-**查询参数:**
-- `sort_order`: 新的排序值
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "code": "tech_video_short",
-    "name": "科技短视频",
-    "sort_order": 20,
-    "updated_at": "2023-01-01T00:00:00"
-  }
-}
-```
-
-### 项目类型管理示例用法
-
-1. **创建新项目类型**
-```bash
-curl -X POST "http://localhost:8000/api/project-types" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "education_video",
-    "name": "教育类视频",
-    "description": "适用于教育培训的视频项目类型",
-    "inspiration_workflow_id": "education_inspiration_v1",
-    "transform_workflow_id": "script_transform_v1",
-    "execution_workflow_id": "dreamina_video_gen_v1",
+### PUT `/api/project-types/{project_type_code}`
+- **Description**: Update project type.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Request Body**: `schemas.project_type.ProjectTypeUpdate`
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
     "default_parameters": {
-      "duration": 60,
-      "style": "professional",
-      "language": "chinese"
+      "additionalProp1": {}
     },
     "parameter_schema": {
-      "type": "object",
-      "properties": {
-        "duration": {"type": "integer", "minimum": 30, "maximum": 300},
-        "style": {"type": "string", "enum": ["professional", "casual", "formal"]},
-        "language": {"type": "string", "enum": ["chinese", "english"]}
-      }
+      "additionalProp1": {}
     },
-    "category": "education",
-    "sort_order": 5,
-    "is_active": true
-  }'
-```
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-2. **查询视频类项目类型**
-```bash
-curl "http://localhost:8000/api/project-types?category=video&is_active=true"
-```
+### DELETE `/api/project-types/{project_type_code}`
+- **Description**: Soft delete project type.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Response**: A confirmation message.
 
-3. **获取项目类型详情及关联工作流**
-```bash
-curl "http://localhost:8000/api/project-types/education_video"
-```
-
-4. **更新项目类型配置**
-```bash
-curl -X PUT "http://localhost:8000/api/project-types/education_video" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "在线教育视频",
+### POST `/api/project-types/{project_type_code}/activate`
+- **Description**: Activate a project type.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
     "default_parameters": {
-      "duration": 90,
-      "style": "modern",
-      "interactive": true
+      "additionalProp1": {}
     },
-    "sort_order": 3
-  }'
-```
-
-5. **获取所有项目类型分类**
-```bash
-curl "http://localhost:8000/api/project-types/categories/list"
-```
-
-6. **停用项目类型**
-```bash
-curl -X POST "http://localhost:8000/api/project-types/education_video/deactivate"
-```
-
-### 10. 目标账号分析管理 (/api/target-account-analysis)
-
-#### 10.1 快速添加目标账号
-- **POST** `/api/target-account-analysis/accounts/quick-add`
-- **功能**: 通过频道URL快速添加监控账号，系统自动检测平台并提取信息
-
-**最简参数:**
-```json
-{
-  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-  "monitor_frequency": "daily",
-  "video_limit": 50
-}
-```
-
-**完整参数示例:**
-```json
-{
-  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-  "category": "technology",
-  "monitor_frequency": "daily",
-  "video_limit": 50,
-  "crawl_videos": true,
-  "crawl_metrics": true
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "platform": "youtube",
-    "platform_account_id": "UCxxxxxxxxxxxxxx",
-    "username": "tech_channel", 
-    "display_name": "科技频道",
-    "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-    "description": "专注科技内容的频道",
-    "avatar_url": "https://example.com/avatar.jpg",
-    "is_verified": true,
-    "category": "technology",
-    "is_active": true,
-    "monitor_frequency": "daily",
-    "last_crawled_at": null,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+    "parameter_schema": {
+      "additionalProp1": {}
+    },
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   }
-}
-```
+  ```
 
-#### 10.2 创建目标账号（手动）
-- **POST** `/api/target-account-analysis/accounts`
-- **功能**: 创建新的目标账号监控配置
-
-**请求体:**
-```json
-{
-  "platform": "youtube",
-  "platform_account_id": "UCxxxxxxxxxxxxxx", 
-  "username": "tech_channel",
-  "display_name": "科技频道",
-  "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-  "description": "专注科技内容的频道",
-  "avatar_url": "https://example.com/avatar.jpg",
-  "is_verified": true,
-  "category": "technology",
-  "monitor_frequency": "daily"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "platform": "youtube",
-    "platform_account_id": "UCxxxxxxxxxxxxxx",
-    "username": "tech_channel", 
-    "display_name": "科技频道",
-    "profile_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-    "description": "专注科技内容的频道",
-    "avatar_url": "https://example.com/avatar.jpg",
-    "is_verified": true,
-    "category": "technology",
-    "is_active": true,
-    "monitor_frequency": "daily",
-    "last_crawled_at": null,
-    "created_at": "2023-01-01T00:00:00",
-    "updated_at": "2023-01-01T00:00:00"
+### POST `/api/project-types/{project_type_code}/deactivate`
+- **Description**: Deactivate a project type.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
+    "default_parameters": {
+      "additionalProp1": {}
+    },
+    "parameter_schema": {
+      "additionalProp1": {}
+    },
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   }
-}
-```
+  ```
 
-#### 10.3 获取目标账号列表  
-- **GET** `/api/target-account-analysis/accounts?platform=youtube&is_active=true&skip=0&limit=50`
+### GET `/api/project-types/categories/list`
+- **Description**: Get list of all unique project type categories.
+- **Response**: `List[string]`
 
-**查询参数:**
-- `platform`: 平台过滤 (youtube, tiktok, bilibili)
-- `is_active`: 是否活跃监控
-- `category`: 内容分类过滤
-- `monitor_frequency`: 监控频率过滤
-- `skip`: 跳过记录数
-- `limit`: 限制记录数
+### PUT `/api/project-types/{project_type_code}/sort-order`
+- **Description**: Update project type sort order.
+- **Path Parameters**:
+  - `project_type_code` (string): The unique code for the project type.
+- **Query Parameters**:
+  - `sort_order` (int): The new sort order.
+- **Response**:
+  ```json
+  {
+    "code": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "inspiration_workflow_id": "string (optional)",
+    "transform_workflow_id": "string (optional)",
+    "execution_workflow_id": "string (optional)",
+    "default_parameters": {
+      "additionalProp1": {}
+    },
+    "parameter_schema": {
+      "additionalProp1": {}
+    },
+    "category": "string (optional)",
+    "sort_order": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
 
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
+---
+
+## Projects
+
+**Prefix**: `/api/projects`
+
+### POST `/api/projects`
+- **Description**: Create a new project.
+- **Request Body**: `schemas.ProjectCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "project_type_code": "string",
+    "initial_parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "inspiration_id": "string (optional)",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "used_transform_workflow_id": "string (optional)",
+    "used_execution_workflow_id": "string (optional)",
+    "total_tasks": "integer",
+    "completed_tasks": "integer",
+    "failed_tasks": "integer",
+    "output_asset_id": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "tasks": []
+  }
+  ```
+
+### PUT `/api/projects/{project_id}`
+- **Description**: Update a project with comprehensive validation and business logic.
+- **Path Parameters**:
+  - `project_id` (int): The ID of the project.
+- **Request Body**: `schemas.ProjectUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "project_type_code": "string",
+    "initial_parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "inspiration_id": "string (optional)",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "used_transform_workflow_id": "string (optional)",
+    "used_execution_workflow_id": "string (optional)",
+    "total_tasks": "integer",
+    "completed_tasks": "integer",
+    "failed_tasks": "integer",
+    "output_asset_id": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "tasks": []
+  }
+  ```
+
+### GET `/api/projects`
+- **Description**: Read a list of projects.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
     {
-      "id": 1,
-      "platform": "youtube",
-      "username": "tech_channel",
-      "display_name": "科技频道",
-      "category": "technology", 
-      "is_active": true,
-      "monitor_frequency": "daily",
-      "last_crawled_at": "2023-01-01T12:00:00",
-      "created_at": "2023-01-01T00:00:00"
+      "id": "string",
+      "name": "string",
+      "project_type_code": "string",
+      "initial_parameters": {
+        "additionalProp1": {}
+      },
+      "status": "string",
+      "inspiration_id": "string (optional)",
+      "score": "number (optional)",
+      "score_details": {
+        "additionalProp1": {}
+      },
+      "review_notes": "string (optional)",
+      "used_transform_workflow_id": "string (optional)",
+      "used_execution_workflow_id": "string (optional)",
+      "total_tasks": "integer",
+      "completed_tasks": "integer",
+      "failed_tasks": "integer",
+      "output_asset_id": "string (optional)",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "tasks": []
     }
   ]
-}
-```
+  ```
 
-#### 10.4 获取账号详情
-- **GET** `/api/target-account-analysis/accounts/{account_id}`
-
-**响应**: 包含账号基本信息及最新统计数据
-
-#### 10.5 更新账号配置
-- **PUT** `/api/target-account-analysis/accounts/{account_id}`
-
-**请求体:** (所有字段都是可选的)
-```json
-{
-  "display_name": "更新后的频道名",
-  "category": "entertainment",
-  "monitor_frequency": "hourly",
-  "is_active": false
-}
-```
-
-#### 10.6 删除账号监控
-- **DELETE** `/api/target-account-analysis/accounts/{account_id}`
-
-#### 10.7 创建频道信息
-- **POST** `/api/target-account-analysis/channels`
-
-**请求体:**
-```json
-{
-  "platform": "youtube",
-  "channel_id": "UCxxxxxxxxxxxxxx",
-  "channel_name": "科技频道",
-  "channel_url": "https://www.youtube.com/channel/UCxxxxxxxxxxxxxx",
-  "is_verified": true,
-  "subscriber_count": 150000
-}
-```
-
-#### 10.8 获取频道列表
-- **GET** `/api/target-account-analysis/channels?platform=youtube&skip=0&limit=50`
-
-#### 10.9 更新频道订阅数
-- **PATCH** `/api/target-account-analysis/channels/{channel_id}/subscriber-count`
-
-**请求体:**
-```json
-{
-  "subscriber_count": 155000
-}
-```
-
-#### 10.10 记录账号统计数据
-- **POST** `/api/target-account-analysis/accounts/{account_id}/statistics`
-
-**请求体:**
-```json
-{
-  "followers_count": 150000,
-  "following_count": 500,
-  "total_videos_count": 280,
-  "total_views": 5000000,
-  "total_likes": 120000,
-  "collected_at": "2023-01-01T12:00:00"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success", 
-  "data": {
-    "id": 1,
-    "account_id": 1,
-    "followers_count": 150000,
-    "following_count": 500,
-    "total_videos_count": 280,
-    "total_views": 5000000,
-    "total_likes": 120000,
-    "followers_growth": 1000,
-    "followers_growth_rate": 0.0067,
-    "collected_at": "2023-01-01T12:00:00",
-    "created_at": "2023-01-01T12:00:00"
-  }
-}
-```
-
-#### 10.11 获取账号统计历史
-- **GET** `/api/target-account-analysis/accounts/{account_id}/statistics?days=30&limit=100`
-
-**查询参数:**
-- `days`: 获取最近天数的数据
-- `limit`: 限制记录数
-
-#### 10.12 获取增长趋势分析
-- **GET** `/api/target-account-analysis/accounts/{account_id}/growth-trends?days=7`
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "followers_trend": 5000,
-    "videos_trend": 12,
-    "avg_daily_growth": 714,
-    "total_growth_rate": 3.44,
-    "analysis_period_days": 7,
-    "data_points": 7
-  }
-}
-```
-
-#### 10.13 创建视频记录
-- **POST** `/api/target-account-analysis/videos`
-
-**请求体:**
-```json
-{
-  "account_id": 1,
-  "channel_id": 1,
-  "platform": "youtube",
-  "platform_video_id": "dQw4w9WgXcQ",
-  "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "title": "Amazing Tech Video",
-  "description": "This video shows amazing technology",
-  "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-  "duration": 240,
-  "video_type": "long",
-  "published_at": "2023-01-01T10:00:00",
-  "discovered_at": "2023-01-01T12:00:00"
-}
-```
-
-#### 10.14 批量创建视频
-- **POST** `/api/target-account-analysis/videos/batch`
-
-**请求体:**
-```json
-{
-  "videos": [
-    {
-      "account_id": 1,
-      "platform_video_id": "video1",
-      "title": "Video 1",
-      "duration": 120
+### GET `/api/projects/{project_id}`
+- **Description**: Read a single project.
+- **Path Parameters**:
+  - `project_id` (int): The ID of the project.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "project_type_code": "string",
+    "initial_parameters": {
+      "additionalProp1": {}
     },
-    {
-      "account_id": 1, 
-      "platform_video_id": "video2",
-      "title": "Video 2", 
-      "duration": 180
+    "status": "string",
+    "inspiration_id": "string (optional)",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "used_transform_workflow_id": "string (optional)",
+    "used_execution_workflow_id": "string (optional)",
+    "total_tasks": "integer",
+    "completed_tasks": "integer",
+    "failed_tasks": "integer",
+    "output_asset_id": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "tasks": []
+  }
+  ```
+
+### DELETE `/api/projects/{project_id}`
+- **Description**: 逻辑删除项目 (Logically delete a project).
+- **Path Parameters**:
+  - `project_id` (int): The ID of the project.
+- **Response**: A confirmation message.
+
+### POST `/api/projects/{project_id}/recalculate-tasks`
+- **Description**: Manually recalculate project task counts. Useful for fixing data inconsistencies.
+- **Path Parameters**:
+  - `project_id` (int): The ID of the project.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "project_type_code": "string",
+    "initial_parameters": {
+      "additionalProp1": {}
+    },
+    "status": "string",
+    "inspiration_id": "string (optional)",
+    "score": "number (optional)",
+    "score_details": {
+      "additionalProp1": {}
+    },
+    "review_notes": "string (optional)",
+    "used_transform_workflow_id": "string (optional)",
+    "used_execution_workflow_id": "string (optional)",
+    "total_tasks": "integer",
+    "completed_tasks": "integer",
+    "failed_tasks": "integer",
+    "output_asset_id": "string (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "tasks": []
+  }
+  ```
+
+### POST `/api/projects/{project_id}/regenerate`
+- **Description**: 重新生成项目，触发n8n执行工作流 (Regenerate a project, triggering an n8n execution workflow).
+- **Path Parameters**:
+  - `project_id` (int): The ID of the project.
+- **Request Body** (optional): `regeneration_params` (dict) - Parameters for regeneration.
+- **Response**: A confirmation message with `project_id` and `execution_id`.
+
+---
+
+## Analysis
+
+**Prefix**: `/api/analysis`
+
+### POST `/api/analysis/accounts/quick-add`
+- **Description**: 快速添加目标账号并立即触发一次后台数据同步任务 (Quickly add a target account and immediately trigger a background data sync task).
+- **Request Body**: `QuickAddAccountRequest`
+  - `channel_url` (string): URL of the channel.
+  - `category` (string, optional): Category for the account.
+  - `video_limit` (int, optional, default: 50): Number of videos to crawl.
+  - `crawl_videos` (bool, optional, default: True): Whether to crawl videos.
+  - `is_scheduled` (bool, optional, default: True): Whether to schedule regular crawls.
+  - `schedule_interval` (int, optional): Interval in seconds for scheduled crawls.
+  - `cron_string` (string, optional): Cron string for scheduled crawls.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "account_id": "string (optional)",
+    "display_name": "string (optional)",
+    "username": "string (optional)",
+    "profile_url": "string (optional)",
+    "channel_url": "string (optional)",
+    "description": "string (optional)",
+    "avatar_url": "string (optional)",
+    "is_verified": "boolean (optional)",
+    "category": "string (optional)",
+    "subscriber_count": "integer (optional)",
+    "is_active": "boolean",
+    "last_crawled_at": "datetime (optional)",
+    "video_crawl_limit": "integer",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "deleted_at": "datetime (optional)",
+    "uploads_playlist_id": "string (optional)",
+    "country": "string (optional)",
+    "published_at": "datetime (optional)",
+    "is_scheduled": "boolean (optional)",
+    "schedule_interval": "integer (optional)",
+    "cron_string": "string (optional)",
+    "latest_snapshot": {
+      "id": "string",
+      "target_account_id": "string",
+      "subscriber_count": "integer (optional)",
+      "total_videos_count": "integer (optional)",
+      "hidden_subscriber_count": "boolean (optional)",
+      "total_views": "integer (optional)",
+      "collected_at": "datetime",
+      "created_at": "datetime"
     }
-  ]
-}
-```
-
-#### 10.15 获取视频列表
-- **GET** `/api/target-account-analysis/videos?account_id=1&video_type=short&skip=0&limit=50`
-
-**查询参数:**
-- `account_id`: 账号ID过滤
-- `channel_id`: 频道ID过滤  
-- `video_type`: 视频类型过滤 (long, short, live)
-- `is_downloaded`: 是否已下载过滤
-- `published_after`: 发布时间起始过滤
-- `published_before`: 发布时间结束过滤
-
-#### 10.16 更新视频下载状态
-- **PATCH** `/api/target-account-analysis/videos/{video_id}/download-status`
-
-**请求体:**
-```json
-{
-  "download_status": "completed",
-  "local_file_path": "/storage/videos/amazing_tech_video.mp4",
-  "local_file_size": 52428800,
-  "is_downloaded": true
-}
-```
-
-#### 10.17 记录视频互动数据
-- **POST** `/api/target-account-analysis/videos/{video_id}/engagement-metrics`
-
-**请求体:**
-```json
-{
-  "views_count": 100000,
-  "likes_count": 5000, 
-  "comments_count": 300,
-  "shares_count": 150,
-  "collected_at": "2023-01-01T12:00:00"
-}
-```
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1,
-    "video_id": 1,
-    "views_count": 100000,
-    "likes_count": 5000,
-    "comments_count": 300, 
-    "shares_count": 150,
-    "engagement_rate": 0.0545,
-    "views_growth": 2000,
-    "likes_growth": 100,
-    "collected_at": "2023-01-01T12:00:00",
-    "created_at": "2023-01-01T12:00:00"
   }
-}
-```
+  ```
 
-#### 10.18 获取视频互动历史
-- **GET** `/api/target-account-analysis/videos/{video_id}/engagement-metrics?days=30&limit=100`
+### POST `/api/analysis/videos/trigger-download`
+- **Description**: 手动创建并入队视频下载任务 (Manually create and enqueue video download tasks).
+- **Request Body**: `TriggerDownloadRequest`
+  - `video_ids` (List[string]): List of video IDs to download.
+  - `priority` (int, optional, default: 10): Task priority.
+- **Response**: A summary of processed requests.
 
-#### 10.19 批量获取最新互动数据
-- **POST** `/api/target-account-analysis/videos/latest-metrics`
-
-**请求体:**
-```json
-{
-  "video_ids": [1, 2, 3, 4, 5]
-}
-```
-
-#### 10.20 获取热门视频排行
-- **GET** `/api/target-account-analysis/videos/trending?account_id=1&metric=views_count&days=7&limit=10`
-
-**查询参数:**
-- `account_id`: 账号ID过滤
-- `metric`: 排序指标 (views_count, likes_count, engagement_rate)
-- `days`: 时间范围
-- `limit`: 限制数量
-
-#### 10.21 获取账号分析摘要
-- **GET** `/api/target-account-analysis/accounts/{account_id}/analytics-summary`
-
-**响应示例:**
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "account": {
-      "id": 1,
-      "username": "tech_channel",
-      "platform": "youtube"
-    },
-    "latest_stats": {
-      "followers_count": 150000,
-      "total_videos_count": 280,
-      "followers_growth": 1000
-    },
-    "recent_videos": [
-      {
-        "id": 1,
-        "title": "Amazing Tech Video",
-        "views_count": 100000,
-        "published_at": "2023-01-01T10:00:00"
-      }
+### POST `/api/analysis/accounts/{account_id}/trigger-crawl`
+- **Description**: 手动触发对指定账号的后台数据同步任务 (Manually trigger a background data sync task for a specific account).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Request Body**: `AccountCrawlRequest`
+  - `crawl_videos` (bool, optional, default: True): Whether to crawl videos.
+  - `video_limit` (int, optional, default: 50): Number of videos to crawl.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "task_type": "string",
+    "status": "string",
+    "priority": "integer",
+    "dependencies": [
+      "string"
     ],
-    "growth_trends": {
-      "followers_trend": 5000,
-      "avg_daily_growth": 714
-    },
-    "engagement_analysis": {
-      "avg_engagement_rate": 0.045,
-      "top_performing_video_type": "short"
+    "target_account_id": "string",
+    "video_id": "string (optional)",
+    "error_message": "string (optional)",
+    "started_at": "datetime (optional)",
+    "completed_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### POST `/api/analysis/accounts/batch-trigger-crawl`
+- **Description**: 批量触发多个账号的后台数据同步任务 (Batch trigger background data sync tasks for multiple accounts).
+- **Request Body**: `BatchAccountCrawlRequest`
+  - `account_ids` (List[string]): List of account IDs.
+  - `crawl_videos` (bool, optional, default: True): Whether to crawl videos.
+  - `video_limit` (int, optional, default: 50): Number of videos to crawl.
+- **Response**: A summary of batch results.
+
+### GET `/api/analysis/accounts`
+- **Description**: 获取目标账号列表, 并附带最新的快照数据 (Get a list of target accounts with their latest snapshot data).
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `is_active` (bool, optional): Filter by active status.
+  - `category` (string, optional): Filter by category.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "account_id": "string (optional)",
+      "display_name": "string (optional)",
+      "username": "string (optional)",
+      "profile_url": "string (optional)",
+      "channel_url": "string (optional)",
+      "description": "string (optional)",
+      "avatar_url": "string (optional)",
+      "is_verified": "boolean (optional)",
+      "category": "string (optional)",
+      "subscriber_count": "integer (optional)",
+      "is_active": "boolean",
+      "last_crawled_at": "datetime (optional)",
+      "video_crawl_limit": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "deleted_at": "datetime (optional)",
+      "uploads_playlist_id": "string (optional)",
+      "country": "string (optional)",
+      "published_at": "datetime (optional)",
+      "is_scheduled": "boolean (optional)",
+      "schedule_interval": "integer (optional)",
+      "cron_string": "string (optional)",
+      "latest_snapshot": {
+        "id": "string",
+        "target_account_id": "string",
+        "subscriber_count": "integer (optional)",
+        "total_videos_count": "integer (optional)",
+        "hidden_subscriber_count": "boolean (optional)",
+        "total_views": "integer (optional)",
+        "collected_at": "datetime",
+        "created_at": "datetime"
+      }
+    }
+  ]
+  ```
+
+### GET `/api/analysis/accounts/{account_id}`
+- **Description**: 获取单个目标账号信息, 并附带最新的快照数据 (Get a single target account's info with its latest snapshot data).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "account_id": "string (optional)",
+    "display_name": "string (optional)",
+    "username": "string (optional)",
+    "profile_url": "string (optional)",
+    "channel_url": "string (optional)",
+    "description": "string (optional)",
+    "avatar_url": "string (optional)",
+    "is_verified": "boolean (optional)",
+    "category": "string (optional)",
+    "subscriber_count": "integer (optional)",
+    "is_active": "boolean",
+    "last_crawled_at": "datetime (optional)",
+    "video_crawl_limit": "integer",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "deleted_at": "datetime (optional)",
+    "uploads_playlist_id": "string (optional)",
+    "country": "string (optional)",
+    "published_at": "datetime (optional)",
+    "is_scheduled": "boolean (optional)",
+    "schedule_interval": "integer (optional)",
+    "cron_string": "string (optional)",
+    "latest_snapshot": {
+      "id": "string",
+      "target_account_id": "string",
+      "subscriber_count": "integer (optional)",
+      "total_videos_count": "integer (optional)",
+      "hidden_subscriber_count": "boolean (optional)",
+      "total_views": "integer (optional)",
+      "collected_at": "datetime",
+      "created_at": "datetime"
     }
   }
-}
-```
+  ```
 
-### Worker专用接口说明
+### PUT `/api/analysis/accounts/{account_id}`
+- **Description**: 更新目标账号信息 (Update target account information).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Request Body**: `schemas.target_account.TargetAccountUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "account_id": "string (optional)",
+    "display_name": "string (optional)",
+    "username": "string (optional)",
+    "profile_url": "string (optional)",
+    "channel_url": "string (optional)",
+    "description": "string (optional)",
+    "avatar_url": "string (optional)",
+    "is_verified": "boolean (optional)",
+    "category": "string (optional)",
+    "subscriber_count": "integer (optional)",
+    "is_active": "boolean",
+    "last_crawled_at": "datetime (optional)",
+    "video_crawl_limit": "integer",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "deleted_at": "datetime (optional)",
+    "uploads_playlist_id": "string (optional)",
+    "country": "string (optional)",
+    "published_at": "datetime (optional)",
+    "is_scheduled": "boolean (optional)",
+    "schedule_interval": "integer (optional)",
+    "cron_string": "string (optional)",
+    "latest_snapshot": {
+      "id": "string",
+      "target_account_id": "string",
+      "subscriber_count": "integer (optional)",
+      "total_videos_count": "integer (optional)",
+      "hidden_subscriber_count": "boolean (optional)",
+      "total_views": "integer (optional)",
+      "collected_at": "datetime",
+      "created_at": "datetime"
+    }
+  }
+  ```
 
-以上目标账号分析接口专为yt-dlp爬虫Worker设计，具有以下特点：
+### DELETE `/api/analysis/accounts/{account_id}`
+- **Description**: 删除目标账号 (Delete a target account).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Request Body**: `DeleteAccountRequest`
+  - `force` (bool, optional, default: False): Force deletion, ignoring dependencies.
+- **Response**: A confirmation message.
 
-1. **幂等性支持**: 账号、频道、视频创建接口支持重复调用，自动去重
-2. **批量操作**: 支持批量创建视频、批量更新互动数据等高效操作
-3. **增长计算**: 自动计算粉丝增长、互动增长等趋势数据
-4. **时间序列**: 统计和互动数据保留完整历史记录用于趋势分析
-5. **状态管理**: 支持下载状态跟踪、爬取状态管理
-6. **性能优化**: 使用索引优化查询，支持分页和过滤
-
-### 工作流管理示例用法
-
-1. **注册新工作流**
-```bash
-curl -X POST "http://localhost:8000/api/workflow-registry" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "runway_video_gen_v1",
-    "name": "Runway视频生成工作流",
-    "description": "使用Runway平台生成视频",
-    "workflow_type": "execution",
-    "version": "1.0.0",
-    "config": {
-      "platform": "runway",
-      "model": "gen3_alpha",
-      "parameters": {
-        "duration": 10,
-        "quality": "1080p"
+### GET `/api/analysis/accounts/{account_id}/videos`
+- **Description**: 获取指定账号下的视频列表 (Get the list of videos for a specific account).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `sort_by` (enum, optional, default: "published_at"): Sort by `published_at` or `views_count`.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "target_account_id": "string",
+      "video_id": "string",
+      "video_url": "string",
+      "asset_id": "string (optional)",
+      "title": "string (optional)",
+      "description": "string (optional)",
+      "thumbnail_url": "string (optional)",
+      "duration": "integer (optional)",
+      "published_at": "datetime (optional)",
+      "category_id": "string (optional)",
+      "default_audio_language": "string (optional)",
+      "analysis_results": {},
+      "analysis_status": "string (optional)",
+      "analysis_error": "string (optional)",
+      "is_downloaded": "boolean",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "deleted_at": "datetime (optional)",
+      "latest_snapshot": {
+        "id": "string",
+        "video_id": "string",
+        "views_count": "integer (optional)",
+        "likes_count": "integer (optional)",
+        "comments_count": "integer (optional)",
+        "favorite_count": "integer (optional)",
+        "collected_at": "datetime",
+        "created_at": "datetime"
+      },
+      "asset": {
+        "id": "string",
+        "name": "string",
+        "description": "string (optional)",
+        "asset_type": "string",
+        "storage_path": "string (optional)",
+        "asset_metadata": {
+          "additionalProp1": {}
+        },
+        "duration_seconds": "number (optional)",
+        "source": "string (optional)",
+        "visibility": "string (optional)",
+        "file_hash": "string",
+        "original_filename": "string (optional)",
+        "status": "string",
+        "created_at": "datetime",
+        "updated_at": "datetime"
       }
     }
-  }'
-```
+  ]
+  ```
 
-2. **查询执行类型的工作流**
-```bash
-curl "http://localhost:8000/api/workflow-registry?workflow_type=execution&is_active=true"
-```
-
-3. **激活工作流**
-```bash
-curl -X POST "http://localhost:8000/api/workflow-registry/runway_video_gen_v1/activate"
-```
-
-4. **更新工作流配置**
-```bash
-curl -X PUT "http://localhost:8000/api/workflow-registry/runway_video_gen_v1" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "version": "1.1.0",
-    "config": {
-      "platform": "runway",
-      "model": "gen3_alpha_turbo",
-      "parameters": {
-        "duration": 10,
-        "quality": "4K"
+### GET `/api/analysis/videos`
+- **Description**: 获取视频列表, 并附带最新的快照数据 (Get a list of videos with their latest snapshot data).
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 50): Maximum number of records to return.
+  - `sort_by` (enum, optional, default: "published_at"): Sort by `published_at` or `views_count`.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "target_account_id": "string",
+      "video_id": "string",
+      "video_url": "string",
+      "asset_id": "string (optional)",
+      "title": "string (optional)",
+      "description": "string (optional)",
+      "thumbnail_url": "string (optional)",
+      "duration": "integer (optional)",
+      "published_at": "datetime (optional)",
+      "category_id": "string (optional)",
+      "default_audio_language": "string (optional)",
+      "analysis_results": {},
+      "analysis_status": "string (optional)",
+      "analysis_error": "string (optional)",
+      "is_downloaded": "boolean",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "deleted_at": "datetime (optional)",
+      "latest_snapshot": {
+        "id": "string",
+        "video_id": "string",
+        "views_count": "integer (optional)",
+        "likes_count": "integer (optional)",
+        "comments_count": "integer (optional)",
+        "favorite_count": "integer (optional)",
+        "collected_at": "datetime",
+        "created_at": "datetime"
+      },
+      "asset": {
+        "id": "string",
+        "name": "string",
+        "description": "string (optional)",
+        "asset_type": "string",
+        "storage_path": "string (optional)",
+        "asset_metadata": {
+          "additionalProp1": {}
+        },
+        "duration_seconds": "number (optional)",
+        "source": "string (optional)",
+        "visibility": "string (optional)",
+        "file_hash": "string",
+        "original_filename": "string (optional)",
+        "status": "string",
+        "created_at": "datetime",
+        "updated_at": "datetime"
       }
     }
-  }'
-```
+  ]
+  ```
+
+### GET `/api/analysis/accounts/{account_id}/snapshots`
+- **Description**: 获取账号的历史快照数据 (Get historical snapshot data for an account).
+- **Path Parameters**:
+  - `account_id` (string): The ID of the target account.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "target_account_id": "string",
+      "subscriber_count": "integer (optional)",
+      "total_videos_count": "integer (optional)",
+      "hidden_subscriber_count": "boolean (optional)",
+      "total_views": "integer (optional)",
+      "collected_at": "datetime",
+      "created_at": "datetime"
+    }
+  ]
+  ```
+
+### GET `/api/analysis/videos/{video_id}/snapshots`
+- **Description**: 获取视频的历史快照数据 (Get historical snapshot data for a video).
+- **Path Parameters**:
+  - `video_id` (string): The ID of the video.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "video_id": "string",
+      "views_count": "integer (optional)",
+      "likes_count": "integer (optional)",
+      "comments_count": "integer (optional)",
+      "favorite_count": "integer (optional)",
+      "collected_at": "datetime",
+      "created_at": "datetime"
+    }
+  ]
+  ```
+
+### POST `/api/analysis/videos/{video_id}/analyze`
+- **Description**: 触发对指定视频的后台镜头分析任务 (Trigger a background shot analysis task for a specific video).
+- **Path Parameters**:
+  - `video_id` (string): The ID of the video.
+- **Response**: A confirmation message with `job_id`.
+
+### GET `/api/analysis/tasks`
+- **Description**: 获取监控任务列表 (Get a list of monitoring tasks).
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `account_id` (string, optional): Filter by account ID.
+  - `video_id` (string, optional): Filter by video ID.
+  - `task_type` (enum, optional): Filter by task type.
+  - `status` (enum, optional): Filter by task status.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "task_type": "string",
+      "status": "string",
+      "priority": "integer",
+      "dependencies": [
+        "string"
+      ],
+      "target_account_id": "string",
+      "video_id": "string (optional)",
+      "error_message": "string (optional)",
+      "started_at": "datetime (optional)",
+      "completed_at": "datetime (optional)",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ]
+  ```
+
+### PUT `/api/analysis/tasks/{task_id}`
+- **Description**: 更新监控任务状态 (例如，手动取消) (Update monitoring task status, e.g., manual cancellation).
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Request Body**: `schemas.monitoring_task.MonitoringTaskUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "task_type": "string",
+    "status": "string",
+    "priority": "integer",
+    "dependencies": [
+      "string"
+    ],
+    "target_account_id": "string",
+    "video_id": "string (optional)",
+    "error_message": "string (optional)",
+    "started_at": "datetime (optional)",
+    "completed_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+---
+
+## Tasks
+
+**Prefix**: `/api/tasks`
+
+### POST `/api/tasks`
+- **Description**: Create a new task.
+- **Request Body**: `schemas.TaskCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "task_type": "string",
+    "status": "string",
+    "dependencies": [
+      "string"
+    ],
+    "task_output": {
+      "additionalProp1": {}
+    },
+    "task_input": {
+      "additionalProp1": {}
+    },
+    "project_id": "string (optional)",
+    "platform_account_id": "string (optional)",
+    "platform_account": {
+      "name": "string",
+      "credentials": {
+        "additionalProp1": {}
+      },
+      "proxy": "string (optional)"
+    },
+    "submit_id": "string (optional)",
+    "error_message": "string (optional)",
+    "started_at": "datetime (optional)",
+    "completed_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "deleted_at": "datetime (optional)",
+    "forecast_generate_cost": "number (optional)",
+    "forecast_queue_cost": "number (optional)"
+  }
+  ```
+
+### POST `/api/tasks/batch`
+- **Description**: Create multiple tasks in a batch.
+- **Request Body**: `schemas.task.TaskBatchCreate`
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "task_type": "string",
+      "status": "string",
+      "dependencies": [
+        "string"
+      ],
+      "task_output": {
+        "additionalProp1": {}
+      },
+      "task_input": {
+        "additionalProp1": {}
+      },
+      "project_id": "string (optional)",
+      "platform_account_id": "string (optional)",
+      "platform_account": {
+        "name": "string",
+        "credentials": {
+          "additionalProp1": {}
+        },
+        "proxy": "string (optional)"
+      },
+      "submit_id": "string (optional)",
+      "error_message": "string (optional)",
+      "started_at": "datetime (optional)",
+      "completed_at": "datetime (optional)",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "deleted_at": "datetime (optional)",
+      "forecast_generate_cost": "number (optional)",
+      "forecast_queue_cost": "number (optional)"
+    }
+  ]
+  ```
+
+### PATCH `/api/tasks/{task_id}`
+- **Description**: Allows a worker to update the status of a task (e.g., to 'completed' or 'failed').
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Request Body**: `schemas.task.TaskStatusUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "task_type": "string",
+    "status": "string",
+    "dependencies": [
+      "string"
+    ],
+    "task_output": {
+      "additionalProp1": {}
+    },
+    "task_input": {
+      "additionalProp1": {}
+    },
+    "project_id": "string (optional)",
+    "platform_account_id": "string (optional)",
+    "platform_account": {
+      "name": "string",
+      "credentials": {
+        "additionalProp1": {}
+      },
+      "proxy": "string (optional)"
+    },
+    "submit_id": "string (optional)",
+    "error_message": "string (optional)",
+    "started_at": "datetime (optional)",
+    "completed_at": "datetime (optional)",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "deleted_at": "datetime (optional)",
+    "forecast_generate_cost": "number (optional)",
+    "forecast_queue_cost": "number (optional)"
+  }
+  ```
+
+### GET `/api/tasks/types`
+- **Description**: Get a list of all available task types.
+- **Response**: `List[string]`
+
+### GET `/api/tasks`
+- **Description**: List tasks.
+- **Query Parameters**:
+  - `project_id` (string, optional): Filter tasks by project ID.
+  - `task_type` (string, optional): Filter tasks by task type.
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "task_type": "string",
+      "status": "string",
+      "dependencies": [
+        "string"
+      ],
+      "task_output": {
+        "additionalProp1": {}
+      },
+      "task_input": {
+        "additionalProp1": {}
+      },
+      "project_id": "string (optional)",
+      "platform_account_id": "string (optional)",
+      "platform_account": {
+        "name": "string",
+        "credentials": {
+          "additionalProp1": {}
+        },
+        "proxy": "string (optional)"
+      },
+      "submit_id": "string (optional)",
+      "error_message": "string (optional)",
+      "started_at": "datetime (optional)",
+      "completed_at": "datetime (optional)",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "deleted_at": "datetime (optional)",
+      "forecast_generate_cost": "number (optional)",
+      "forecast_queue_cost": "number (optional)"
+    }
+  ]
+  ```
+
+### POST `/api/tasks/{task_id}/enqueue`
+- **Description**: 手动将任务加入队列，并构建发送给worker的最终任务结构 (Manually enqueue a task and construct the final task structure to be sent to the worker).
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Response**: A confirmation message with `job_id` and `queue_name`.
+
+### GET `/api/tasks/{task_id}/queue-status`
+- **Description**: 获取任务的队列状态 (Get the queue status of a task).
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Response**: A dictionary with task status and queue status.
+
+### POST `/api/tasks/{task_id}/cancel`
+- **Description**: 取消任务的队列执行 (Cancel a queued task).
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Response**: A confirmation message.
+
+### POST `/api/tasks/delete-all-queues`
+- **Description**: 清空并删除所有队列 (Clear and delete all queues).
+- **Response**: A summary of deleted queues.
+
+### GET `/api/tasks/queue-info`
+- **Description**: 获取所有队列的信息 (Get information about all queues).
+- **Response**: A dictionary with queue information.
+
+### GET `/api/tasks/list-redis-queues`
+- **Description**: 直接从Redis中列出所有实际存在的RQ队列 (List all existing RQ queues directly from Redis).
+- **Response**: `List[string]`
+
+### POST `/api/tasks/callback`
+- **Description**: 统一的Worker回调接口 (Unified callback interface for workers).
+- **Request Body**: `WorkerCallbackRequest`
+  - `report_type` (string): Type of report to determine the handler.
+  - `worker` (enum): The worker reporting the status.
+  - `data` (List[dict]): The callback data.
+- **Response**: Processing result.
+
+### POST `/api/tasks/monitoring/{task_id}/retry`
+- **Description**: Retry a failed monitoring task.
+- **Path Parameters**:
+  - `task_id` (string): The ID of the monitoring task.
+- **Response**: A confirmation message with `job_id`.
+
+---
+
+## Webhooks
+
+**Prefix**: `/api/webhooks`
+
+### POST `/api/webhooks/n8n/inspiration/{inspiration_id}`
+- **Description**: Handle n8n webhook for inspiration workflow completion.
+- **Path Parameters**:
+  - `inspiration_id` (string): The ID of the inspiration.
+- **Request Body**: JSON payload from n8n.
+- **Response**: A confirmation message.
+
+### POST `/api/webhooks/n8n/project_creation/{inspiration_id}`
+- **Description**: Handle n8n webhook for project creation (transform workflow).
+- **Path Parameters**:
+  - `inspiration_id` (string): The ID of the inspiration that triggered the project.
+- **Request Body**: JSON payload from n8n.
+- **Response**: A confirmation message.
+
+### POST `/api/webhooks/n8n/project_execution/{project_id}`
+- **Description**: Handle n8n webhook for project execution workflow updates.
+- **Path Parameters**:
+  - `project_id` (string): The ID of the project.
+- **Request Body**: JSON payload from n8n.
+- **Response**: A confirmation message.
+
+### POST `/api/webhooks/n8n/task_update/{task_id}`
+- **Description**: Handle n8n webhook for individual task updates.
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Request Body**: JSON payload from n8n.
+- **Response**: A confirmation message.
+
+---
+
+## Worker Configs
+
+**Prefix**: `/api/worker-configs`
+
+### POST `/api/worker-configs`
+- **Description**: Create a new worker configuration.
+- **Request Body**: `schemas.worker_config.WorkerConfigCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "config_name": "string",
+    "config_type": "string",
+    "worker_type": "string (optional)",
+    "config_data": {
+      "additionalProp1": {}
+    },
+    "description": "string (optional)",
+    "priority": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### GET `/api/worker-configs`
+- **Description**: List worker configurations with optional filtering.
+- **Query Parameters**:
+  - `worker_type` (string, optional): Filter by worker type.
+  - `config_type` (string, optional): Filter by config type.
+  - `is_active` (bool, optional, default: True): Filter by active status.
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "config_name": "string",
+      "config_type": "string",
+      "worker_type": "string (optional)",
+      "config_data": {
+        "additionalProp1": {}
+      },
+      "description": "string (optional)",
+      "priority": "integer",
+      "is_active": "boolean",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ]
+  ```
+
+### GET `/api/worker-configs/{config_id}`
+- **Description**: Get a specific worker configuration.
+- **Path Parameters**:
+  - `config_id` (string): The ID of the configuration.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "config_name": "string",
+    "config_type": "string",
+    "worker_type": "string (optional)",
+    "config_data": {
+      "additionalProp1": {}
+    },
+    "description": "string (optional)",
+    "priority": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### PUT `/api/worker-configs/{config_id}`
+- **Description**: Update a worker configuration.
+- **Path Parameters**:
+  - `config_id` (string): The ID of the configuration.
+- **Request Body**: `schemas.worker_config.WorkerConfigUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "config_name": "string",
+    "config_type": "string",
+    "worker_type": "string (optional)",
+    "config_data": {
+      "additionalProp1": {}
+    },
+    "description": "string (optional)",
+    "priority": "integer",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### DELETE `/api/worker-configs/{config_id}`
+- **Description**: Delete a worker configuration (soft delete by setting is_active=False).
+- **Path Parameters**:
+  - `config_id` (string): The ID of the configuration.
+- **Response**: A confirmation message.
+
+### POST `/api/worker-configs/tasks/{task_id}/assign`
+- **Description**: Assign configurations to a specific task.
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Request Body**: `schemas.worker_config.ConfigAssignmentRequest`
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "task_id": "string",
+      "config_id": "string",
+      "override_data": {
+        "additionalProp1": {}
+      },
+      "created_at": "datetime"
+    }
+  ]
+  ```
+
+### GET `/api/worker-configs/tasks/{task_id}/configs`
+- **Description**: Get all configurations assigned to a specific task.
+- **Path Parameters**:
+  - `task_id` (string): The ID of the task.
+- **Response**: A dictionary of configurations.
+
+---
+
+## Workflow Registry
+
+**Prefix**: `/api/workflow-registry`
+
+### POST `/api/workflow-registry`
+- **Description**: Create a new workflow registry entry.
+- **Request Body**: `schemas.workflow_registry.WorkflowRegistryCreate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "workflow_type": "string",
+    "n8n_webhook_url": "string (optional)",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### GET `/api/workflow-registry`
+- **Description**: List workflow registry entries with optional filtering.
+- **Query Parameters**:
+  - `skip` (int, optional, default: 0): Number of records to skip.
+  - `limit` (int, optional, default: 100): Maximum number of records to return.
+  - `workflow_type` (string, optional): Filter by workflow type.
+  - `is_active` (bool, optional): Filter by active status.
+- **Response**:
+  ```json
+  [
+    {
+      "id": "string",
+      "name": "string",
+      "description": "string (optional)",
+      "workflow_type": "string",
+      "is_active": "boolean"
+    }
+  ]
+  ```
+
+### GET `/api/workflow-registry/{workflow_id}`
+- **Description**: Get workflow registry entry by ID.
+- **Path Parameters**:
+  - `workflow_id` (string): The ID of the workflow.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "workflow_type": "string",
+    "n8n_webhook_url": "string (optional)",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### PUT `/api/workflow-registry/{workflow_id}`
+- **Description**: Update workflow registry entry.
+- **Path Parameters**:
+  - `workflow_id` (string): The ID of the workflow.
+- **Request Body**: `schemas.workflow_registry.WorkflowRegistryUpdate`
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "workflow_type": "string",
+    "n8n_webhook_url": "string (optional)",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### DELETE `/api/workflow-registry/{workflow_id}`
+- **Description**: Soft delete workflow registry entry.
+- **Path Parameters**:
+  - `workflow_id` (string): The ID of the workflow.
+- **Response**: A confirmation message.
+
+### POST `/api/workflow-registry/{workflow_id}/activate`
+- **Description**: Activate a workflow.
+- **Path Parameters**:
+  - `workflow_id` (string): The ID of the workflow.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "workflow_type": "string",
+    "n8n_webhook_url": "string (optional)",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### POST `/api/workflow-registry/{workflow_id}/deactivate`
+- **Description**: Deactivate a workflow.
+- **Path Parameters**:
+  - `workflow_id` (string): The ID of the workflow.
+- **Response**:
+  ```json
+  {
+    "id": "string",
+    "name": "string",
+    "description": "string (optional)",
+    "workflow_type": "string",
+    "n8n_webhook_url": "string (optional)",
+    "is_active": "boolean",
+    "created_at": "datetime",
+    "updated_at": "datetime"
+  }
+  ```
+
+### GET `/api/workflow-registry/types/list`
+- **Description**: Get list of all unique workflow types.
+- **Response**: `List[string]`

@@ -111,7 +111,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     } finally {
       setLoading(false)
     }
-  }, [pagination.skip, pagination.limit, filters.isActive, filters.category])
+  }, [pagination, filters])
 
   const createTargetAccount = useCallback(async (data: QuickAddAccountRequest): Promise<TargetAccount | null> => {
     try {
@@ -382,7 +382,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
   // Fetch data on mount and when pagination/filters change
   useEffect(() => {
     fetchTargetAccounts()
-  }, [fetchTargetAccounts])
+  }, [pagination.skip, pagination.limit, filters.isActive, filters.category])
 
   const value: TargetAccountsContextType = {
     targetAccounts,

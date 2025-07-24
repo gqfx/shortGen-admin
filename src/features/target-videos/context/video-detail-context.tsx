@@ -103,10 +103,11 @@ const VideoDetailContext = createContext<VideoDetailContextType | undefined>(und
 interface VideoDetailProviderProps {
   children: ReactNode
   videoId: string
+  initialData?: VideoDetails | null
 }
 
-export function VideoDetailProvider({ children, videoId }: VideoDetailProviderProps) {
-  const [video, setVideo] = useState<VideoDetails | null>(null)
+export function VideoDetailProvider({ children, videoId, initialData = null }: VideoDetailProviderProps) {
+  const [video, setVideo] = useState<VideoDetails | null>(initialData)
   const [analysis, setAnalysis] = useState<VideoAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -180,8 +181,10 @@ export function VideoDetailProvider({ children, videoId }: VideoDetailProviderPr
     }
   }, [])
 
-  // Download progress monitoring
-  const startDownloadMonitoring = useCallback((taskId: string) => {
+
+ 
+   // Download progress monitoring
+   const startDownloadMonitoring = useCallback((taskId: string) => {
     // Clear any existing polling
     if (downloadPollingRef.current) {
       clearInterval(downloadPollingRef.current)
@@ -336,31 +339,8 @@ export function VideoDetailProvider({ children, videoId }: VideoDetailProviderPr
       }
     }, 2000) // Poll every 2 seconds
   }, [videoId, fetchVideoDetail, downloadProgress?.retryCount, getDownloadStatusMessage])
-
-  const stopDownloadMonitoring = useCallback(() => {
-    if (downloadPollingRef.current) {
-      clearInterval(downloadPollingRef.current)
-      downloadPollingRef.current = null
-    }
-    setDownloadProgress(null)
-  }, [])
-
-  const getDownloadStatusMessage = useCallback((status: string): string => {
-    switch (status) {
-      case 'pending':
-        return 'Download task is queued and waiting to start...'
-      case 'processing':
-        return 'Video is being downloaded...'
-      case 'completed':
-        return 'Download completed successfully!'
-      case 'failed':
-        return 'Download failed. You can retry the download.'
-      default:
-        return `Download status: ${status}`
-    }
-  }, [])
-
-  const fetchAnalysis = useCallback(async (id: string) => {
+ 
+   const fetchAnalysis = useCallback(async (id: string) => {
     try {
       setLoadingStates(prev => ({ ...prev, analysis: true }))
       setErrorStates(prev => ({ ...prev, analysis: null }))
@@ -632,17 +612,21 @@ export function VideoDetailProvider({ children, videoId }: VideoDetailProviderPr
   // Initialize data when videoId changes
   useEffect(() => {
     if (videoId && videoId.trim() !== '') {
-      setLoading(true)
+      if (!initialData) {
+        setLoading(true)
+      }
       clearErrors() // Clear any previous errors
       fetchVideoDetail(videoId).finally(() => {
-        setLoading(false)
+        if (!initialData) {
+          setLoading(false)
+        }
       })
     } else {
       // Handle invalid video ID
       setError('Invalid video ID')
       setLoading(false)
     }
-  }, [videoId, fetchVideoDetail, clearErrors])
+  }, [videoId, fetchVideoDetail, clearErrors, initialData])
 
   // Cleanup polling on unmount
   useEffect(() => {

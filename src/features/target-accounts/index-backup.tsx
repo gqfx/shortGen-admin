@@ -634,7 +634,7 @@ function TargetAccountsContent() {
                           role="button"
                           aria-label={`View ${account.display_name}'s profile page in new tab`}
                           aria-describedby={`account-${account.id}-info`}
-                          title={`Click to view ${account.display_name}'s profile`}
+                          title={`Click to view ${account.display_name}'s profile`}ew ${account.display_name}'s profile`}
                         >
                           <AvatarImage src={account.avatar_url || undefined} alt={`${account.display_name} avatar`} />
                           <AvatarFallback aria-label={`${account.display_name} initials`}>

@@ -1,16 +1,16 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
+import { FixedSizeList as List } from 'react-window'
 import { formatDistanceToNow } from 'date-fns'
-import { 
-  Play, 
-  Download, 
-  BarChart3, 
-  ExternalLink, 
-  CheckSquare, 
+import { useNavigate } from '@tanstack/react-router'
+import {
+  Play,
+  Download,
+  ExternalLink,
+  CheckSquare,
   Square,
   Loader2,
   AlertCircle,
-  CheckCircle2,
-  MoreVertical
+  CheckCircle2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,13 +18,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAccountDetail } from '../context/account-detail-context'
 import { AnalysisAction } from '../../target-videos/components/analysis-action'
 import { VideoDetailProvider } from '../../target-videos/context/video-detail-context'
 import { Video } from '@/lib/api'
 import { toast } from 'sonner'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
+import { useAccessibility } from '@/hooks/use-accessibility'
 
 interface VideoListProps {
   className?: string
@@ -45,8 +45,10 @@ export function VideoList({ className }: VideoListProps) {
     triggerBatchDownload
   } = useAccountDetail()
   
-  const { isMobile, isTablet } = useResponsive()
-  const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
+  const { isMobile } = useResponsive()
+  const { touchTargetSize, touchPadding } = useTouchFriendly()
+  const { announceStatus, announceError, announceSuccess } = useAccessibility()
+  const navigate = useNavigate()
   
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set())
   const [batchOperationResult, setBatchOperationResult] = useState<BatchOperationResult | null>(null)
@@ -78,6 +80,7 @@ export function VideoList({ className }: VideoListProps) {
   const handleBatchDownload = useCallback(async () => {
     if (selectedVideoIds.size === 0) {
       toast.error('Please select videos to download')
+      announceError('No videos selected for download')
       return
     }
 
@@ -89,13 +92,18 @@ export function VideoList({ className }: VideoListProps) {
 
     if (downloadableVideos.length === 0) {
       toast.error('No downloadable videos selected')
+      announceError('No downloadable videos selected')
       return
     }
 
     if (downloadableVideos.length < videoIdsArray.length) {
       const alreadyDownloaded = videoIdsArray.length - downloadableVideos.length
-      toast.info(`${alreadyDownloaded} video(s) already downloaded, proceeding with ${downloadableVideos.length} video(s)`)
+      const message = `${alreadyDownloaded} video(s) already downloaded, proceeding with ${downloadableVideos.length} video(s)`
+      toast.info(message)
+      announceStatus(message)
     }
+
+    announceStatus(`Starting download for ${downloadableVideos.length} videos`)
     
     try {
       await triggerBatchDownload(downloadableVideos)
@@ -111,6 +119,9 @@ export function VideoList({ className }: VideoListProps) {
       
       // Clear selection after successful batch operation
       setSelectedVideoIds(new Set())
+      
+      // Announce success
+      announceSuccess(`Successfully started download for ${downloadableVideos.length} videos`)
       
       // Auto-hide result after 5 seconds
       setTimeout(() => {
@@ -162,11 +173,10 @@ export function VideoList({ className }: VideoListProps) {
         triggerBatchDownload([video.id])
         break
       case 'view':
-        // TODO: Navigate to video detail page
-        toast.info('Video detail page will be implemented in later tasks')
+        navigate({ to: '/target-videos/$videoId', params: { videoId: video.id } })
         break
     }
-  }, [triggerBatchDownload])
+  }, [triggerBatchDownload, navigate])
 
   const handleThumbnailClick = useCallback((video: Video) => {
     if (video.video_url) {
@@ -174,8 +184,12 @@ export function VideoList({ className }: VideoListProps) {
     }
   }, [])
 
-  // Computed values
-  const selectedCount = selectedVideoIds.size
+  const handleNavigateToVideoDetail = useCallback((videoId: string) => {
+    navigate({ to: '/target-videos/$videoId', params: { videoId } })
+  }, [navigate])
+ 
+   // Computed values
+   const selectedCount = selectedVideoIds.size
   const allSelected = selectedCount === videos.length && videos.length > 0
 
   const selectedDownloadableCount = useMemo(() => {
@@ -284,15 +298,16 @@ export function VideoList({ className }: VideoListProps) {
                 onClick={allSelected ? handleClearSelection : handleSelectAll}
                 className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
                 title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
+                aria-label={allSelected ? `Clear all ${videos.length} video selections` : `Select all ${videos.length} videos`}
               >
                 {allSelected ? (
                   <>
-                    <Square className="h-4 w-4" />
+                    <Square className="h-4 w-4" aria-hidden="true" />
                     <span className="ml-2">Clear All</span>
                   </>
                 ) : (
                   <>
-                    <CheckSquare className="h-4 w-4" />
+                    <CheckSquare className="h-4 w-4" aria-hidden="true" />
                     <span className="ml-2">Select All</span>
                   </>
                 )}
@@ -306,11 +321,12 @@ export function VideoList({ className }: VideoListProps) {
                   disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
                   className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
                   title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
+                  aria-label={`Download ${selectedDownloadableCount} selected videos out of ${selectedCount} total selected`}
                 >
                   {loadingStates.batchDownload ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Download className="h-4 w-4" />
+                    <Download className="h-4 w-4" aria-hidden="true" />
                   )}
                   <span className="ml-2">
                     Download ({selectedDownloadableCount})
@@ -374,17 +390,23 @@ export function VideoList({ className }: VideoListProps) {
             No videos found for this account
           </div>
         ) : (
-          <div className="space-y-4">
-            {videos.map((video) => (
-              <VideoItem
-                key={video.id}
-                video={video}
-                isSelected={selectedVideoIds.has(video.id)}
-                onSelect={handleVideoSelect}
-                onAction={handleVideoAction}
-                onThumbnailClick={handleThumbnailClick}
-              />
-            ))}
+          <div className="h-[600px]">
+            <List
+              height={600}
+              itemCount={videos.length}
+              itemSize={230}
+              width="100%"
+              itemData={{
+                videos,
+                selectedVideoIds,
+                handleVideoSelect,
+                handleVideoAction,
+                handleThumbnailClick,
+                handleNavigateToVideoDetail,
+              }}
+            >
+              {Row}
+            </List>
           </div>
         )}
       </CardContent>
@@ -398,14 +420,55 @@ interface VideoItemProps {
   onSelect: (videoId: string, checked: boolean) => void
   onAction: (video: Video, action: 'download' | 'view') => void
   onThumbnailClick: (video: Video) => void
+  onNavigateToDetail: (videoId: string) => void
 }
 
-function VideoItem({ 
-  video, 
-  isSelected, 
-  onSelect, 
-  onAction, 
-  onThumbnailClick 
+interface RowProps {
+  index: number
+  style: React.CSSProperties
+  data: {
+    videos: Video[]
+    selectedVideoIds: Set<string>
+    handleVideoSelect: (videoId: string, checked: boolean) => void
+    handleVideoAction: (video: Video, action: 'download' | 'view') => void
+    handleThumbnailClick: (video: Video) => void
+    handleNavigateToVideoDetail: (videoId: string) => void
+  }
+}
+
+const Row = ({ index, style, data }: RowProps) => {
+  const {
+    videos,
+    selectedVideoIds,
+    handleVideoSelect,
+    handleVideoAction,
+    handleThumbnailClick,
+    handleNavigateToVideoDetail,
+  } = data
+  const video = videos[index]
+  const isSelected = selectedVideoIds.has(video.id)
+
+  return (
+    <div style={style}>
+      <VideoItem
+        video={video}
+        isSelected={isSelected}
+        onSelect={handleVideoSelect}
+        onAction={handleVideoAction}
+        onThumbnailClick={handleThumbnailClick}
+        onNavigateToDetail={handleNavigateToVideoDetail}
+      />
+    </div>
+  )
+}
+
+function VideoItem({
+  video,
+  isSelected,
+  onSelect,
+  onAction,
+  onThumbnailClick,
+  onNavigateToDetail,
 }: VideoItemProps) {
   const getVideoStatus = (): 'downloaded' | 'not_downloaded' => {
     if (video.is_downloaded) {
@@ -460,26 +523,55 @@ function VideoItem({
   }
 
   return (
-    <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+    <div
+      className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer"
+      role="article"
+      onClick={() => onNavigateToDetail(video.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onNavigateToDetail(video.id)
+        }
+      }}
+      tabIndex={0}
+      aria-labelledby={`video-${video.id}-title`}
+      aria-describedby={`video-${video.id}-status video-${video.id}-meta`}
+    >
       {/* Selection Checkbox */}
-      <div className="flex items-center pt-2">
+      <div className="flex items-center pt-2" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(video.id, checked as boolean)}
+          aria-label={`Select video: ${video.title}`}
+          aria-describedby={`video-${video.id}-status`}
         />
       </div>
 
       {/* Video Thumbnail */}
       <div className="flex-shrink-0">
-        <div 
-          className="w-32 h-20 bg-muted rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => onThumbnailClick(video)}
+        <div
+          className="w-32 h-20 bg-muted rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          onClick={(e) => {
+            e.stopPropagation()
+            onThumbnailClick(video)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              onThumbnailClick(video)
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          aria-label={`View original video: ${video.title}`}
         >
           {video.thumbnail_url ? (
             <img
               src={video.thumbnail_url}
-              alt={video.title}
+              alt={`Thumbnail for ${video.title}`}
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.style.display = 'none'
@@ -488,7 +580,7 @@ function VideoItem({
             />
           ) : null}
           <div className="w-full h-full flex items-center justify-center text-muted-foreground hidden">
-            <Play className="h-8 w-8" />
+            <Play className="h-8 w-8" aria-hidden="true" />
           </div>
         </div>
       </div>
@@ -497,21 +589,28 @@ function VideoItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium line-clamp-2 mb-1">
+            <h3 
+              id={`video-${video.id}-title`}
+              className="font-medium line-clamp-2 mb-1"
+            >
               {video.title}
             </h3>
             
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-              <span>N/A views</span>
-              <span>N/A likes</span>
-              <span>N/A comments</span>
-              <span>{formatDate(video.published_at)}</span>
+            <div 
+              id={`video-${video.id}-meta`}
+              className="flex items-center gap-4 text-sm text-muted-foreground mb-2"
+              aria-label={`Video metrics: N/A views, N/A likes, N/A comments, published ${formatDate(video.published_at)}`}
+            >
+              <span aria-label="View count">N/A views</span>
+              <span aria-label="Like count">N/A likes</span>
+              <span aria-label="Comment count">N/A comments</span>
+              <span aria-label={`Published ${formatDate(video.published_at)}`}>{formatDate(video.published_at)}</span>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" id={`video-${video.id}-status`}>
               {getStatusBadge()}
               {video.video_type && (
-                <Badge variant="outline" className="capitalize">
+                <Badge variant="outline" className="capitalize" aria-label={`Video type: ${video.video_type}`}>
                   {video.video_type}
                 </Badge>
               )}
@@ -519,14 +618,15 @@ function VideoItem({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Actions for ${video.title}`}>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onThumbnailClick(video)}
               className="flex items-center gap-1"
+              aria-label={`Open ${video.title} in new tab`}
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
             </Button>
             {getActionButton()}
           </div>

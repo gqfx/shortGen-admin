@@ -45,38 +45,61 @@ function StatCard({
   const { isMobile } = useResponsive()
   const { touchPadding } = useTouchFriendly()
   
+  const cardId = `stat-${title.toLowerCase().replace(/\s+/g, '-')}`
+  const valueText = loading ? 'Loading' : (value || placeholder).toString()
+  
   return (
-    <Card className="h-full">
+    <Card 
+      className="h-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200" 
+      role="region" 
+      aria-labelledby={`${cardId}-title`}
+      aria-describedby={`${cardId}-description`}
+      tabIndex={0}
+    >
       <CardContent className={isMobile ? touchPadding : "p-4 sm:p-6"}>
         <div className={`flex items-center justify-between space-y-0 ${isMobile ? 'pb-1' : 'pb-2'}`}>
           <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-            <div className="text-muted-foreground">{icon}</div>
-            <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>{title}</p>
+            <div className="text-muted-foreground" aria-hidden="true">{icon}</div>
+            <p 
+              id={`${cardId}-title`}
+              className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}
+            >
+              {title}
+            </p>
           </div>
           {trend && (
-            <div className={`flex items-center space-x-1 ${isMobile ? 'text-xs' : 'text-xs'} ${
-              trend.isPositive ? 'text-green-600' : 'text-red-600'
-            }`}>
-              <TrendingUp className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
-              <span>{trend.isPositive ? '+' : ''}{trend.value}%</span>
+            <div 
+              className={`flex items-center space-x-1 ${isMobile ? 'text-xs' : 'text-xs'} ${
+                trend.isPositive ? 'text-green-600' : 'text-red-600'
+              }`}
+              aria-label={`Trend: ${trend.isPositive ? 'positive' : 'negative'} ${trend.value} percent`}
+            >
+              <TrendingUp className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} aria-hidden="true" />
+              <span aria-hidden="true">{trend.isPositive ? '+' : ''}{trend.value}%</span>
             </div>
           )}
         </div>
         <div className="space-y-1">
           {loading ? (
-            <Skeleton className={`${isMobile ? 'h-6 w-20' : 'h-8 w-24'}`} />
+            <Skeleton className={`${isMobile ? 'h-6 w-20' : 'h-8 w-24'}`} aria-label="Loading statistic value" />
           ) : (
-            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
+            <div 
+              className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}
+              aria-label={`${title}: ${valueText}`}
+            >
               {value || placeholder}
             </div>
           )}
           {description && !loading && (
-            <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground line-clamp-2`}>
+            <p 
+              id={`${cardId}-description`}
+              className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground line-clamp-2`}
+            >
               {description}
             </p>
           )}
           {loading && description && (
-            <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} />
+            <Skeleton className={`${isMobile ? 'h-3 w-full' : 'h-4 w-full'}`} aria-label="Loading description" />
           )}
         </div>
       </CardContent>
@@ -141,16 +164,23 @@ export function AccountStatistics({ account, loading = false, className }: Accou
   return (
     <div className={className}>
       {/* Account Overview Card */}
-      <Card className={isMobile ? 'mb-4' : 'mb-6'}>
+      <Card className={isMobile ? 'mb-4' : 'mb-6'} role="region" aria-labelledby="account-overview-title">
         <CardHeader className={isMobile ? touchPadding : ''}>
           <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center justify-between'}`}>
-            <CardTitle className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-              <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+            <CardTitle 
+              id="account-overview-title"
+              className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}
+            >
+              <Users className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} aria-hidden="true" />
               <span className={isMobile ? 'text-base' : ''}>Account Overview</span>
             </CardTitle>
             {account?.is_verified && (
-              <Badge variant="secondary" className={`flex items-center ${isMobile ? 'space-x-1 self-start' : 'space-x-1'}`}>
-                <CheckCircle className="h-3 w-3" />
+              <Badge 
+                variant="secondary" 
+                className={`flex items-center ${isMobile ? 'space-x-1 self-start' : 'space-x-1'}`}
+                aria-label="This account is verified"
+              >
+                <CheckCircle className="h-3 w-3" aria-hidden="true" />
                 <span className={isMobile ? 'text-xs' : ''}>Verified</span>
               </Badge>
             )}
@@ -222,9 +252,13 @@ export function AccountStatistics({ account, loading = false, className }: Accou
       </Card>
 
       {/* Responsive Statistics Grid */}
-      <div className={`grid gap-${isMobile ? '3' : '4'} ${
-        isMobile ? 'grid-cols-2' : isTablet ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'
-      }`}>
+      <div 
+        className={`grid gap-${isMobile ? '3' : '4'} ${
+          isMobile ? 'grid-cols-2' : isTablet ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'
+        }`}
+        role="region"
+        aria-label="Account statistics"
+      >
         {/* Subscriber Count */}
         <StatCard
           title="Subscribers"
@@ -283,10 +317,13 @@ export function AccountStatistics({ account, loading = false, className }: Accou
       </div>
 
       {/* Additional Information Card */}
-      <Card className={isMobile ? 'mt-4' : 'mt-6'}>
+      <Card className={isMobile ? 'mt-4' : 'mt-6'} role="region" aria-labelledby="account-details-title">
         <CardHeader className={isMobile ? touchPadding : ''}>
-          <CardTitle className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-            <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+          <CardTitle 
+            id="account-details-title"
+            className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}
+          >
+            <FileText className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} aria-hidden="true" />
             <span className={isMobile ? 'text-base' : ''}>Account Details</span>
           </CardTitle>
         </CardHeader>

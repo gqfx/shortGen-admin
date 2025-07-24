@@ -270,3 +270,207 @@
     opacity: 1;
   }
 }
+
+/* Accessibility Enhancements */
+@layer base {
+  /* Enhanced focus indicators */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --border: oklch(0.5 0 0);
+      --ring: oklch(0.3 0 0);
+    }
+    
+    .dark {
+      --border: oklch(0.7 0 0);
+      --ring: oklch(0.8 0 0);
+    }
+    
+    button, [role="button"] {
+      @apply border-2 border-solid;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    /* Disable scene highlight animations */
+    .scene-highlight-pulse,
+    .scene-highlight-overlay,
+    .scene-sync-indicator,
+    .corner-highlight,
+    .progress-fill {
+      animation: none !important;
+    }
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sr-only:focus,
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Skip links */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50;
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-md;
+    @apply transition-all duration-200 font-medium;
+  }
+
+  /* Keyboard navigation indicators */
+  .keyboard-nav-active *:focus {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Touch target sizing */
+  @media (pointer: coarse) {
+    button,
+    [role="button"],
+    input[type="checkbox"],
+    input[type="radio"],
+    select {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Enhanced button states */
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* ARIA live regions */
+  [aria-live] {
+    @apply sr-only;
+  }
+
+  /* Focus trap indicators */
+  .focus-trap {
+    @apply relative;
+  }
+
+  .focus-trap::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    @apply ring-2 ring-primary ring-offset-2 rounded-lg;
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  .focus-trap:focus-within::before {
+    @apply opacity-100;
+  }
+}
+
+/* Keyboard shortcut indicators */
+@layer components {
+  .kbd {
+    @apply inline-flex items-center justify-center;
+    @apply px-2 py-1 text-xs font-mono;
+    @apply bg-muted border border-border rounded;
+    @apply shadow-sm;
+  }
+
+  .kbd-combo {
+    @apply flex items-center gap-1;
+  }
+
+  .kbd-combo .kbd + .kbd::before {
+    content: '+';
+    @apply text-muted-foreground mx-1;
+  }
+}
+
+/* Accessibility animations */
+@keyframes focus-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+}
+
+@keyframes announce-flash {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: var(--accent);
+  }
+}
+
+/* Focus management for modals and dialogs */
+.modal-overlay {
+  @apply fixed inset-0 z-50;
+}
+
+.modal-content {
+  @apply focus:outline-none;
+}
+
+.modal-content:focus-visible {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+/* Improved table accessibility */
+table[role="table"] th[role="columnheader"] {
+  @apply cursor-pointer;
+}
+
+table[role="table"] th[role="columnheader"]:hover {
+  @apply bg-muted/50;
+}
+
+table[role="table"] tr[role="row"]:focus {
+  @apply bg-muted/50 outline-none ring-2 ring-primary ring-inset;
+}
+
+/* Video player accessibility */
+video:focus {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Scene slider accessibility */
+.scene-slider [role="listbox"] {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+}
+
+.scene-slider [role="option"]:focus {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+.scene-slider [role="option"][aria-selected="true"] {
+  @apply ring-2 ring-blue-500 ring-offset-2;
+}

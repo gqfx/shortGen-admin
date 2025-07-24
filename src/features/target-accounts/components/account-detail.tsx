@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { ArrowLeft, Home, ChevronRight, RefreshCw, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,31 +34,75 @@ function AccountDetailContent() {
     await refreshAccountData()
   }
 
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not in an input field
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      if (event.altKey) {
+        switch (event.key) {
+          case 'ArrowLeft':
+          case 'Backspace':
+            event.preventDefault()
+            handleBack()
+            break
+          case 'h':
+            event.preventDefault()
+            handleHomeClick()
+            break
+          case 'r':
+            event.preventDefault()
+            handleRefresh()
+            break
+        }
+      }
+
+      if (event.key === 'Escape') {
+        handleBack()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleBack, handleHomeClick, handleRefresh])
+
   return (
     <div className="min-h-screen bg-background">
       <main className={`container mx-auto ${isMobile ? 'px-3 py-4' : 'px-4 py-6'} space-y-4 md:space-y-6`}>
         {/* Mobile-Optimized Breadcrumb Navigation */}
-        <nav className={`flex items-center ${touchSpacing} text-sm text-muted-foreground overflow-x-auto`}>
+        <nav 
+          className={`flex items-center ${touchSpacing} text-sm text-muted-foreground overflow-x-auto`}
+          aria-label="Breadcrumb navigation"
+          role="navigation"
+        >
           <Button
             variant="ghost"
             size={isMobile ? "sm" : "sm"}
             onClick={handleHomeClick}
             className={`${touchTargetSize} ${isMobile ? 'p-2' : 'h-auto p-1'} hover:text-foreground flex-shrink-0`}
+            aria-label="Go to home page"
           >
-            <Home className="h-4 w-4" />
+            <Home className="h-4 w-4" aria-hidden="true" />
             {isMobile && <span className="ml-2 text-xs">Home</span>}
           </Button>
-          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+          <ChevronRight className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
           <Button
             variant="ghost"
             size={isMobile ? "sm" : "sm"}
             onClick={handleAccountsClick}
             className={`${touchTargetSize} ${isMobile ? 'px-3 py-2' : 'h-auto p-1'} hover:text-foreground flex-shrink-0`}
+            aria-label="Go to target accounts list"
           >
             <span className={isMobile ? 'text-xs' : ''}>Target Accounts</span>
           </Button>
-          <ChevronRight className="h-4 w-4 flex-shrink-0" />
-          <span className={`text-foreground font-medium ${isMobile ? 'text-xs' : ''} truncate`}>
+          <ChevronRight className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          <span 
+            className={`text-foreground font-medium ${isMobile ? 'text-xs' : ''} truncate`}
+            aria-current="page"
+          >
             Account Detail
           </span>
         </nav>
@@ -70,16 +115,23 @@ function AccountDetailContent() {
               size={isMobile ? "default" : "sm"}
               onClick={handleBack}
               className={`${touchTargetSize} flex items-center gap-2 ${isMobile ? 'w-full justify-center' : ''}`}
+              aria-label="Go back to target accounts list"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               <span className={isMobile ? '' : 'hidden sm:inline'}>Back to Accounts</span>
               <span className={isMobile ? 'hidden' : 'sm:hidden'}>Back</span>
             </Button>
             <div className={isMobile ? 'text-center' : ''}>
-              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold`}>
+              <h1 
+                className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold`}
+                id="account-detail-title"
+              >
                 {loading ? 'Loading...' : account?.display_name || 'Account Detail'}
               </h1>
-              <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground mt-1`}>
+              <p 
+                className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground mt-1`}
+                aria-describedby="account-detail-title"
+              >
                 {loading ? `Account ID: ${accountId}` : `@${account?.username || 'unknown'}`}
               </p>
             </div>
@@ -91,8 +143,9 @@ function AccountDetailContent() {
               onClick={handleRefresh}
               disabled={loading}
               className={`${touchTargetSize} flex items-center gap-2 ${isMobile ? 'px-6' : ''}`}
+              aria-label={loading ? 'Refreshing account data' : 'Refresh account data'}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className={isMobile ? '' : 'hidden sm:inline'}>Refresh</span>
             </Button>
           </div>

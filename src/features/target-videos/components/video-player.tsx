@@ -18,6 +18,8 @@ import {
 import { useVideoDetail } from '../context/video-detail-context'
 import { DownloadStatus } from './download-status'
 import { AnalysisAction } from './analysis-action'
+import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
+import { useAccessibility } from '@/hooks/use-accessibility'
 import { toast } from 'sonner'
 
 interface SceneData {
@@ -59,6 +61,10 @@ export function VideoPlayer({
     getDownloadStatusMessage
   } = useVideoDetail()
   
+  const { isMobile, isTablet, isDesktop } = useResponsive()
+  const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
+  const { announceStatus, announceError, announceSuccess } = useAccessibility()
+  
   const [imageLoading, setImageLoading] = useState(true)
   const [imageError, setImageError] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -66,10 +72,13 @@ export function VideoPlayer({
 
   const handleDownload = async () => {
     if (!canTriggerDownload) {
-      toast.info('Video is already downloaded or download is in progress')
+      const message = 'Video is already downloaded or download is in progress'
+      toast.info(message)
+      announceStatus(message)
       return
     }
     
+    announceStatus(`Starting download for ${video.title}`)
     await triggerDownload(video.id)
   }
 
@@ -103,6 +112,70 @@ export function VideoPlayer({
     setIsVideoReady(false)
     toast.error('Failed to load video file')
   }, [])
+
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not in an input field and video is ready
+      if (event.target instanceof HTMLInputElement || 
+          event.target instanceof HTMLTextAreaElement || 
+          !isVideoReady || 
+          !videoRef.current) {
+        return
+      }
+
+      const video = videoRef.current
+
+      switch (event.key) {
+        case ' ':
+          event.preventDefault()
+          if (video.paused) {
+            video.play()
+            announceStatus('Video playing')
+          } else {
+            video.pause()
+            announceStatus('Video paused')
+          }
+          break
+        case 'ArrowLeft':
+          event.preventDefault()
+          video.currentTime = Math.max(0, video.currentTime - 10)
+          break
+        case 'ArrowRight':
+          event.preventDefault()
+          video.currentTime = Math.min(video.duration, video.currentTime + 10)
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          video.volume = Math.min(1, video.volume + 0.1)
+          break
+        case 'ArrowDown':
+          event.preventDefault()
+          video.volume = Math.max(0, video.volume - 0.1)
+          break
+        case 'm':
+        case 'M':
+          event.preventDefault()
+          video.muted = !video.muted
+          announceStatus(video.muted ? 'Video muted' : 'Video unmuted')
+          break
+        case 'f':
+        case 'F':
+          event.preventDefault()
+          if (document.fullscreenElement) {
+            document.exitFullscreen()
+          } else {
+            video.requestFullscreen()
+          }
+          break
+      }
+    }
+
+    if (video.is_downloaded && isVideoReady) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [video.is_downloaded, isVideoReady])
 
   // Enhanced seek to specific time with smooth navigation
   useEffect(() => {
@@ -360,62 +433,91 @@ export function VideoPlayer({
 
   return (
     <Card className={className}>
-      <CardContent className="p-0">
-        <div className="relative aspect-video bg-black rounded-t-lg overflow-hidden">
+      <CardContent className={isMobile ? "p-0" : "p-0"}>
+        <div className={`relative ${isMobile ? 'aspect-video' : 'aspect-video'} bg-black ${isMobile ? 'rounded-t-md' : 'rounded-t-lg'} overflow-hidden`}>
           {video.is_downloaded && video.local_file_path ? (
             // Video Player for downloaded videos
             <div className="w-full h-full">
               <video
                 ref={videoRef}
                 controls
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 poster={video.thumbnail_url || undefined}
                 preload="metadata"
                 onTimeUpdate={handleVideoTimeUpdate}
                 onLoadedData={handleVideoLoadedData}
                 onError={handleVideoError}
                 style={getSceneHighlightStyle()}
+                aria-label={`Video player for ${video.title}. Duration: ${video.duration ? formatDuration(video.duration) : 'unknown'}`}
+                aria-describedby="video-controls-help video-info"
+                title={`Playing: ${video.title}`}
               >
                 <source src={video.local_file_path} type="video/mp4" />
                 <source src={video.local_file_path} type="video/webm" />
                 <source src={video.local_file_path} type="video/ogg" />
+                <track kind="captions" label="English captions" srcLang="en" />
                 Your browser does not support the video tag.
               </video>
               
+              {/* Screen reader help text */}
+              <div id="video-controls-help" className="sr-only">
+                Use video controls to play, pause, adjust volume, and seek through the video. 
+                Press space to play/pause, arrow keys to seek, and M to mute.
+              </div>
+              
+              {/* Video information for screen readers */}
+              <div id="video-info" className="sr-only">
+                Video title: {video.title}. 
+                {video.duration && `Duration: ${formatDuration(video.duration)}. `}
+                {video.description && `Description: ${video.description}. `}
+                Platform: {video.platform}. 
+                Type: {video.video_type}.
+              </div>
+              
               {/* Video status badge */}
-              <div className="absolute top-2 right-2">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <div className={`absolute ${isMobile ? 'top-1 right-1' : 'top-2 right-2'}`}>
+                <Badge 
+                  variant="secondary" 
+                  className={`bg-green-100 text-green-800 ${isMobile ? 'text-xs px-2 py-1' : ''}`}
+                  aria-label="Video status: Downloaded and ready to play"
+                >
                   Downloaded
                 </Badge>
               </div>
 
               {/* Enhanced scene highlight indicator */}
               {highlightedScene && isVideoReady && (
-                <div className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 backdrop-blur-sm border border-blue-400/30">
-                  <div className="flex items-center gap-2">
+                <div className={`absolute ${isMobile ? 'bottom-1 left-1 right-1' : 'bottom-2 left-2'} bg-gradient-to-r from-blue-600 to-blue-700 text-white ${isMobile ? 'px-2 py-1' : 'px-4 py-2'} rounded-full ${isMobile ? 'text-xs' : 'text-sm'} font-medium shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-500 backdrop-blur-sm border border-blue-400/30`}>
+                  <div className={`flex items-center ${isMobile ? 'gap-1' : 'gap-2'}`}>
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    <span>
+                    <span className={isMobile ? 'truncate' : ''}>
                       Scene {highlightedScene.sceneId}: {Math.floor(highlightedScene.startTime / 60)}:{(highlightedScene.startTime % 60).toString().padStart(2, '0')} - {Math.floor(highlightedScene.endTime / 60)}:{(highlightedScene.endTime % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
-                  <div className="text-xs opacity-90 mt-1 truncate max-w-xs">
-                    {highlightedScene.description}
-                  </div>
+                  {!isMobile && (
+                    <div className="text-xs opacity-90 mt-1 truncate max-w-xs">
+                      {highlightedScene.description}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ) : (
             // Thumbnail with download button for non-downloaded videos
-            <div className="relative w-full h-full flex items-center justify-center bg-muted">
+            <div 
+              className="relative w-full h-full flex items-center justify-center bg-muted"
+              role="img"
+              aria-label={`Video thumbnail for ${video.title}. Video not yet downloaded.`}
+            >
               {/* Thumbnail image */}
               {video.thumbnail_url && !imageError ? (
                 <>
                   {imageLoading && (
-                    <Skeleton className="absolute inset-0 w-full h-full" />
+                    <Skeleton className="absolute inset-0 w-full h-full" aria-label="Loading video thumbnail" />
                   )}
                   <img
                     src={video.thumbnail_url}
-                    alt={video.title}
+                    alt={`Thumbnail for ${video.title}`}
                     className={`w-full h-full object-cover ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
@@ -423,67 +525,67 @@ export function VideoPlayer({
                 </>
               ) : (
                 // Fallback when no thumbnail or image error
-                <div className="flex flex-col items-center justify-center text-muted-foreground">
-                  <Play className="w-16 h-16 mb-2" />
+                <div className="flex flex-col items-center justify-center text-muted-foreground" role="img" aria-label="No thumbnail available">
+                  <Play className="w-16 h-16 mb-2" aria-hidden="true" />
                   <p className="text-sm">No thumbnail available</p>
                 </div>
               )}
               
               {/* Overlay with download button */}
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+              <div className={`absolute inset-0 bg-black/50 flex items-center justify-center ${isMobile ? 'opacity-100' : 'opacity-0 hover:opacity-100'} transition-opacity duration-200`}>
                 <div className="text-center">
                   <Button
                     onClick={handleDownload}
                     disabled={loadingStates.download || !canTriggerDownload}
-                    size="lg"
-                    className="mb-2"
+                    size={isMobile ? "default" : "lg"}
+                    className={`${touchTargetSize} mb-2`}
                   >
                     {loadingStates.download ? (
                       <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Downloading...
+                        <Loader2 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 animate-spin`} />
+                        {isMobile ? 'Downloading...' : 'Downloading...'}
                       </>
                     ) : (
                       <>
-                        <Download className="w-5 h-5 mr-2" />
-                        Download Video
+                        <Download className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2`} />
+                        {isMobile ? 'Download' : 'Download Video'}
                       </>
                     )}
                   </Button>
-                  <p className="text-white text-sm">
-                    Click to download and watch
+                  <p className={`text-white ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                    {isMobile ? 'Tap to download' : 'Click to download and watch'}
                   </p>
                 </div>
               </div>
               
               {/* Status badges */}
-              <div className="absolute top-2 right-2 flex gap-2">
+              <div className={`absolute ${isMobile ? 'top-1 right-1' : 'top-2 right-2'} flex ${isMobile ? 'gap-1' : 'gap-2'}`}>
                 {video.download_status === 'pending' && (
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                    Download Pending
+                  <Badge variant="secondary" className={`bg-yellow-100 text-yellow-800 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
+                    {isMobile ? 'Pending' : 'Download Pending'}
                   </Badge>
                 )}
                 {video.download_status === 'processing' && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    Downloading
+                  <Badge variant="secondary" className={`bg-blue-100 text-blue-800 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
+                    {isMobile ? 'Downloading' : 'Downloading'}
                   </Badge>
                 )}
                 {video.download_status === 'failed' && (
-                  <Badge variant="destructive">
-                    Download Failed
+                  <Badge variant="destructive" className={isMobile ? 'text-xs px-2 py-1' : ''}>
+                    {isMobile ? 'Failed' : 'Download Failed'}
                   </Badge>
                 )}
                 {!video.is_downloaded && !video.download_status && (
-                  <Badge variant="outline">
-                    Not Downloaded
+                  <Badge variant="outline" className={isMobile ? 'text-xs px-2 py-1' : ''}>
+                    {isMobile ? 'Not Downloaded' : 'Not Downloaded'}
                   </Badge>
                 )}
               </div>
               
               {/* Duration badge */}
               {video.duration && (
-                <div className="absolute bottom-2 right-2">
-                  <Badge variant="secondary" className="bg-black/70 text-white">
+                <div className={`absolute ${isMobile ? 'bottom-1 right-1' : 'bottom-2 right-2'}`}>
+                  <Badge variant="secondary" className={`bg-black/70 text-white ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
                     {formatDuration(video.duration)}
                   </Badge>
                 </div>
