@@ -26,9 +26,17 @@ function formatNumber(num: number): string {
   return num.toString()
 }
 
+const renderDiff = (diff: number) => {
+  if (diff > 0) {
+    return <span className="text-xs text-green-500 ml-1">↑{formatNumber(diff)}</span>
+  } else if (diff < 0) {
+    return <span className="text-xs text-red-500 ml-1">↓{formatNumber(Math.abs(diff))}</span>
+  }
+  return null
+}
+
 function formatDate(dateString: string | null): string {
   if (!dateString) return 'N/A'
-  
   try {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -65,7 +73,12 @@ export function AccountStatistics({ account, loading = false, className }: Accou
   useResponsive()
   useTouchFriendly()
 
-  const latest_snapshot = account?.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+  const latest_snapshot = account?.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null
+  const prev_snapshot = account?.snapshots && account.snapshots.length > 1 ? account.snapshots[1] : null
+
+  const subscriberDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.subscriber_count ?? 0) - (prev_snapshot.subscriber_count ?? 0) : 0
+  const viewsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.total_views ?? 0) - (prev_snapshot.total_views ?? 0) : 0
+  const videosDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.total_videos_count ?? 0) - (prev_snapshot.total_videos_count ?? 0) : 0
 
   const accountAge = account?.published_at ?
     Math.floor((new Date().getTime() - new Date(account.published_at).getTime()) / (1000 * 60 * 60 * 24)) : 0
@@ -73,7 +86,14 @@ export function AccountStatistics({ account, loading = false, className }: Accou
   const statItems = [
     {
       title: "Subscribers",
-      value: latest_snapshot?.subscriber_count ? formatNumber(latest_snapshot.subscriber_count) : 'N/A',
+      value: latest_snapshot?.subscriber_count ? (
+        <>
+          {formatNumber(latest_snapshot.subscriber_count)}
+          {renderDiff(subscriberDiff)}
+        </>
+      ) : (
+        'N/A'
+      ),
       icon: <Users className="h-4 w-4" />,
       description: latest_snapshot?.subscriber_count ? `${latest_snapshot.subscriber_count.toLocaleString()} total subscribers` : undefined,
     },
@@ -85,13 +105,27 @@ export function AccountStatistics({ account, loading = false, className }: Accou
     },
     {
       title: "Total Videos",
-      value: latest_snapshot?.total_videos_count ? formatNumber(latest_snapshot.total_videos_count) : 'N/A',
+      value: latest_snapshot?.total_videos_count ? (
+        <>
+          {formatNumber(latest_snapshot.total_videos_count)}
+          {renderDiff(videosDiff)}
+        </>
+      ) : (
+        'N/A'
+      ),
       icon: <Video className="h-4 w-4" />,
       description: latest_snapshot?.total_videos_count ? `${latest_snapshot.total_videos_count.toLocaleString()} videos` : "Videos in this account",
     },
     {
       title: "Total Views",
-      value: latest_snapshot?.total_views ? formatNumber(latest_snapshot.total_views) : 'N/A',
+      value: latest_snapshot?.total_views ? (
+        <>
+          {formatNumber(latest_snapshot.total_views)}
+          {renderDiff(viewsDiff)}
+        </>
+      ) : (
+        'N/A'
+      ),
       icon: <Eye className="h-4 w-4" />,
       description: "Across all videos",
     },

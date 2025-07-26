@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
@@ -12,18 +12,10 @@ import { TaskStatsCards } from './components/task-stats-cards'
 import { TaskFilters } from './components/task-filters'
 import TasksProvider, { useTasks } from './context/tasks-context'
 import PlatformAccountsProvider from '../platform-accounts/context/platform-accounts-context'
-import { Task } from './data/schema'
+import { Pagination } from '@/components/ui/pagination'
 
 function TasksContent() {
-  const { tasks, isLoading, error } = useTasks()
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>(tasks)
-
-  // Update filtered tasks when tasks change
-  React.useEffect(() => {
-    setFilteredTasks(tasks)
-  }, [tasks])
-
-  const displayTasks = filteredTasks.length > 0 ? filteredTasks : tasks
+  const { tasks, isLoading, error, pagination, setPagination } = useTasks()
 
   return (
     <>
@@ -60,9 +52,20 @@ function TasksContent() {
             </div>
           ) : (
             <>
-              <TaskStatsCards tasks={displayTasks} />
-              <TaskFilters tasks={tasks} onFilteredTasksChange={setFilteredTasks} />
-              <DataTable data={displayTasks} columns={columns} />
+              <TaskStatsCards tasks={tasks} />
+              {/* The TaskFilters component might need to be adapted or removed if filtering is now server-side */}
+              {/* For now, we assume it might still be used for client-side filtering on the current page */}
+              <TaskFilters tasks={tasks} onFilteredTasksChange={() => {}} />
+              <DataTable data={tasks} columns={columns} />
+              <div className="mt-4 flex justify-end">
+                <Pagination
+                  page={pagination.page}
+                  pageSize={pagination.size}
+                  total={pagination.total}
+                  onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+                  onPageSizeChange={(size) => setPagination(prev => ({ ...prev, size, page: 1 }))}
+                />
+              </div>
             </>
           )}
         </div>

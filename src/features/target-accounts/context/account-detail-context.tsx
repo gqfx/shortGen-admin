@@ -34,13 +34,13 @@ interface AccountDetailContextType {
   error: string | null
   errorStates: ErrorStates
   pagination: {
-    skip: number
-    limit: number
+    page: number
+    size: number
     total: number
   }
   currentFilters: VideoFilters
   fetchAccountDetail: (accountId: string) => Promise<void>
-  fetchAccountVideos: (accountId: string, params?: { skip?: number; limit?: number; sort_by?: string }) => Promise<void>
+  fetchAccountVideos: (accountId: string, params?: { page?: number; size?: number; sort_by?: string }) => Promise<void>
   fetchAccountStatistics: (accountId: string) => Promise<void>
   triggerBatchDownload: (videoIds: string[]) => Promise<void>
   filterVideos: (filters: VideoFilters) => void
@@ -96,8 +96,8 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
   })
   
   const [pagination, setPaginationState] = useState({
-    skip: 0,
-    limit: 50,
+    page: 1,
+    size: 10,
     total: 0
   })
 
@@ -121,17 +121,23 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     setFilters(accountId, filters)
   }, [accountId, setFilters])
 
-  const fetchAccountVideos = useCallback(async (id: string, params?: { skip?: number, limit?: number, sort_by?: string }) => {
+  const fetchAccountVideos = useCallback(async (id: string, params?: { page?: number, size?: number, sort_by?: string }) => {
     try {
       setLoadingStates(prev => ({ ...prev, videos: true }))
       const response = await analysisApi.getAccountVideos(id, {
-        skip: params?.skip ?? pagination.skip,
-        limit: params?.limit ?? pagination.limit,
+        page: params?.page ?? pagination.page,
+        size: params?.size ?? pagination.size,
         sort_by: params?.sort_by,
       })
       if (response.code === 0) {
-        setVideos(accountId, response.data)
-        setAllVideos(response.data)
+        const { items, total, page, size } = response.data
+        setVideos(accountId, items)
+        setAllVideos(items)
+        setPaginationState({
+          total,
+          page,
+          size,
+        })
       } else {
         toast.error(response.msg || 'Failed to fetch account videos')
       }
@@ -140,15 +146,15 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
     } finally {
       setLoadingStates(prev => ({ ...prev, videos: false }))
     }
-  }, [accountId, pagination.skip, pagination.limit, setVideos])
+  }, [accountId, pagination.page, pagination.size, setVideos])
 
   const fetchAccountStatistics = useCallback(async (id: string) => {
     try {
       setLoadingStates(prev => ({ ...prev, statistics: true }))
-      const response = await analysisApi.getAccountSnapshots(id, { limit: 1, skip: 0 })
-      if (response.code === 0 && response.data.length > 0) {
+      const response = await analysisApi.getAccountSnapshots(id, { page: 1, size: 1 })
+      if (response.code === 0 && response.data.items.length > 0) {
         // Assuming we want the latest snapshot for the stats
-        _setAccountStats(response.data[0])
+        _setAccountStats(response.data.items[0])
       } else if (response.code !== 0) {
         toast.error(response.msg || 'Failed to fetch account statistics')
       }
@@ -218,6 +224,17 @@ export function AccountDetailProvider({ children, accountId, initialData = null 
       fetchAccountVideos(accountId, { sort_by: currentFilters.sortBy })
     }
   }, [currentFilters.sortBy, accountId, fetchAccountVideos])
+
+  useEffect(() => {
+    // Refetch videos when pagination changes, but not on initial load
+    if (accountId && !loadingStates.videos) {
+      fetchAccountVideos(accountId, {
+        page: pagination.page,
+        size: pagination.size,
+        sort_by: currentFilters.sortBy
+      })
+    }
+  }, [pagination.page, pagination.size, accountId])
 
   useEffect(() => {
     setComponentVideos(storeVideos)

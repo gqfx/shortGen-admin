@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios'
+import axios from 'axios'
 import { Project } from '@/features/projects/data/schema'
 import { CreateProjectFormData, UpdateProjectFormData } from '../features/projects/data/schema'
 import { Task } from '@/features/tasks/data/schema'
@@ -309,8 +309,10 @@ export interface ProjectTypeUpdate {
 
 // Projects API
 export const projectsApi = {
-  getAll: (skip = 0, limit = 100): Promise<ApiResponse<Project[]>> =>
-    api.get(`/api/projects?skip=${skip}&limit=${limit}`),
+  getAll: (page = 1, size = 100): Promise<ApiResponse<PaginatedResponse<Project>>> => {
+    if (page < 1) page = 1
+    return api.get(`/api/projects?page=${page}&size=${size}`)
+  },
 
   getById: (id: string): Promise<ApiResponse<Project>> =>
     api.get(`/api/projects/${id}`),
@@ -345,8 +347,12 @@ export const tasksApi = {
   getTaskTypes: (): Promise<ApiResponse<string[]>> =>
     api.get('/api/tasks/types'),
 
-  listTasks: (params: { project_id?: string; task_type?: string; skip?: number; limit?: number }): Promise<ApiResponse<Task[]>> =>
-    api.get('/api/tasks', { params }),
+  listTasks: (params: { project_id?: string; task_type?: string; page?: number; size?: number }): Promise<ApiResponse<PaginatedResponse<Task>>> => {
+    let { page = 1 } = params
+    const { size = 10, ...rest } = params
+    if (page < 1) page = 1
+    return api.get('/api/tasks', { params: { ...rest, page, size } })
+  },
 
   enqueue: (taskId: string): Promise<ApiResponse<unknown>> =>
     api.post(`/api/tasks/${taskId}/enqueue`),
@@ -381,8 +387,9 @@ export const assetsApi = {
   create: (data: AssetCreate): Promise<Asset> =>
     api.post('/api/assets', data),
 
-  getAll: (skip = 0, limit = 100, assetType?: string, status?: string): Promise<ApiResponse<Asset[]>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 10, assetType?: string, status?: string): Promise<ApiResponse<PaginatedResponse<Asset>>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (assetType) params.append('asset_type', assetType)
     if (status) params.append('status', status)
     return api.get(`/api/assets?${params.toString()}`)
@@ -397,14 +404,17 @@ export const assetsApi = {
   delete: (assetId: string): Promise<{ message: string }> =>
     api.delete(`/api/assets/${assetId}`),
 
-  getByType: (assetType: string, skip = 0, limit = 100): Promise<Asset[]> =>
-    api.get(`/api/assets/by-type/${assetType}?skip=${skip}&limit=${limit}`),
+  getByType: (assetType: string, page = 1, size = 100): Promise<Asset[]> => {
+    if (page < 1) page = 1
+    return api.get(`/api/assets/by-type/${assetType}?page=${page}&size=${size}`)
+  },
 }
 
 // Inspirations API
 export const inspirationsApi = {
-  getAll: (skip = 0, limit = 100, status?: string): Promise<Inspiration[]> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 100, status?: string): Promise<PaginatedResponse<Inspiration>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (status) params.append('status', status)
     return api.get(`/api/inspirations?${params.toString()}`)
   },
@@ -433,11 +443,12 @@ export const inspirationsApi = {
 
 // Platform Accounts API
 export const platformAccountsApi = {
-  getAll: (skip = 0, limit = 100, platform?: string, status?: string): Promise<ApiResponse<PlatformAccount[]>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 10, platform?: string, status?: string): Promise<ApiResponse<PaginatedResponse<PlatformAccount>>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (platform) params.append('platform', platform)
     if (status) params.append('status', status)
-    return api.get(`/api/platform-accounts?${params}`)
+    return api.get(`/api/platform-accounts?${params.toString()}`)
   },
 
   getById: (id: string): Promise<ApiResponse<PlatformAccount>> =>
@@ -464,8 +475,9 @@ export const platformAccountsApi = {
 
 // Worker Configs API
 export const workerConfigsApi = {
-  getAll: (skip = 0, limit = 100, workerType?: string, configType?: string, isActive?: boolean): Promise<ApiResponse<WorkerConfig[]>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 100, workerType?: string, configType?: string, isActive?: boolean): Promise<ApiResponse<PaginatedResponse<WorkerConfig>>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (workerType) params.append('worker_type', workerType)
     if (configType) params.append('config_type', configType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
@@ -493,8 +505,9 @@ export const workerConfigsApi = {
 
 // WorkflowRegistry API
 export const workflowRegistryApi = {
-  getAll: (skip = 0, limit = 100, workflowType?: string, isActive?: boolean): Promise<ApiResponse<WorkflowRegistry[]>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 100, workflowType?: string, isActive?: boolean): Promise<ApiResponse<PaginatedResponse<WorkflowRegistry>>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (workflowType) params.append('workflow_type', workflowType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
     return api.get(`/api/workflow-registry?${params}`)
@@ -524,8 +537,9 @@ export const workflowRegistryApi = {
 
 // ProjectType API
 export const projectTypesApi = {
-  getAll: (skip = 0, limit = 100, category?: string, isActive?: boolean): Promise<ApiResponse<ProjectType[]>> => {
-    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() })
+  getAll: (page = 1, size = 100, category?: string, isActive?: boolean): Promise<ApiResponse<PaginatedResponse<ProjectType>>> => {
+    if (page < 1) page = 1
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (category) params.append('category', category)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
     return api.get(`/api/project-types?${params}`)
@@ -557,6 +571,14 @@ export const projectTypesApi = {
 }
 
 // --- Analysis API Types (Updated based on new documentation) ---
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
 
 // Schemas
 export interface AccountSnapshot {
@@ -731,8 +753,10 @@ export const analysisApi = {
   /**
    * 获取目标账号列表, 并附带最新的快照数据.
    */
-  getAccounts: (params: { skip?: number; limit?: number; is_active?: boolean; category?: string }): Promise<ApiResponse<TargetAccount[]>> =>
-    api.get('/api/analysis/accounts', { params }),
+  getAccounts: (params: { page?: number; size?: number; is_active?: boolean; category?: string }): Promise<ApiResponse<PaginatedResponse<TargetAccount>>> => {
+    if (params.page && params.page < 1) params.page = 1
+    return api.get('/api/analysis/accounts', { params })
+  },
 
   /**
    * 获取单个目标账号信息, 并附带最新的快照数据.
@@ -755,26 +779,42 @@ export const analysisApi = {
   /**
    * 获取指定账号下的视频列表.
    */
-  getAccountVideos: (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }): Promise<ApiResponse<Video[]>> =>
-    api.get(`/api/analysis/accounts/${accountId}/videos`, { params }),
+  getAccountVideos: (accountId: string, params: { page?: number; size?: number; sort_by?: string }): Promise<ApiResponse<PaginatedResponse<Video>>> => {
+    let { page = 1 } = params
+    const { size = 10, ...rest } = params
+    if (page < 1) page = 1
+    return api.get(`/api/analysis/accounts/${accountId}/videos`, { params: { ...rest, page, size } })
+  },
 
   /**
    * 获取视频列表, 并附带最新的快照数据.
    */
-  getVideos: (params: { skip?: number; limit?: number; sort_by?: string }): Promise<ApiResponse<Video[]>> =>
-    api.get('/api/analysis/videos', { params }),
+  getVideos: (params: { page?: number; size?: number; sort_by?: string }): Promise<ApiResponse<PaginatedResponse<Video>>> => {
+    let { page = 1 } = params
+    const { size = 10, ...rest } = params
+    if (page < 1) page = 1
+    return api.get('/api/analysis/videos', { params: { ...rest, page, size } })
+  },
 
   /**
    * 获取账号的历史快照数据.
    */
-  getAccountSnapshots: (accountId: string, params: { skip?: number; limit?: number }): Promise<ApiResponse<AccountSnapshot[]>> =>
-    api.get(`/api/analysis/accounts/${accountId}/snapshots`, { params }),
+  getAccountSnapshots: (accountId: string, params: { page?: number; size?: number }): Promise<ApiResponse<PaginatedResponse<AccountSnapshot>>> => {
+    let { page = 1 } = params
+    const { size = 10 } = params
+    if (page < 1) page = 1
+    return api.get(`/api/analysis/accounts/${accountId}/snapshots`, { params: { page, size } })
+  },
 
   /**
    * 获取视频的历史快照数据.
    */
-  getVideoSnapshots: (videoId: string, params: { skip?: number; limit?: number }): Promise<ApiResponse<VideoSnapshot[]>> =>
-    api.get(`/api/analysis/videos/${videoId}/snapshots`, { params }),
+  getVideoSnapshots: (videoId: string, params: { page?: number; size?: number }): Promise<ApiResponse<PaginatedResponse<VideoSnapshot>>> => {
+    let { page = 1 } = params
+    const { size = 10 } = params
+    if (page < 1) page = 1
+    return api.get(`/api/analysis/videos/${videoId}/snapshots`, { params: { page, size } })
+  },
 
   /**
    * 触发对指定视频的后台镜头分析任务.
@@ -785,8 +825,10 @@ export const analysisApi = {
   /**
    * 获取监控任务列表.
    */
-  getTasks: (params: { skip?: number; limit?: number; account_id?: string; video_id?: string; task_type?: string; status?: string }): Promise<ApiResponse<MonitoringTask[]>> =>
-    api.get('/api/analysis/tasks', { params }),
+  getTasks: (params: { page?: number; size?: number; account_id?: string; video_id?: string; task_type?: string; status?: string }): Promise<ApiResponse<PaginatedResponse<MonitoringTask>>> => {
+    if (params.page && params.page < 1) params.page = 1
+    return api.get('/api/analysis/tasks', { params })
+  },
 
   /**
    * 更新监控任务状态.

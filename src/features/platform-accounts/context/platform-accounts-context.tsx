@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState } from 'react'
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import {
@@ -14,10 +14,17 @@ interface ApiErrorResponse {
   msg: string
 }
 
+interface PaginationState {
+  page: number
+  size: number
+  total: number
+  pages: number
+}
+
 interface PlatformAccountsContextType {
   platformAccounts: PlatformAccount[]
   isLoading: boolean
-  error: any
+  error: Error | null
   platforms: string[]
   selectedAccount: PlatformAccount | null
   setSelectedAccount: (account: PlatformAccount | null) => void
@@ -34,6 +41,9 @@ interface PlatformAccountsContextType {
   deleteAccount: (id: string) => Promise<void>
   resetUsage: (id: string, data: PlatformAccountUsageReset) => Promise<void>
   refreshAccounts: () => void
+  pagination: PaginationState
+  setPagination: React.Dispatch<React.SetStateAction<PaginationState>>
+  total: number
 }
 
 const PlatformAccountsContext = createContext<PlatformAccountsContextType | undefined>(undefined)
@@ -56,15 +66,41 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    size: 10,
+    total: 0,
+    pages: 1,
+  })
 
   const queryClient = useQueryClient()
 
   // Fetch platform accounts
-  const { data: accountsResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['platformAccounts'],
-    queryFn: () => platformAccountsApi.getAll(0, 100),
+  const {
+    data: { platformAccounts = [], total = 0 } = {},
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['platformAccounts', pagination.page, pagination.size],
+    queryFn: () => platformAccountsApi.getAll(pagination.page, pagination.size),
+    select: (data) => {
+      return {
+        platformAccounts: data?.data?.items ?? [],
+        total: data?.data?.total ?? 0,
+      }
+    },
   })
-  const platformAccounts = accountsResponse?.data || []
+
+  useEffect(() => {
+    if (typeof total === 'number') {
+      setPagination(prev => ({
+        ...prev,
+        total,
+        pages: Math.ceil(total / prev.size),
+      }))
+    }
+  }, [total])
 
   // Fetch available platforms
   const { data: platformsResponse } = useQuery({
@@ -151,7 +187,7 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
   return (
     <PlatformAccountsContext.Provider
       value={{
-        platformAccounts,
+        platformAccounts: platformAccounts,
         isLoading,
         error,
         platforms,
@@ -170,6 +206,9 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
         deleteAccount,
         resetUsage,
         refreshAccounts,
+        pagination,
+        setPagination,
+        total,
       }}
     >
       {children}

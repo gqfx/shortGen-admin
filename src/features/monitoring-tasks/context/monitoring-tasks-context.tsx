@@ -12,9 +12,10 @@ interface MonitoringTasksContextType {
   loading: boolean
   error: string | null
   pagination: {
-    skip: number
-    limit: number
+    page: number
+    size: number
     total: number
+    pages: number
   }
   filters: {
     accountId?: string
@@ -22,7 +23,7 @@ interface MonitoringTasksContextType {
     taskType?: string
     status?: string
   }
-  
+
   // Actions
   fetchTasks: () => Promise<void>
   updateTask: (taskId: string, data: MonitoringTaskUpdate) => Promise<boolean>
@@ -50,9 +51,10 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPaginationState] = useState({
-    skip: 0,
-    limit: 50,
+    page: 1,
+    size: 10,
     total: 0,
+    pages: 1,
   })
   const [filters, setFiltersState] = useState<MonitoringTasksContextType['filters']>({})
 
@@ -60,22 +62,20 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await analysisApi.getTasks({
-        skip: pagination.skip,
-        limit: pagination.limit,
+        page: pagination.page,
+        size: pagination.size,
         account_id: filters.accountId,
         video_id: filters.videoId,
         task_type: filters.taskType,
         status: filters.status,
       })
-      
+
       if (response.code === 0) {
-        setTasks(response.data)
-        setPaginationState(prev => ({
-          ...prev,
-          total: response.data.length
-        }))
+        const { items, total, page, size, pages } = response.data
+        setTasks(items)
+        setPaginationState({ total, page, size, pages })
       } else {
         setError(response.msg || 'Failed to fetch monitoring tasks')
       }
@@ -86,7 +86,7 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
     } finally {
       setLoading(false)
     }
-  }, [pagination.skip, pagination.limit, filters.accountId, filters.videoId, filters.taskType, filters.status])
+  }, [pagination.page, pagination.size, filters.accountId, filters.videoId, filters.taskType, filters.status])
 
   const updateTask = useCallback(async (taskId: string, data: MonitoringTaskUpdate): Promise<boolean> => {
     try {
@@ -109,7 +109,7 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
 
   const setFilters = useCallback((newFilters: Partial<MonitoringTasksContextType['filters']>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
-    setPaginationState(prev => ({ ...prev, skip: 0 })) // Reset to first page when filters change
+    setPaginationState(prev => ({ ...prev, page: 1 })) // Reset to first page when filters change
   }, [])
 
   const setPagination = useCallback((newPagination: Partial<MonitoringTasksContextType['pagination']>) => {
@@ -118,7 +118,7 @@ export function MonitoringTasksProvider({ children }: MonitoringTasksProviderPro
 
   const resetFilters = useCallback(() => {
     setFiltersState({})
-    setPaginationState(prev => ({ ...prev, skip: 0 }))
+    setPaginationState(prev => ({ ...prev, page: 1 }))
   }, [])
 
   // Fetch data on mount and when pagination/filters change

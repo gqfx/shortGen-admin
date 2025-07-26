@@ -2,11 +2,10 @@ import { useParams, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { Home, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { AccountDetailProvider, useAccountDetail } from '../context/account-detail-context'
 import { AccountStatistics } from './account-statistics'
-import { VideoFilters } from './video-filters'
 import { VideoList } from './video-list'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 import {
@@ -23,6 +22,7 @@ function AccountDetailContent() {
   const { account, loading, error } = useAccountDetail()
   const { isMobile } = useResponsive()
   const { touchTargetSize, touchSpacing, touchPadding } = useTouchFriendly()
+
 
   const handleBack = () => {
     navigate({ to: '/target-accounts' })
@@ -142,14 +142,7 @@ function AccountDetailContent() {
         )}
 
         {/* Full Width Section for Video List with Filters */}
-        <Card>
-          <CardHeader>
-            <VideoFilters />
-          </CardHeader>
-          <CardContent>
-            <VideoList />
-          </CardContent>
-        </Card>
+        <VideoList />
       </main>
     </div>
   )

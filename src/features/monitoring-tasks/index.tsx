@@ -1,12 +1,13 @@
 import { RefreshCw, Activity, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
 import { MonitoringTasksProvider, useMonitoringTasks } from './context/monitoring-tasks-context'
 import { TaskFilters } from './components/task-filters'
 import { TaskTable } from './components/task-table'
 
 function MonitoringTasksContent() {
-  const { tasks, loading, fetchTasks } = useMonitoringTasks()
+  const { tasks, loading, fetchTasks, pagination, setPagination } = useMonitoringTasks()
 
   const getTaskStats = () => {
     const stats = {
@@ -109,7 +110,20 @@ function MonitoringTasksContent() {
       <TaskFilters />
 
       {/* Tasks Table */}
-      <TaskTable />
+      <Card>
+        <CardContent>
+          <TaskTable />
+        </CardContent>
+        <CardFooter>
+          <Pagination
+            page={pagination.page}
+            pageSize={pagination.size}
+            total={pagination.total}
+            onPageChange={(page) => setPagination({ page })}
+            onPageSizeChange={(size) => setPagination({ size, page: 1 })}
+          />
+        </CardFooter>
+      </Card>
     </div>
   )
 }

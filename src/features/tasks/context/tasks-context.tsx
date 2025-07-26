@@ -16,6 +16,13 @@ interface ApiError {
   message: string
 }
 
+export interface PaginationState {
+  page: number
+  size: number
+  total: number
+  pages: number
+}
+
 interface TasksContextType {
   open: TasksDialogType | null
   setOpen: (str: TasksDialogType | null) => void
@@ -25,6 +32,9 @@ interface TasksContextType {
   tasks: Task[]
   isLoading: boolean
   error: Error | null
+  // Pagination
+  pagination: PaginationState
+  setPagination: React.Dispatch<React.SetStateAction<PaginationState>>
   // API operations
   createTask: (data: unknown) => Promise<void>
   updateTask: (id: string, data: unknown) => Promise<void>
@@ -43,18 +53,34 @@ export default function TasksProvider({ children }: Props) {
   const [currentRow, setCurrentRow] = useState<Task | null>(null)
   const queryClient = useQueryClient()
 
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    size: 10,
+    total: 0,
+    pages: 1,
+  })
+
   // Fetch tasks
   const { data: apiResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: async () => {
-      const response = await tasksApi.listTasks({})
-      return response
-    },
+    queryKey: ['tasks', pagination.page, pagination.size],
+    queryFn: () => tasksApi.listTasks({ page: pagination.page, size: pagination.size }),
     retry: false,
     refetchOnWindowFocus: false,
   })
 
-  const tasks = apiResponse?.data || []
+  React.useEffect(() => {
+    if (apiResponse?.data) {
+      setPagination(prev => ({
+        ...prev,
+        total: apiResponse.data.total,
+        pages: apiResponse.data.pages,
+        page: apiResponse.data.page,
+        size: apiResponse.data.size,
+      }))
+    }
+  }, [apiResponse])
+
+  const tasks = apiResponse?.data?.items || []
 
   // Create task mutation
   const createMutation = useMutation({
@@ -127,6 +153,8 @@ export default function TasksProvider({ children }: Props) {
         tasks,
         isLoading,
         error,
+        pagination,
+        setPagination,
         createTask,
         updateTask,
         enqueueTask,

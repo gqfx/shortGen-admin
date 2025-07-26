@@ -48,9 +48,9 @@ export function VideoManagement({
   const fetchVideos = async () => {
     setLoading(true)
     try {
-      const result = await getAccountVideos(accountId)
+      const result = await getAccountVideos(accountId, { page: 1, size: 100 }) // Fetch up to 100 videos
       if (result) {
-        setVideos(result)
+        setVideos(result.items)
       }
     } finally {
       setLoading(false)
@@ -60,7 +60,7 @@ export function VideoManagement({
   const handleDownloadSelected = async () => {
     if (selectedVideos.length === 0) return
     
-    await triggerVideoDownload(selectedVideos)
+    await triggerVideoDownload({ video_ids: selectedVideos })
     setSelectedVideos([])
   }
 
@@ -80,19 +80,6 @@ export function VideoManagement({
     }
   }
 
-  const getVideoTypeBadge = (type: string) => {
-    const variants = {
-      short: 'secondary',
-      long: 'default',
-      live: 'destructive',
-    } as const
-
-    return (
-      <Badge variant={variants[type as keyof typeof variants] || 'default'}>
-        {type.charAt(0).toUpperCase() + type.slice(1)}
-      </Badge>
-    )
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,7 +151,7 @@ export function VideoManagement({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getVideoTypeBadge(video.video_type)}
+                        {/* {getVideoTypeBadge(video.video_type)} */}
                       </TableCell>
                       <TableCell>
                         {video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : 'N/A'}

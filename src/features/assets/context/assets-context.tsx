@@ -1,16 +1,19 @@
-import { createContext, useContext, ReactNode, useState } from 'react'
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Asset, assetsApi } from '@/lib/api'
+import { Asset, assetsApi, PaginatedResponse, ApiResponse } from '@/lib/api'
 
-interface AssetsApiResponse {
-  code: number;
-  msg: string;
-  data: Asset[];
+interface PaginationState {
+  page: number
+  size: number
+  total: number
+  pages: number
 }
 
 interface AssetsContextType {
   assets: Asset[]
   isLoading: boolean
+  pagination: PaginationState
+  setPagination: React.Dispatch<React.SetStateAction<PaginationState>>
   selectedAsset: Asset | null
   isCreateDialogOpen: boolean
   isEditDialogOpen: boolean
@@ -20,6 +23,7 @@ interface AssetsContextType {
   setIsDeleteDialogOpen: (open: boolean) => void
   setSelectedAsset: (asset: Asset | null) => void
   refreshAssets: () => void
+  deleteAsset: (id: string) => void
 }
 
 const AssetsContext = createContext<AssetsContextType | undefined>(undefined)
@@ -37,27 +41,46 @@ interface AssetsProviderProps {
 }
 
 export default function AssetsProvider({ children }: AssetsProviderProps) {
+  const [assets, setAssets] = useState<Asset[]>([])
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
-  // Fetch assets
-  const { data: assets, isLoading, refetch } = useQuery<AssetsApiResponse, Error, Asset[]>({
-    queryKey: ['assets'],
-    queryFn: () => assetsApi.getAll(0, 100),
-    select: (response) => (response?.data && Array.isArray(response.data) ? response.data : []),
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    size: 10,
+    total: 0,
+    pages: 1,
   })
+
+  const { data: queryResult, isLoading, refetch } = useQuery<ApiResponse<PaginatedResponse<Asset>>, Error>({
+    queryKey: ['assets', pagination.page, pagination.size],
+    queryFn: () => assetsApi.getAll(pagination.page, pagination.size),
+  })
+
+  useEffect(() => {
+    if (queryResult?.data) {
+      const { total, page, size, pages } = queryResult.data
+      setPagination(prev => ({ ...prev, total, page, size, pages }))
+      setAssets(queryResult.data.items)
+    }
+  }, [queryResult?.data])
 
   const refreshAssets = () => {
     refetch()
   }
 
+  const deleteAsset = (id: string) => {
+    setAssets(prevAssets => prevAssets.filter(asset => asset.id !== id))
+  }
+
   return (
     <AssetsContext.Provider
       value={{
-        assets: assets || [],
+        assets,
         isLoading,
+        pagination,
+        setPagination,
         selectedAsset,
         isCreateDialogOpen,
         isEditDialogOpen,
@@ -67,6 +90,7 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
         setIsDeleteDialogOpen,
         setSelectedAsset,
         refreshAssets,
+        deleteAsset,
       }}
     >
       {children}

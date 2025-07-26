@@ -21,7 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DataTableToolbar } from '../components/data-table-toolbar'
+import { DataTablePagination } from './data-table-pagination'
+import { DataTableToolbar } from './data-table-toolbar'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -115,6 +116,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination table={table} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import {
   AccountCrawlRequest,
   BatchAccountCrawlRequest,
   TriggerDownloadRequest,
+  PaginatedResponse,
 } from '@/lib/api'
 import { handleServerError } from '@/utils/handle-server-error'
 import { toast } from 'sonner'
@@ -18,9 +19,10 @@ interface TargetAccountsContextType {
   loading: boolean
   error: string | null
   pagination: {
-    skip: number
-    limit: number
+    page: number
+    size: number
     total: number
+    pages: number
   }
   filters: {
     isActive?: boolean
@@ -53,7 +55,7 @@ interface TargetAccountsContextType {
   // New enhanced actions
   triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest) => Promise<boolean>
   batchTriggerCrawl: (data: BatchAccountCrawlRequest) => Promise<boolean>
-  getAccountVideos: (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }) => Promise<Video[] | null>
+  getAccountVideos: (accountId: string, params: { page?: number; size?: number; sort_by?: string }) => Promise<PaginatedResponse<Video> | null>
   triggerVideoDownload: (data: TriggerDownloadRequest) => Promise<boolean>
 }
 
@@ -77,9 +79,10 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPaginationState] = useState({
-    skip: 0,
-    limit: 50,
+    page: 1,
+    size: 10,
     total: 0,
+    pages: 1,
   })
   const [filters, setFiltersState] = useState<TargetAccountsContextType['filters']>({})
   const [navigationState, setNavigationStateInternal] = useState<TargetAccountsContextType['navigationState']>({})
@@ -90,19 +93,18 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
       setError(null)
       
       const response = await analysisApi.getAccounts({
-        skip: pagination.skip,
-        limit: pagination.limit,
+        page: pagination.page,
+        size: pagination.size,
         is_active: filters.isActive,
         category: filters.category,
       })
 
       if (response.code === 0) {
-        setTargetAccounts(response.data)
-        // Assuming the API does not return total count, we might need to adjust this
-        // For now, we'll just use the length of the returned array
+        setTargetAccounts(response.data.items)
         setPaginationState(prev => ({
           ...prev,
-          total: response.data.length,
+          total: response.data.total,
+          pages: response.data.pages,
         }))
       } else {
         setError(response.msg || 'Failed to fetch target accounts')
@@ -111,11 +113,10 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
       const errorMessage = handleServerError(error)
       setError(errorMessage)
       // Don't show toast for initial data loading errors
-      console.error('Failed to fetch target accounts:', errorMessage)
     } finally {
       setLoading(false)
     }
-  }, [pagination.skip, pagination.limit, filters.isActive, filters.category])
+  }, [pagination.page, pagination.size, filters.isActive, filters.category])
 
   const createTargetAccount = useCallback(async (data: QuickAddAccountRequest): Promise<TargetAccount | null> => {
     try {
@@ -212,7 +213,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
     }
   }, [])
 
-  const getAccountVideos = useCallback(async (accountId: string, params: { skip?: number; limit?: number; sort_by?: string }): Promise<Video[] | null> => {
+  const getAccountVideos = useCallback(async (accountId: string, params: { page?: number; size?: number; sort_by?: string }): Promise<PaginatedResponse<Video> | null> => {
     try {
       const response = await analysisApi.getAccountVideos(accountId, params)
 
@@ -249,7 +250,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
 
   const setFilters = useCallback((newFilters: Partial<TargetAccountsContextType['filters']>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }))
-    setPaginationState(prev => ({ ...prev, skip: 0 })) // Reset to first page when filters change
+    setPaginationState(prev => ({ ...prev, page: 1 })) // Reset to first page when filters change
   }, [])
 
   const setPagination = useCallback((newPagination: Partial<TargetAccountsContextType['pagination']>) => {
@@ -258,7 +259,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
 
   const resetFilters = useCallback(() => {
     setFiltersState({})
-    setPaginationState(prev => ({ ...prev, skip: 0 }))
+    setPaginationState(prev => ({ ...prev, page: 1 }))
   }, [])
 
   // Navigation handlers
@@ -282,9 +283,8 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
         to: '/target-accounts/$accountId',
         params: { accountId: accountId.trim() }
       })
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to navigate to account detail')
-      console.error('Navigation error:', error)
     }
   }, [navigate])
 
@@ -335,9 +335,8 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
         }
       }))
       
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to open profile page')
-      console.error('Error opening profile URL:', error)
     }
   }, [])
 
@@ -355,8 +354,8 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
         const parsedState = JSON.parse(savedState)
         setNavigationStateInternal(prev => ({ ...prev, ...parsedState }))
       }
-    } catch (error) {
-      console.warn('Failed to restore navigation state:', error)
+    } catch (_error) {
+      // console.warn('Failed to restore navigation state:', error)
     }
   }, [])
 
@@ -364,8 +363,8 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
   useEffect(() => {
     try {
       sessionStorage.setItem('target-accounts-navigation-state', JSON.stringify(navigationState))
-    } catch (error) {
-      console.warn('Failed to save navigation state:', error)
+    } catch (_error) {
+      // console.warn('Failed to save navigation state:', error)
     }
   }, [navigationState])
 
@@ -377,7 +376,7 @@ export function TargetAccountsProvider({ children }: TargetAccountsProviderProps
   // Fetch data on mount and when pagination/filters change
   useEffect(() => {
     fetchTargetAccounts()
-  }, [pagination.skip, pagination.limit, filters.isActive, filters.category])
+  }, [pagination.page, pagination.size, filters.isActive, filters.category, fetchTargetAccounts])
 
   const value: TargetAccountsContextType = {
     targetAccounts,

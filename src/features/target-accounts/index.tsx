@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Search, Filter, Edit, Trash2, RefreshCw, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/pagination'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -21,7 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -39,12 +40,32 @@ import { TargetAccount } from '@/lib/api'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
 import { useAccessibility } from '@/hooks/use-accessibility'
 
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`
+  } else if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`
+  }
+  return num.toString()
+}
+
+const renderDiff = (diff: number) => {
+  if (diff > 0) {
+    return <span className="text-xs text-green-500 ml-1">↑{formatNumber(diff)}</span>
+  } else if (diff < 0) {
+    return <span className="text-xs text-red-500 ml-1">↓{formatNumber(Math.abs(diff))}</span>
+  }
+  return null
+}
+
 function TargetAccountsContent() {
   const {
     targetAccounts,
     loading,
     error,
     filters,
+    pagination,
+    setPagination,
     deleteTargetAccount,
     setFilters,
     resetFilters,
@@ -435,7 +456,11 @@ function TargetAccountsContent() {
               )}
               
               {filteredAccounts.map((account) => {
-                const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+                const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null
+                const prev_snapshot = account.snapshots && account.snapshots.length > 1 ? account.snapshots[1] : null
+
+                const subscriberDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.subscriber_count ?? 0) - (prev_snapshot.subscriber_count ?? 0) : 0
+                const videosDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.total_videos_count ?? 0) - (prev_snapshot.total_videos_count ?? 0) : 0
                 return (
                 <Card
                   key={account.id}
@@ -537,19 +562,27 @@ function TargetAccountsContent() {
                       <div>
                         <span className="text-muted-foreground">Subscribers:</span>
                         <div className="mt-1 font-medium">
-                          {latest_snapshot ?
-                            (latest_snapshot.subscriber_count ?? 0).toLocaleString() :
+                          {latest_snapshot ? (
+                            <>
+                              {formatNumber(latest_snapshot.subscriber_count ?? 0)}
+                              {renderDiff(subscriberDiff)}
+                            </>
+                          ) : (
                             'N/A'
-                          }
+                          )}
                         </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Videos:</span>
                         <div className="mt-1 font-medium">
-                          {latest_snapshot ?
-                            (latest_snapshot.total_videos_count ?? 0).toLocaleString() :
+                          {latest_snapshot ? (
+                            <>
+                              {formatNumber(latest_snapshot.total_videos_count ?? 0)}
+                              {renderDiff(videosDiff)}
+                            </>
+                          ) : (
                             'N/A'
-                          }
+                          )}
                         </div>
                       </div>
                     </div>
@@ -587,7 +620,12 @@ function TargetAccountsContent() {
               </TableHeader>
               <TableBody role="rowgroup">
                 {filteredAccounts.map((account, index) => {
-                  const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null;
+                  const latest_snapshot = account.snapshots && account.snapshots.length > 0 ? account.snapshots[0] : null
+                  const prev_snapshot = account.snapshots && account.snapshots.length > 1 ? account.snapshots[1] : null
+
+                  const subscriberDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.subscriber_count ?? 0) - (prev_snapshot.subscriber_count ?? 0) : 0
+                  const viewsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.total_views ?? 0) - (prev_snapshot.total_views ?? 0) : 0
+                  const videosDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.total_videos_count ?? 0) - (prev_snapshot.total_videos_count ?? 0) : 0
                   return (
                   <TableRow
                     key={account.id}
@@ -655,7 +693,8 @@ function TargetAccountsContent() {
                     <TableCell>
                       {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(latest_snapshot.subscriber_count ?? 0).toLocaleString()}
+                          {formatNumber(latest_snapshot.subscriber_count ?? 0)}
+                          {renderDiff(subscriberDiff)}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -664,7 +703,8 @@ function TargetAccountsContent() {
                     <TableCell>
                       {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(latest_snapshot.total_videos_count ?? 0).toLocaleString()}
+                          {formatNumber(latest_snapshot.total_videos_count ?? 0)}
+                          {renderDiff(videosDiff)}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -673,7 +713,8 @@ function TargetAccountsContent() {
                     <TableCell>
                       {latest_snapshot ? (
                         <span className="text-sm font-medium">
-                          {(latest_snapshot.total_views ?? 0).toLocaleString()}
+                          {formatNumber(latest_snapshot.total_views ?? 0)}
+                          {renderDiff(viewsDiff)}
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">N/A</span>
@@ -753,6 +794,15 @@ function TargetAccountsContent() {
             </div>
           )}
         </CardContent>
+        <CardFooter>
+          <Pagination
+            page={pagination.page}
+            pageSize={pagination.size}
+            total={pagination.total}
+            onPageChange={(page) => setPagination({ page })}
+            onPageSizeChange={(size) => setPagination({ size, page: 1 })}
+          />
+        </CardFooter>
       </Card>
 
       {/* Dialogs */}
