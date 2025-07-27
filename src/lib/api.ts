@@ -652,7 +652,7 @@ export interface Video {
   created_at: string
   updated_at: string
   deleted_at?: string
-  latest_snapshot: VideoSnapshot | null
+  snapshots: VideoSnapshot[]
   asset?: Asset
 }
 

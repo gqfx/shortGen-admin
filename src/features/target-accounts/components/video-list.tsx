@@ -659,6 +659,22 @@ function VideoItem({
     return num.toString()
   }
 
+  const renderDiff = (diff: number) => {
+    if (diff > 0) {
+      return <span className="text-xs text-green-500 ml-1">↑{formatNumber(diff)}</span>
+    } else if (diff < 0) {
+      return <span className="text-xs text-red-500 ml-1">↓{formatNumber(Math.abs(diff))}</span>
+    }
+    return null
+  }
+
+  const latest_snapshot = video.snapshots && video.snapshots.length > 0 ? video.snapshots[0] : null
+  const prev_snapshot = video.snapshots && video.snapshots.length > 1 ? video.snapshots[1] : null
+
+  const viewsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.views_count ?? 0) - (prev_snapshot.views_count ?? 0) : 0
+  const likesDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.likes_count ?? 0) - (prev_snapshot.likes_count ?? 0) : 0
+  const commentsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.comments_count ?? 0) - (prev_snapshot.comments_count ?? 0) : 0
+
   return (
     <div
       className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer"
@@ -736,11 +752,11 @@ function VideoItem({
             <div
               id={`video-${video.id}-meta`}
               className="flex items-center gap-4 text-sm text-muted-foreground mb-2"
-              aria-label={`Video metrics: ${formatNumber(video.latest_snapshot?.views_count)} views, ${formatNumber(video.latest_snapshot?.likes_count)} likes, ${formatNumber(video.latest_snapshot?.comments_count)} comments, published ${formatDate(video.published_at)}`}
+              aria-label={`Video metrics: ${formatNumber(latest_snapshot?.views_count)} views, ${formatNumber(latest_snapshot?.likes_count)} likes, ${formatNumber(latest_snapshot?.comments_count)} comments, published ${formatDate(video.published_at)}`}
             >
-              <span aria-label="View count">{formatNumber(video.latest_snapshot?.views_count)} views</span>
-              <span aria-label="Like count">{formatNumber(video.latest_snapshot?.likes_count)} likes</span>
-              <span aria-label="Comment count">{formatNumber(video.latest_snapshot?.comments_count)} comments</span>
+              <span aria-label="View count">{formatNumber(latest_snapshot?.views_count)} views {renderDiff(viewsDiff)}</span>
+              <span aria-label="Like count">{formatNumber(latest_snapshot?.likes_count)} likes {renderDiff(likesDiff)}</span>
+              <span aria-label="Comment count">{formatNumber(latest_snapshot?.comments_count)} comments {renderDiff(commentsDiff)}</span>
               <span aria-label={`Published ${formatDate(video.published_at)}`}>{formatDate(video.published_at)}</span>
             </div>
             
