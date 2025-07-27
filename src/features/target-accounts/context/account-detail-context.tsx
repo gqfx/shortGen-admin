@@ -1,56 +1,155 @@
-import { createContext, useContext, useEffect, useCallback, useState } from 'react'
-import { useTargetAccountsStore } from '../stores/target-accounts-store'
-import {
-  TargetAccount,
-  Video,
-  analysisApi,
-  AccountSnapshot,
-} from '@/lib/api'
-import { handleServerError } from '@/utils/handle-server-error'
-import { toast } from 'sonner'
+import { createContext, useContext, ReactNode } from 'react'
+import { useParams } from '@tanstack/react-router'
+import { 
+  useTargetAccount, 
+  useAccountVideos, 
+  useTriggerVideoDownload,
+  TargetAccountFilters,
+  VideoFilters 
+} from '../hooks/use-target-accounts-query'
+import { usePaginatedFilters } from '@/hooks/use-api-query'
 
-import { VideoFilters } from '../stores/target-accounts-store'
-
+// 统一的加载状态类型
 interface LoadingStates {
   account: boolean
   videos: boolean
-  statistics: boolean
   batchDownload: boolean
 }
 
+// 统一的错误状态类型
 interface ErrorStates {
   account: string | null
   videos: string | null
-  statistics: string | null
   batchDownload: string | null
 }
 
 interface AccountDetailContextType {
-  account: TargetAccount | null
-  accountStats: AccountSnapshot | null
-  videos: Video[]
-  loading: boolean
+  // 数据
+  account: any | null // TargetAccount
+  videos: any[] // Video[]
+  
+  // 状态
   loadingStates: LoadingStates
-  error: string | null
   errorStates: ErrorStates
+  
+  // 分页和过滤
   pagination: {
     page: number
     size: number
     total: number
   }
   currentFilters: VideoFilters
-  fetchAccountDetail: (accountId: string) => Promise<void>
-  fetchAccountVideos: (accountId: string, params?: { page?: number; size?: number; sort_by?: string }) => Promise<void>
-  fetchAccountStatistics: (accountId: string) => Promise<void>
+  
+  // 操作方法
   triggerBatchDownload: (videoIds: string[]) => Promise<void>
   filterVideos: (filters: VideoFilters) => void
-  refreshAccountData: () => Promise<void>
-  clearErrors: () => void
-  setPagination: (pagination: Partial<AccountDetailContextType['pagination']>) => void
+  setPagination: (pagination: Partial<{ page: number; size: number }>) => void
+  
+  // 刷新方法
+  refetchAccount: () => void
+  refetchVideos: () => void
 }
 
-
 const AccountDetailContext = createContext<AccountDetailContextType | undefined>(undefined)
+
+interface AccountDetailProviderProps {
+  children: ReactNode
+}
+
+export function AccountDetailProvider({ children }: AccountDetailProviderProps) {
+  const { accountId } = useParams({ from: '/target-accounts/$accountId' })
+  
+  // 初始化分页和过滤状态
+  const {
+    pagination,
+    filters: currentFilters,
+    setPagination,
+    setFilters: setVideoFilters,
+    queryParams: videoQueryParams,
+  } = usePaginatedFilters<VideoFilters>({
+    sortBy: 'views_desc',
+  }, 1, 10)
+
+  // 获取账号信息
+  const {
+    data: account,
+    isLoading: isAccountLoading,
+    error: accountError,
+    refetch: refetchAccount,
+  } = useTargetAccount(accountId)
+
+  // 获取视频列表
+  const {
+    data: videosResponse,
+    isLoading: isVideosLoading,
+    error: videosError,
+    refetch: refetchVideos,
+  } = useAccountVideos(accountId, videoQueryParams)
+
+  // 触发视频下载
+  const triggerDownloadMutation = useTriggerVideoDownload()
+
+  // 组装状态数据
+  const loadingStates: LoadingStates = {
+    account: isAccountLoading,
+    videos: isVideosLoading,
+    batchDownload: triggerDownloadMutation.isPending,
+  }
+
+  const errorStates: ErrorStates = {
+    account: accountError?.message || null,
+    videos: videosError?.message || null,
+    batchDownload: triggerDownloadMutation.error?.message || null,
+  }
+
+  // 批量下载处理
+  const triggerBatchDownload = async (videoIds: string[]) => {
+    await triggerDownloadMutation.mutateAsync({
+      video_ids: videoIds,
+      priority: 5,
+    })
+  }
+
+  // 过滤视频
+  const filterVideos = (filters: VideoFilters) => {
+    setVideoFilters(filters)
+  }
+
+  // 更新分页时同步总数
+  const updatedPagination = {
+    ...pagination,
+    total: videosResponse?.total || 0,
+  }
+
+  const value: AccountDetailContextType = {
+    // 数据
+    account,
+    videos: videosResponse?.items || [],
+    
+    // 状态
+    loadingStates,
+    errorStates,
+    
+    // 分页和过滤
+    pagination: updatedPagination,
+    currentFilters,
+    
+    // 操作方法
+    triggerBatchDownload,
+    filterVideos,
+    setPagination,
+    
+    // 刷新方法
+    refetchAccount,
+    refetchVideos,
+  }
+
+  return (
+    <AccountDetailContext.Provider value={value}>
+      {children}
+    </AccountDetailContext.Provider>
+  )
+}
 
 export function useAccountDetail() {
   const context = useContext(AccountDetailContext)
@@ -60,210 +159,5 @@ export function useAccountDetail() {
   return context
 }
 
-interface AccountDetailProviderProps {
-  children: React.ReactNode
-  accountId: string
-  initialData?: TargetAccount | null
-}
-
-const EMPTY_VIDEOS: Video[] = []
-const EMPTY_FILTERS: VideoFilters = {}
-
-export function AccountDetailProvider({ children, accountId, initialData = null }: AccountDetailProviderProps) {
-  const { setVideos, updateVideo, setFilters } = useTargetAccountsStore()
-  const storeVideos = useTargetAccountsStore((state) => state.videos[accountId] || EMPTY_VIDEOS)
-  const currentFilters = useTargetAccountsStore((state) => state.filters[accountId] || EMPTY_FILTERS)
-
-  const [account, setAccount] = useState<TargetAccount | null>(initialData)
-  const [accountStats, _setAccountStats] = useState<AccountSnapshot | null>(null)
-  const [videos, setComponentVideos] = useState<Video[]>(storeVideos)
-  const [allVideos, setAllVideos] = useState<Video[]>(storeVideos)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  const [loadingStates, setLoadingStates] = useState<LoadingStates>({
-    account: false,
-    videos: false,
-    statistics: false,
-    batchDownload: false
-  })
-  
-  const [errorStates, setErrorStates] = useState<ErrorStates>({
-    account: null,
-    videos: null,
-    statistics: null,
-    batchDownload: null
-  })
-  
-  const [pagination, setPaginationState] = useState({
-    page: 1,
-    size: 10,
-    total: 0
-  })
-
-  const fetchAccountDetail = useCallback(async (id: string) => {
-    try {
-      setLoadingStates(prev => ({ ...prev, account: true }))
-      const response = await analysisApi.getAccount(id)
-      if (response.code === 0) {
-        setAccount(response.data)
-      } else {
-        toast.error(response.msg || 'Failed to fetch account details')
-      }
-    } catch (error) {
-      toast.error(handleServerError(error))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, account: false }))
-    }
-  }, [])
-
-  const filterVideos = useCallback((filters: VideoFilters) => {
-    setFilters(accountId, filters)
-  }, [accountId, setFilters])
-
-  const fetchAccountVideos = useCallback(async (id: string, params?: { page?: number, size?: number, sort_by?: string }) => {
-    try {
-      setLoadingStates(prev => ({ ...prev, videos: true }))
-      const response = await analysisApi.getAccountVideos(id, {
-        page: params?.page ?? pagination.page,
-        size: params?.size ?? pagination.size,
-        sort_by: params?.sort_by,
-      })
-      if (response.code === 0) {
-        const { items, total, page, size } = response.data
-        setVideos(accountId, items)
-        setAllVideos(items)
-        setPaginationState({
-          total,
-          page,
-          size,
-        })
-      } else {
-        toast.error(response.msg || 'Failed to fetch account videos')
-      }
-    } catch (error) {
-      toast.error(handleServerError(error))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, videos: false }))
-    }
-  }, [accountId, pagination.page, pagination.size, setVideos])
-
-  const fetchAccountStatistics = useCallback(async (id: string) => {
-    try {
-      setLoadingStates(prev => ({ ...prev, statistics: true }))
-      const response = await analysisApi.getAccountSnapshots(id, { page: 1, size: 1 })
-      if (response.code === 0 && response.data.items.length > 0) {
-        // Assuming we want the latest snapshot for the stats
-        _setAccountStats(response.data.items[0])
-      } else if (response.code !== 0) {
-        toast.error(response.msg || 'Failed to fetch account statistics')
-      }
-    } catch (error) {
-      toast.error(handleServerError(error))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, statistics: false }))
-    }
-  }, [])
-
-  const triggerBatchDownload = useCallback(async (videoIds: string[]) => {
-    try {
-      setLoadingStates(prev => ({ ...prev, batchDownload: true }))
-      const response = await analysisApi.triggerVideoDownload({ video_ids: videoIds })
-      if (response.code === 0) {
-        toast.success(response.data.message)
-        // The download status should be updated via polling the task, not manually setting it.
-        // We can trigger a refresh of the video data after a short delay.
-        setTimeout(() => fetchAccountVideos(accountId), 3000)
-      } else {
-        toast.error(response.msg || 'Failed to trigger batch download')
-      }
-    } catch (error) {
-      toast.error(handleServerError(error))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, batchDownload: false }))
-    }
-  }, [accountId, updateVideo])
-
-  const refreshAccountData = useCallback(async () => {
-    await Promise.all([
-      fetchAccountDetail(accountId),
-      fetchAccountVideos(accountId),
-    ])
-  }, [accountId, fetchAccountDetail, fetchAccountVideos])
-
-  const clearErrors = useCallback(() => {
-    setError(null)
-    setErrorStates({ account: null, videos: null, statistics: null, batchDownload: null })
-  }, [])
-
-  const setPagination = useCallback((newPagination: Partial<typeof pagination>) => {
-    setPaginationState(prev => ({ ...prev, ...newPagination }))
-  }, [])
-
-  useEffect(() => {
-    if (accountId) {
-      setLoading(true)
-      Promise.all([
-        fetchAccountDetail(accountId),
-        fetchAccountVideos(accountId),
-      ]).finally(() => setLoading(false))
-    }
-  }, [accountId, fetchAccountDetail, fetchAccountVideos])
-
-  useEffect(() => {
-    let filtered = allVideos
-    if (currentFilters.searchQuery) {
-      filtered = filtered.filter(v => v.title && v.title.includes(currentFilters.searchQuery!))
-    }
-    // TODO: Add other filters from currentFilters here
-    setComponentVideos(filtered)
-  }, [allVideos, currentFilters])
-
-  useEffect(() => {
-    if (currentFilters.sortBy) {
-      fetchAccountVideos(accountId, { sort_by: currentFilters.sortBy })
-    }
-  }, [currentFilters.sortBy, accountId, fetchAccountVideos])
-
-  useEffect(() => {
-    // Refetch videos when pagination changes, but not on initial load
-    if (accountId && !loadingStates.videos) {
-      fetchAccountVideos(accountId, {
-        page: pagination.page,
-        size: pagination.size,
-        sort_by: currentFilters.sortBy
-      })
-    }
-  }, [pagination.page, pagination.size, accountId])
-
-  useEffect(() => {
-    setComponentVideos(storeVideos)
-    setAllVideos(storeVideos)
-  }, [storeVideos])
-
-  const value: AccountDetailContextType = {
-    account,
-    accountStats,
-    videos,
-    loading,
-    loadingStates,
-    error,
-    errorStates,
-    pagination,
-    currentFilters,
-    fetchAccountDetail,
-    fetchAccountVideos,
-    fetchAccountStatistics,
-    triggerBatchDownload,
-    filterVideos,
-    refreshAccountData,
-    clearErrors,
-    setPagination,
-  }
-
-  return (
-    <AccountDetailContext.Provider value={value}>
-      {children}
-    </AccountDetailContext.Provider>
-  )
-}
+// 向后兼容的默认导出
+export default AccountDetailProvider

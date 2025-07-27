@@ -334,8 +334,9 @@ function BatchOperationsErrorFallback() {
       </AlertDescription>
     </Alert>
   )
-}/
-/ Enhanced Account Statistics Error Boundary with retry
+}
+
+// Enhanced Account Statistics Error Boundary with retry
 function AccountStatisticsErrorFallback() {
   const [isRetrying, setIsRetrying] = useState(false)
 

@@ -1,61 +1,12 @@
-import axios from 'axios'
+import { apiClient } from '@/lib/api/client'
+import { ApiResponse, PaginatedResponse as BasePaginatedResponse } from '@/lib/api/types'
 import { Project } from '@/features/projects/data/schema'
 import { CreateProjectFormData, UpdateProjectFormData } from '../features/projects/data/schema'
 import { Task } from '@/features/tasks/data/schema'
 
-const API_BASE_URL = import.meta.env.DEV ? '' : 'http://localhost:8000'
-
-export interface ApiResponse<T> {
-  code: number
-  msg: string
-  data: T
-}
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-// Add request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    // console.log('🚀 API Request:', {
-    //   method: config.method?.toUpperCase(),
-    //   url: config.url,
-    //   baseURL: config.baseURL,
-    //   fullURL: `${config.baseURL}${config.url}`,
-    //   data: config.data,
-    // })
-    return config
-  },
-  (error) => {
-    // console.error('❌ Request Error:', error)
-    return Promise.reject(error)
-  }
-)
-
-// Add response interceptor for debugging
-api.interceptors.response.use(
-  (response) => {
-    // console.log('✅ API Response:', {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data,
-    // })
-    return response.data
-  },
-  (error) => {
-    // console.error('❌ Response Error:', {
-    //   status: error.response?.status,
-    //   url: error.config?.url,
-    //   message: error.message,
-    //   data: error.response?.data,
-    // })
-    return Promise.reject(error)
-  }
-)
+// 重新导出类型以保持向后兼容
+export type { ApiResponse } from '@/lib/api/types'
+export type PaginatedResponse<T> = BasePaginatedResponse<T>
 
 
 // Task types have been moved to `features/tasks/data/schema.ts`
@@ -311,102 +262,102 @@ export interface ProjectTypeUpdate {
 export const projectsApi = {
   getAll: (page = 1, size = 100): Promise<ApiResponse<PaginatedResponse<Project>>> => {
     if (page < 1) page = 1
-    return api.get(`/api/projects?page=${page}&size=${size}`)
+    return apiClient.get(`/api/projects`, { page, size })
   },
 
   getById: (id: string): Promise<ApiResponse<Project>> =>
-    api.get(`/api/projects/${id}`),
+    apiClient.get(`/api/projects/${id}`),
 
   create: (data: CreateProjectFormData): Promise<ApiResponse<Project>> =>
-    api.post('/api/projects', data),
+    apiClient.post('/api/projects', data),
 
   update: (id: string, data: UpdateProjectFormData): Promise<ApiResponse<Project>> =>
-    api.put(`/api/projects/${id}`, data),
+    apiClient.put(`/api/projects/${id}`, data),
 
   delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/api/projects/${id}`),
+    apiClient.delete(`/api/projects/${id}`),
 
   recalculateTasks: (id: string): Promise<ApiResponse<Project>> =>
-    api.post(`/api/projects/${id}/recalculate-tasks`),
+    apiClient.post(`/api/projects/${id}/recalculate-tasks`),
 
   regenerate: (id: string, data?: Record<string, unknown>): Promise<ApiResponse<{ project_id: string; execution_id: string }>> =>
-    api.post(`/api/projects/${id}/regenerate`, data),
+    apiClient.post(`/api/projects/${id}/regenerate`, data),
 }
 
 // Tasks API
 export const tasksApi = {
   create: (data: unknown): Promise<ApiResponse<Task>> =>
-    api.post('/api/tasks', data),
+    apiClient.post('/api/tasks', data),
 
   createBatch: (data: unknown): Promise<ApiResponse<Task[]>> =>
-    api.post('/api/tasks/batch', data),
+    apiClient.post('/api/tasks/batch', data),
 
   updateStatus: (taskId: string, data: unknown): Promise<ApiResponse<Task>> =>
-    api.patch(`/api/tasks/${taskId}`, data),
+    apiClient.patch(`/api/tasks/${taskId}`, data),
 
   getTaskTypes: (): Promise<ApiResponse<string[]>> =>
-    api.get('/api/tasks/types'),
+    apiClient.get('/api/tasks/types'),
 
   listTasks: (params: { project_id?: string; task_type?: string; page?: number; size?: number }): Promise<ApiResponse<PaginatedResponse<Task>>> => {
     let { page = 1 } = params
     const { size = 10, ...rest } = params
     if (page < 1) page = 1
-    return api.get('/api/tasks', { params: { ...rest, page, size } })
+    return apiClient.get('/api/tasks', { params: { ...rest, page, size } })
   },
 
   enqueue: (taskId: string): Promise<ApiResponse<unknown>> =>
-    api.post(`/api/tasks/${taskId}/enqueue`),
+    apiClient.post(`/api/tasks/${taskId}/enqueue`),
 
   getQueueStatus: (taskId: string): Promise<ApiResponse<unknown>> =>
-    api.get(`/api/tasks/${taskId}/queue-status`),
+    apiClient.get(`/api/tasks/${taskId}/queue-status`),
 
   cancel: (taskId: string): Promise<ApiResponse<unknown>> =>
-    api.post(`/api/tasks/${taskId}/cancel`),
+    apiClient.post(`/api/tasks/${taskId}/cancel`),
 
   deleteAllQueues: (): Promise<ApiResponse<unknown>> =>
-    api.post('/api/tasks/delete-all-queues'),
+    apiClient.post('/api/tasks/delete-all-queues'),
 
   getQueueInfo: (): Promise<ApiResponse<unknown>> =>
-    api.get('/api/tasks/queue-info'),
+    apiClient.get('/api/tasks/queue-info'),
 
   listRedisQueues: (): Promise<ApiResponse<string[]>> =>
-    api.get('/api/tasks/list-redis-queues'),
+    apiClient.get('/api/tasks/list-redis-queues'),
 
   callback: (data: unknown): Promise<ApiResponse<unknown>> =>
-    api.post('/api/tasks/callback', data),
+    apiClient.post('/api/tasks/callback', data),
 
   retryMonitoring: (taskId: string): Promise<ApiResponse<unknown>> =>
-    api.post(`/api/tasks/monitoring/${taskId}/retry`),
+    apiClient.post(`/api/tasks/monitoring/${taskId}/retry`),
 }
 
 // Assets API
 export const assetsApi = {
   getByHash: (fileHash: string): Promise<Asset> =>
-    api.get(`/api/assets/by-hash/${fileHash}`),
+    apiClient.get(`/api/assets/by-hash/${fileHash}`),
 
   create: (data: AssetCreate): Promise<Asset> =>
-    api.post('/api/assets', data),
+    apiClient.post('/api/assets', data),
 
   getAll: (page = 1, size = 10, assetType?: string, status?: string): Promise<ApiResponse<PaginatedResponse<Asset>>> => {
     if (page < 1) page = 1
     const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (assetType) params.append('asset_type', assetType)
     if (status) params.append('status', status)
-    return api.get(`/api/assets?${params.toString()}`)
+    return apiClient.get(`/api/assets?${params.toString()}`)
   },
 
   getById: (assetId: string): Promise<Asset> =>
-    api.get(`/api/assets/${assetId}`),
+    apiClient.get(`/api/assets/${assetId}`),
 
   update: (assetId: string, data: AssetUpdate): Promise<Asset> =>
-    api.put(`/api/assets/${assetId}`, data),
+    apiClient.put(`/api/assets/${assetId}`, data),
 
   delete: (assetId: string): Promise<{ message: string }> =>
-    api.delete(`/api/assets/${assetId}`),
+    apiClient.delete(`/api/assets/${assetId}`),
 
   getByType: (assetType: string, page = 1, size = 100): Promise<Asset[]> => {
     if (page < 1) page = 1
-    return api.get(`/api/assets/by-type/${assetType}?page=${page}&size=${size}`)
+    return apiClient.get(`/api/assets/by-type/${assetType}?page=${page}&size=${size}`)
   },
 }
 
@@ -416,29 +367,29 @@ export const inspirationsApi = {
     if (page < 1) page = 1
     const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (status) params.append('status', status)
-    return api.get(`/api/inspirations?${params.toString()}`)
+    return apiClient.get(`/api/inspirations?${params.toString()}`)
   },
 
   getById: (inspirationId: string): Promise<Inspiration> =>
-    api.get(`/api/inspirations/${inspirationId}`),
+    apiClient.get(`/api/inspirations/${inspirationId}`),
 
   create: (data: CreateInspirationRequest): Promise<Inspiration> =>
-    api.post('/api/inspirations', data),
+    apiClient.post('/api/inspirations', data),
 
   update: (inspirationId: string, data: UpdateInspirationRequest): Promise<Inspiration> =>
-    api.put(`/api/inspirations/${inspirationId}`, data),
+    apiClient.put(`/api/inspirations/${inspirationId}`, data),
 
   delete: (inspirationId: string): Promise<{ message: string }> =>
-    api.delete(`/api/inspirations/${inspirationId}`),
+    apiClient.delete(`/api/inspirations/${inspirationId}`),
 
   approve: (inspirationId: string, data?: { review_notes?: string; score?: number }): Promise<Inspiration> =>
-    api.post(`/api/inspirations/${inspirationId}/approve`, data),
+    apiClient.post(`/api/inspirations/${inspirationId}/approve`, data),
 
   reject: (inspirationId: string, data?: { review_notes?: string }): Promise<Inspiration> =>
-    api.post(`/api/inspirations/${inspirationId}/reject`, data),
+    apiClient.post(`/api/inspirations/${inspirationId}/reject`, data),
 
   regenerate: (inspirationId: string, data?: Record<string, unknown>): Promise<{ inspiration_id: string; execution_id: string }> =>
-    api.post(`/api/inspirations/${inspirationId}/regenerate`, data),
+    apiClient.post(`/api/inspirations/${inspirationId}/regenerate`, data),
 }
 
 // Platform Accounts API
@@ -448,29 +399,29 @@ export const platformAccountsApi = {
     const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (platform) params.append('platform', platform)
     if (status) params.append('status', status)
-    return api.get(`/api/platform-accounts?${params.toString()}`)
+    return apiClient.get(`/api/platform-accounts?${params.toString()}`)
   },
 
   getById: (id: string): Promise<ApiResponse<PlatformAccount>> =>
-    api.get(`/api/platform-accounts/${id}`),
+    apiClient.get(`/api/platform-accounts/${id}`),
 
   create: (data: PlatformAccountCreate): Promise<ApiResponse<PlatformAccount>> =>
-    api.post('/api/platform-accounts', data),
+    apiClient.post('/api/platform-accounts', data),
 
   update: (id: string, data: PlatformAccountUpdate): Promise<ApiResponse<PlatformAccount>> =>
-    api.put(`/api/platform-accounts/${id}`, data),
+    apiClient.put(`/api/platform-accounts/${id}`, data),
 
   delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/api/platform-accounts/${id}`),
+    apiClient.delete(`/api/platform-accounts/${id}`),
 
   getAvailable: (platform: string): Promise<ApiResponse<PlatformAccount[]>> =>
-    api.get(`/api/platform-accounts/available/${platform}`),
+    apiClient.get(`/api/platform-accounts/available/${platform}`),
 
   resetUsage: (id: string, data: PlatformAccountUsageReset): Promise<ApiResponse<PlatformAccount>> =>
-    api.post(`/api/platform-accounts/${id}/reset-usage`, data),
+    apiClient.post(`/api/platform-accounts/${id}/reset-usage`, data),
 
   getPlatforms: (): Promise<ApiResponse<string[]>> =>
-    api.get('/api/platform-accounts/platforms/list'),
+    apiClient.get('/api/platform-accounts/platforms/list'),
 }
 
 // Worker Configs API
@@ -481,26 +432,26 @@ export const workerConfigsApi = {
     if (workerType) params.append('worker_type', workerType)
     if (configType) params.append('config_type', configType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
-    return api.get(`/api/worker-configs?${params}`)
+    return apiClient.get(`/api/worker-configs?${params}`)
   },
   
   getById: (id: string): Promise<ApiResponse<WorkerConfig>> =>
-    api.get(`/api/worker-configs/${id}`),
+    apiClient.get(`/api/worker-configs/${id}`),
   
   create: (data: CreateWorkerConfigRequest): Promise<ApiResponse<WorkerConfig>> =>
-    api.post('/api/worker-configs', data),
+    apiClient.post('/api/worker-configs', data),
   
   update: (id: string, data: UpdateWorkerConfigRequest): Promise<ApiResponse<WorkerConfig>> =>
-    api.put(`/api/worker-configs/${id}`, data),
+    apiClient.put(`/api/worker-configs/${id}`, data),
   
   delete: (id: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/api/worker-configs/${id}`),
+    apiClient.delete(`/api/worker-configs/${id}`),
   
   assignToTask: (taskId: string, data: ConfigAssignmentRequest): Promise<ApiResponse<TaskConfigAssignment[]>> =>
-    api.post(`/api/worker-configs/tasks/${taskId}/assign`, data),
+    apiClient.post(`/api/worker-configs/tasks/${taskId}/assign`, data),
   
   getTaskConfigs: (taskId: string): Promise<ApiResponse<Record<string, unknown>>> =>
-    api.get(`/api/worker-configs/tasks/${taskId}/configs`),
+    apiClient.get(`/api/worker-configs/tasks/${taskId}/configs`),
 }
 
 // WorkflowRegistry API
@@ -510,29 +461,29 @@ export const workflowRegistryApi = {
     const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (workflowType) params.append('workflow_type', workflowType)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
-    return api.get(`/api/workflow-registry?${params}`)
+    return apiClient.get(`/api/workflow-registry?${params}`)
   },
 
   getById: (id: string): Promise<WorkflowRegistry> =>
-    api.get(`/api/workflow-registry/${id}`),
+    apiClient.get(`/api/workflow-registry/${id}`),
 
   create: (data: WorkflowRegistryCreate): Promise<WorkflowRegistry> =>
-    api.post('/api/workflow-registry', data),
+    apiClient.post('/api/workflow-registry', data),
 
   update: (id: string, data: WorkflowRegistryUpdate): Promise<WorkflowRegistry> =>
-    api.put(`/api/workflow-registry/${id}`, data),
+    apiClient.put(`/api/workflow-registry/${id}`, data),
 
   delete: (id: string): Promise<{ message: string }> =>
-    api.delete(`/api/workflow-registry/${id}`),
+    apiClient.delete(`/api/workflow-registry/${id}`),
 
   activate: (id: string): Promise<WorkflowRegistry> =>
-    api.post(`/api/workflow-registry/${id}/activate`),
+    apiClient.post(`/api/workflow-registry/${id}/activate`),
 
   deactivate: (id: string): Promise<WorkflowRegistry> =>
-    api.post(`/api/workflow-registry/${id}/deactivate`),
+    apiClient.post(`/api/workflow-registry/${id}/deactivate`),
 
   getTypes: (): Promise<string[]> =>
-    api.get('/api/workflow-registry/types/list'),
+    apiClient.get('/api/workflow-registry/types/list'),
 }
 
 // ProjectType API
@@ -542,43 +493,35 @@ export const projectTypesApi = {
     const params = new URLSearchParams({ page: page.toString(), size: size.toString() })
     if (category) params.append('category', category)
     if (isActive !== undefined) params.append('is_active', isActive.toString())
-    return api.get(`/api/project-types?${params}`)
+    return apiClient.get(`/api/project-types?${params}`)
   },
   
   getById: (code: string): Promise<ApiResponse<ProjectType>> =>
-    api.get(`/api/project-types/${code}`),
+    apiClient.get(`/api/project-types/${code}`),
   
   create: (data: ProjectTypeCreate): Promise<ApiResponse<ProjectType>> =>
-    api.post('/api/project-types', data),
+    apiClient.post('/api/project-types', data),
   
   update: (code: string, data: ProjectTypeUpdate): Promise<ApiResponse<ProjectType>> =>
-    api.put(`/api/project-types/${code}`, data),
+    apiClient.put(`/api/project-types/${code}`, data),
   
   delete: (code: string): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/api/project-types/${code}`),
+    apiClient.delete(`/api/project-types/${code}`),
   
   activate: (code: string): Promise<ApiResponse<ProjectType>> =>
-    api.post(`/api/project-types/${code}/activate`),
+    apiClient.post(`/api/project-types/${code}/activate`),
   
   deactivate: (code: string): Promise<ApiResponse<ProjectType>> =>
-    api.post(`/api/project-types/${code}/deactivate`),
+    apiClient.post(`/api/project-types/${code}/deactivate`),
   
   getCategories: (): Promise<ApiResponse<string[]>> =>
-    api.get('/api/project-types/categories/list'),
+    apiClient.get('/api/project-types/categories/list'),
   
   updateSortOrder: (code: string, sortOrder: number): Promise<ApiResponse<ProjectType>> =>
-    api.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
+    apiClient.put(`/api/project-types/${code}/sort-order?sort_order=${sortOrder}`),
 }
 
 // --- Analysis API Types (Updated based on new documentation) ---
-
-export interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  size: number
-  pages: number
-}
 
 // Schemas
 export interface AccountSnapshot {
@@ -730,51 +673,51 @@ export const analysisApi = {
    * 快速添加目标账号并立即触发一次后台数据同步任务.
    */
   quickAddAccount: (data: QuickAddAccountRequest): Promise<ApiResponse<TargetAccount>> =>
-    api.post('/api/analysis/accounts/quick-add', data),
+    apiClient.post('/api/analysis/accounts/quick-add', data),
 
   /**
    * 手动创建并入队视频下载任务.
    */
   triggerVideoDownload: (data: TriggerDownloadRequest): Promise<ApiResponse<{ message: string }>> =>
-    api.post('/api/analysis/videos/trigger-download', data),
+    apiClient.post('/api/analysis/videos/trigger-download', data),
 
   /**
    * 手动触发对指定账号的后台数据同步任务.
    */
   triggerAccountCrawl: (accountId: string, data: AccountCrawlRequest): Promise<ApiResponse<MonitoringTask>> =>
-    api.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data),
+    apiClient.post(`/api/analysis/accounts/${accountId}/trigger-crawl`, data),
 
   /**
    * 批量触发多个账号的后台数据同步任务.
    */
   batchTriggerCrawl: (data: BatchAccountCrawlRequest): Promise<ApiResponse<{ message: string }>> =>
-    api.post('/api/analysis/accounts/batch-trigger-crawl', data),
+    apiClient.post('/api/analysis/accounts/batch-trigger-crawl', data),
 
   /**
    * 获取目标账号列表, 并附带最新的快照数据.
    */
   getAccounts: (params: { page?: number; size?: number; is_active?: boolean; category?: string }): Promise<ApiResponse<PaginatedResponse<TargetAccount>>> => {
     if (params.page && params.page < 1) params.page = 1
-    return api.get('/api/analysis/accounts', { params })
+    return apiClient.get('/api/analysis/accounts', params)
   },
 
   /**
    * 获取单个目标账号信息, 并附带最新的快照数据.
    */
   getAccount: (accountId: string): Promise<ApiResponse<TargetAccount>> =>
-    api.get(`/api/analysis/accounts/${accountId}`),
+    apiClient.get(`/api/analysis/accounts/${accountId}`),
 
   /**
    * 更新目标账号信息.
    */
   updateAccount: (accountId: string, data: TargetAccountUpdate): Promise<ApiResponse<TargetAccount>> =>
-    api.put(`/api/analysis/accounts/${accountId}`, data),
+    apiClient.put(`/api/analysis/accounts/${accountId}`, data),
 
   /**
    * 删除目标账号.
    */
   deleteAccount: (accountId: string, data: DeleteAccountRequest): Promise<ApiResponse<{ message: string }>> =>
-    api.delete(`/api/analysis/accounts/${accountId}`, { data }),
+    apiClient.delete(`/api/analysis/accounts/${accountId}`, data),
 
   /**
    * 获取指定账号下的视频列表.
@@ -783,7 +726,7 @@ export const analysisApi = {
     let { page = 1 } = params
     const { size = 10, ...rest } = params
     if (page < 1) page = 1
-    return api.get(`/api/analysis/accounts/${accountId}/videos`, { params: { ...rest, page, size } })
+    return apiClient.get(`/api/analysis/accounts/${accountId}/videos`, { ...rest, page, size })
   },
 
   /**
@@ -793,7 +736,7 @@ export const analysisApi = {
     let { page = 1 } = params
     const { size = 10, ...rest } = params
     if (page < 1) page = 1
-    return api.get('/api/analysis/videos', { params: { ...rest, page, size } })
+    return apiClient.get('/api/analysis/videos', { ...rest, page, size })
   },
 
   /**
@@ -803,7 +746,7 @@ export const analysisApi = {
     let { page = 1 } = params
     const { size = 10 } = params
     if (page < 1) page = 1
-    return api.get(`/api/analysis/accounts/${accountId}/snapshots`, { params: { page, size } })
+    return apiClient.get(`/api/analysis/accounts/${accountId}/snapshots`, { page, size })
   },
 
   /**
@@ -813,28 +756,29 @@ export const analysisApi = {
     let { page = 1 } = params
     const { size = 10 } = params
     if (page < 1) page = 1
-    return api.get(`/api/analysis/videos/${videoId}/snapshots`, { params: { page, size } })
+    return apiClient.get(`/api/analysis/videos/${videoId}/snapshots`, { page, size })
   },
 
   /**
    * 触发对指定视频的后台镜头分析任务.
    */
   analyzeVideo: (videoId: string): Promise<ApiResponse<{ message: string }>> =>
-    api.post(`/api/analysis/videos/${videoId}/analyze`),
+    apiClient.post(`/api/analysis/videos/${videoId}/analyze`),
 
   /**
    * 获取监控任务列表.
    */
   getTasks: (params: { page?: number; size?: number; account_id?: string; video_id?: string; task_type?: string; status?: string }): Promise<ApiResponse<PaginatedResponse<MonitoringTask>>> => {
     if (params.page && params.page < 1) params.page = 1
-    return api.get('/api/analysis/tasks', { params })
+    return apiClient.get('/api/analysis/tasks', params)
   },
 
   /**
    * 更新监控任务状态.
    */
   updateTask: (taskId: string, data: MonitoringTaskUpdate): Promise<ApiResponse<MonitoringTask>> =>
-    api.put(`/api/analysis/tasks/${taskId}`, data),
+    apiClient.put(`/api/analysis/tasks/${taskId}`, data),
 }
 
-export default api
+// 向后兼容的默认导出
+export default apiClient

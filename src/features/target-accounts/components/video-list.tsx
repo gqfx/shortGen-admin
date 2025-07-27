@@ -1,23 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
-import { FixedSizeList as List } from 'react-window'
-import { formatDistanceToNow } from 'date-fns'
-import { useNavigate } from '@tanstack/react-router'
-import {
-  Play,
-  Download,
-  ExternalLink,
-  CheckSquare,
-  Square,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Copy
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useCallback } from 'react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -28,11 +11,13 @@ import {
 } from '@/components/ui/select'
 import { useAccountDetail } from '../context/account-detail-context'
 import { Video } from '@/lib/api'
-import { toast } from 'sonner'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
-import { useAccessibility } from '@/hooks/use-accessibility'
 import { Pagination } from '@/components/ui/pagination'
 import { VideoDetailDialog } from './video-detail-dialog'
+import { BatchOperations } from './video-list/batch-operations'
+import { BatchResultDisplay } from './video-list/batch-result-display'
+import { VideoVirtualizedList } from './video-list/video-virtualized-list'
+import { useKeyboardShortcuts } from './video-list/use-keyboard-shortcuts'
 
 interface VideoListProps {
   className?: string
@@ -58,9 +43,7 @@ export function VideoList({ className }: VideoListProps) {
   } = useAccountDetail()
   
   const { isMobile } = useResponsive()
-  const { touchTargetSize, touchPadding } = useTouchFriendly()
-  const { announceStatus, announceError, announceSuccess } = useAccessibility()
-  const navigate = useNavigate()
+  const { touchPadding } = useTouchFriendly()
   
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set())
   const [batchOperationResult, setBatchOperationResult] = useState<BatchOperationResult | null>(null)
@@ -99,51 +82,21 @@ export function VideoList({ className }: VideoListProps) {
   }, [])
 
   // Batch download handler
-  const handleBatchDownload = useCallback(async () => {
-    if (selectedVideoIds.size === 0) {
-      toast.error('Please select videos to download')
-      announceError('No videos selected for download')
-      return
-    }
-
-    const videoIdsArray = Array.from(selectedVideoIds)
-    const downloadableVideos = videoIdsArray.filter(id => {
-      const video = videos.find(v => v.id === id)
-      return video && !video.is_downloaded
-    })
-
-    if (downloadableVideos.length === 0) {
-      toast.error('No downloadable videos selected')
-      announceError('No downloadable videos selected')
-      return
-    }
-
-    if (downloadableVideos.length < videoIdsArray.length) {
-      const alreadyDownloaded = videoIdsArray.length - downloadableVideos.length
-      const message = `${alreadyDownloaded} video(s) already downloaded, proceeding with ${downloadableVideos.length} video(s)`
-      toast.info(message)
-      announceStatus(message)
-    }
-
-    announceStatus(`Starting download for ${downloadableVideos.length} videos`)
-    
+  const handleBatchDownload = useCallback(async (videoIds: string[]) => {
     try {
-      await triggerBatchDownload(downloadableVideos)
+      await triggerBatchDownload(videoIds)
       
       // Show success result
       setBatchOperationResult({
-        success: downloadableVideos.length,
+        success: videoIds.length,
         failed: 0,
-        total: downloadableVideos.length,
+        total: videoIds.length,
         errors: []
       })
       setShowBatchResult(true)
       
       // Clear selection after successful batch operation
       setSelectedVideoIds(new Set())
-      
-      // Announce success
-      announceSuccess(`Successfully started download for ${downloadableVideos.length} videos`)
       
       // Auto-hide result after 5 seconds
       setTimeout(() => {
@@ -157,21 +110,21 @@ export function VideoList({ className }: VideoListProps) {
       
       // Try to extract partial success information from error message
       let successCount = 0
-      let failedCount = downloadableVideos.length
+      let failedCount = videoIds.length
       
       // Check if the error message contains success information
       if (errorMessage.includes('Created') && errorMessage.includes('download tasks')) {
         const match = errorMessage.match(/Created (\d+) download tasks/)
         if (match) {
           successCount = parseInt(match[1], 10)
-          failedCount = downloadableVideos.length - successCount
+          failedCount = videoIds.length - successCount
         }
       }
       
       setBatchOperationResult({
         success: successCount,
         failed: failedCount,
-        total: downloadableVideos.length,
+        total: videoIds.length,
         errors: [errorMessage]
       })
       setShowBatchResult(true)
@@ -185,60 +138,22 @@ export function VideoList({ className }: VideoListProps) {
         setShowBatchResult(false)
         setBatchOperationResult(null)
       }, 8000)
+      
+      throw error // Re-throw to let BatchOperations handle the error display
     }
-  }, [selectedVideoIds, triggerBatchDownload, videos])
-
-  const handleBatchCopyUrl = useCallback(async () => {
-    if (selectedVideoIds.size === 0) {
-      toast.error('Please select videos to copy URLs')
-      announceError('No videos selected for copying URLs')
-      return
-    }
-
-    const videoUrls = Array.from(selectedVideoIds)
-      .map(id => videos.find(v => v.id === id)?.video_url)
-      .map(url => {
-        if (url && url.includes('youtube.com/watch?v=')) {
-          try {
-            const videoId = new URL(url).searchParams.get('v')
-            if (videoId) {
-              return `https://www.youtube.com/shorts/${videoId}`
-            }
-          } catch (_e) {
-            // Invalid URL, return original
-            return url
-          }
-        }
-        return url
-      })
-      .filter((url): url is string => !!url)
-
-    if (videoUrls.length === 0) {
-      toast.error('No valid URLs found for the selected videos')
-      announceError('No valid URLs found for the selected videos')
-      return
-    }
-
-    navigator.clipboard.writeText(videoUrls.join('\n')).then(() => {
-      toast.success(`已成功复制 ${videoUrls.length} 个视频链接`)
-      announceSuccess(`Copied ${videoUrls.length} video URLs`)
-    }).catch((_error) => {
-      toast.error('复制链接失败')
-      announceError('Failed to copy URLs to clipboard')
-    })
-  }, [selectedVideoIds, videos])
+  }, [triggerBatchDownload])
 
   // Individual video action handlers
   const handleVideoAction = useCallback((video: Video, action: 'download' | 'view') => {
     switch (action) {
       case 'download':
-        triggerBatchDownload([video.id])
+        handleBatchDownload([video.id])
         break
       case 'view':
         setDetailVideo(video)
         break
     }
-  }, [triggerBatchDownload, navigate])
+  }, [handleBatchDownload])
 
   const handleThumbnailClick = useCallback((video: Video) => {
     if (video.video_url) {
@@ -246,49 +161,13 @@ export function VideoList({ className }: VideoListProps) {
     }
   }, [])
 
- 
-   // Computed values
-   const selectedCount = selectedVideoIds.size
-  const allSelected = selectedCount === videos.length && videos.length > 0
-
-  const selectedDownloadableCount = useMemo(() => {
-    return Array.from(selectedVideoIds).filter(id => {
-      const video = videos.find(v => v.id === id)
-      return video && !video.is_downloaded
-    }).length
-  }, [selectedVideoIds, videos])
-
-  // Keyboard shortcuts for batch operations
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle shortcuts when not in an input field
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return
-      }
-
-      if (event.ctrlKey || event.metaKey) {
-        switch (event.key) {
-          case 'a':
-            event.preventDefault()
-            handleSelectAll()
-            break
-          case 'd':
-            if (selectedCount > 0) {
-              event.preventDefault()
-              handleBatchDownload()
-            }
-            break
-        }
-      }
-
-      if (event.key === 'Escape') {
-        handleClearSelection()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleSelectAll, handleClearSelection, handleBatchDownload, selectedCount])
+  // Use keyboard shortcuts
+  useKeyboardShortcuts({
+    onSelectAll: handleSelectAll,
+    onClearSelection: handleClearSelection,
+    onBatchDownload: () => handleBatchDownload(Array.from(selectedVideoIds)),
+    selectedCount: selectedVideoIds.size,
+  })
 
   if (loadingStates.videos) {
     return (
@@ -343,7 +222,7 @@ export function VideoList({ className }: VideoListProps) {
               )}
             </CardTitle>
             
-            {/* Responsive Batch Selection Controls */}
+            {/* Responsive Controls */}
             <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-4'}`}>
               <div className="w-[180px]">
                 <Select
@@ -364,148 +243,35 @@ export function VideoList({ className }: VideoListProps) {
                 </Select>
               </div>
 
-              <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
-                {!isMobile && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{selectedCount} selected</span>
-                  </div>
-                )}
-                
-                <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'items-center gap-2'}`}>
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={allSelected ? handleClearSelection : handleSelectAll}
-                    className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
-                    title={allSelected ? "Clear all selections (Esc)" : "Select all videos (Ctrl+A)"}
-                    aria-label={allSelected ? `Clear all ${videos.length} video selections` : `Select all ${videos.length} videos`}
-                  >
-                    {allSelected ? (
-                      <>
-                        <Square className="h-4 w-4" aria-hidden="true" />
-                        <span className="ml-2">Clear All</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckSquare className="h-4 w-4" aria-hidden="true" />
-                        <span className="ml-2">Select All</span>
-                      </>
-                    )}
-                  </Button>
-                  
-                  {selectedCount > 0 && (
-                    <Button
-                      variant="default"
-                      size={isMobile ? "default" : "sm"}
-                      onClick={handleBatchDownload}
-                      disabled={loadingStates.batchDownload || selectedDownloadableCount === 0}
-                      className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
-                      title={`Download ${selectedDownloadableCount} selected video(s) (Ctrl+D)`}
-                      aria-label={`Download ${selectedDownloadableCount} selected videos out of ${selectedCount} total selected`}
-                    >
-                      {loadingStates.batchDownload ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Download className="h-4 w-4" aria-hidden="true" />
-                      )}
-                      <span className="ml-2">
-                        Download ({selectedDownloadableCount})
-                        {isMobile && selectedCount > selectedDownloadableCount && (
-                          <span className="text-xs opacity-75 ml-1">
-                            of {selectedCount}
-                          </span>
-                        )}
-                      </span>
-                    </Button>
-                )}
-
-                {selectedCount > 0 && (
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={handleBatchCopyUrl}
-                    className={`${touchTargetSize} ${isMobile ? 'w-full justify-center' : 'flex items-center gap-1'}`}
-                    title={`Copy URLs for ${selectedCount} selected video(s)`}
-                    aria-label={`Copy URLs for ${selectedCount} selected videos`}
-                  >
-                    <Copy className="h-4 w-4" aria-hidden="true" />
-                    <span className="ml-2">
-                      Copy URLs ({selectedCount})
-                    </span>
-                  </Button>
-                )}
-              </div>
-                
-                {isMobile && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    {selectedCount} selected
-                  </div>
-                )}
-              </div>
+              <BatchOperations
+                videos={videos}
+                selectedVideoIds={selectedVideoIds}
+                onSelectAll={handleSelectAll}
+                onClearSelection={handleClearSelection}
+                onBatchDownload={handleBatchDownload}
+                loadingStates={loadingStates}
+                isMobile={isMobile}
+              />
             </div>
           </div>
           
-          {/* Batch Operation Progress/Results */}
-          {loadingStates.batchDownload && (
-            <div className="mt-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Processing batch download...
-              </div>
-              <Progress value={undefined} className="h-2" />
-            </div>
-          )}
-          
-          {showBatchResult && batchOperationResult && (
-            <Alert className={`mt-4 ${batchOperationResult.failed > 0 ? 'border-destructive' : 'border-green-500'}`}>
-              <div className="flex items-center gap-2">
-                {batchOperationResult.failed > 0 ? (
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                )}
-                <AlertDescription>
-                  <div className="space-y-1">
-                    <div>
-                      Batch operation completed: {batchOperationResult.success} successful, {batchOperationResult.failed} failed out of {batchOperationResult.total} total
-                    </div>
-                    {batchOperationResult.errors.length > 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        Errors: {batchOperationResult.errors.join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </AlertDescription>
-              </div>
-            </Alert>
-          )}
+          <BatchResultDisplay
+            isLoading={loadingStates.batchDownload}
+            result={batchOperationResult}
+            showResult={showBatchResult}
+          />
         </CardHeader>
         
         <CardContent>
-          {videos.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No videos found for this account
-            </div>
-          ) : (
-            <div className="h-[600px]">
-              <List
-                height={600}
-                itemCount={videos.length}
-                itemSize={150}
-                width="100%"
-                itemData={{
-                  videos,
-                  selectedVideoIds,
-                  handleVideoSelect,
-                  handleVideoAction,
-                  handleThumbnailClick,
-                }}
-              >
-                {Row}
-              </List>
-            </div>
-          )}
+          <VideoVirtualizedList
+            videos={videos}
+            selectedVideoIds={selectedVideoIds}
+            onVideoSelect={handleVideoSelect}
+            onVideoAction={handleVideoAction}
+            onThumbnailClick={handleThumbnailClick}
+          />
         </CardContent>
+        
         <CardFooter>
           <Pagination
             page={pagination.page}
@@ -520,6 +286,7 @@ export function VideoList({ className }: VideoListProps) {
           />
         </CardFooter>
       </Card>
+      
       {detailVideo && (
         <VideoDetailDialog
           video={detailVideo}
@@ -528,273 +295,5 @@ export function VideoList({ className }: VideoListProps) {
         />
       )}
     </>
-  )
-}
-
-interface VideoItemProps {
-  video: Video
-  isSelected: boolean
-  onSelect: (videoId: string, checked: boolean) => void
-  onAction: (video: Video, action: 'download' | 'view') => void
-  onThumbnailClick: (video: Video) => void
-}
-
-interface RowProps {
-  index: number
-  style: React.CSSProperties
-  data: {
-    videos: Video[]
-    selectedVideoIds: Set<string>
-    handleVideoSelect: (videoId: string, checked: boolean) => void
-    handleVideoAction: (video: Video, action: 'download' | 'view') => void
-    handleThumbnailClick: (video: Video) => void
-  }
-}
-
-const Row = ({ index, style, data }: RowProps) => {
-  const {
-    videos,
-    selectedVideoIds,
-    handleVideoSelect,
-    handleVideoAction,
-    handleThumbnailClick,
-  } = data
-  const video = videos[index]
-  const isSelected = selectedVideoIds.has(video.id)
-
-  return (
-    <div style={style}>
-      <VideoItem
-        video={video}
-        isSelected={isSelected}
-        onSelect={handleVideoSelect}
-        onAction={handleVideoAction}
-        onThumbnailClick={handleThumbnailClick}
-      />
-    </div>
-  )
-}
-
-function VideoItem({
-  video,
-  isSelected,
-  onSelect,
-  onAction,
-  onThumbnailClick,
-}: VideoItemProps) {
-  const getVideoStatus = (): 'downloaded' | 'not_downloaded' => {
-    if (video.is_downloaded) {
-      return 'downloaded'
-    }
-    return 'not_downloaded'
-  }
-
-  const getStatusBadge = () => {
-    const status = getVideoStatus()
-    switch (status) {
-      case 'downloaded':
-        return <Badge variant="secondary">Downloaded</Badge>
-      default:
-        return <Badge variant="outline">Not Downloaded</Badge>
-    }
-  }
-
-  const getActionButton = () => {
-    const status = getVideoStatus()
-    switch (status) {
-      case 'not_downloaded':
-        return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAction(video, 'download')}
-            className="flex items-center gap-1"
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
-        )
-      case 'downloaded':
-        return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onAction(video, 'view')}
-            className="flex items-center gap-1"
-          >
-            View Details
-          </Button>
-        )
-      default:
-        return null
-    }
-  }
-
-  const handleCopyLink = useCallback(async () => {
-    if (!video.video_url) {
-      toast.error('No video link available to copy.')
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(video.video_url)
-      toast.success('Video link copied to clipboard!')
-    } catch {
-      toast.error('Failed to copy video link.')
-    }
-  }, [video.video_url])
-
-  const formatDate = (dateString: string | undefined | null) => {
-    if (!dateString) return 'Unknown'
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true })
-    } catch {
-      return 'Invalid date'
-    }
-  }
-
-  const formatNumber = (num: number | undefined | null) => {
-    if (num === null || num === undefined) return 'N/A'
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}m`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}k`
-    return num.toString()
-  }
-
-  const renderDiff = (diff: number) => {
-    if (diff > 0) {
-      return <span className="text-xs text-green-500 ml-1">↑{formatNumber(diff)}</span>
-    } else if (diff < 0) {
-      return <span className="text-xs text-red-500 ml-1">↓{formatNumber(Math.abs(diff))}</span>
-    }
-    return null
-  }
-
-  const latest_snapshot = video.snapshots && video.snapshots.length > 0 ? video.snapshots[0] : null
-  const prev_snapshot = video.snapshots && video.snapshots.length > 1 ? video.snapshots[1] : null
-
-  const viewsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.views_count ?? 0) - (prev_snapshot.views_count ?? 0) : 0
-  const likesDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.likes_count ?? 0) - (prev_snapshot.likes_count ?? 0) : 0
-  const commentsDiff = latest_snapshot && prev_snapshot ? (latest_snapshot.comments_count ?? 0) - (prev_snapshot.comments_count ?? 0) : 0
-
-  return (
-    <div
-      className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 cursor-pointer"
-      role="article"
-      // onClick={() => onNavigateToDetail(video.id)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          // onNavigateToDetail(video.id)
-        }
-      }}
-      tabIndex={0}
-      aria-labelledby={`video-${video.id}-title`}
-      aria-describedby={`video-${video.id}-status video-${video.id}-meta`}
-    >
-      {/* Selection Checkbox */}
-      <div className="flex items-center pt-2" onClick={(e) => e.stopPropagation()}>
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelect(video.id, checked as boolean)}
-          aria-label={`Select video: ${video.title}`}
-          aria-describedby={`video-${video.id}-status`}
-        />
-      </div>
-
-      {/* Video Thumbnail */}
-      <div className="flex-shrink-0">
-        <div
-          className="w-32 h-20 bg-muted rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          onClick={(e) => {
-            e.stopPropagation()
-            onThumbnailClick(video)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              e.stopPropagation()
-              onThumbnailClick(video)
-            }
-          }}
-          tabIndex={0}
-          role="button"
-          aria-label={`View original video: ${video.title}`}
-        >
-          {video.thumbnail_url ? (
-            <img
-              src={video.thumbnail_url}
-              alt={`Thumbnail for ${video.title}`}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement
-                target.style.display = 'none'
-                target.nextElementSibling?.classList.remove('hidden')
-              }}
-            />
-          ) : null}
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground hidden">
-            <Play className="h-8 w-8" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
-
-      {/* Video Information */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h3
-              id={`video-${video.id}-title`}
-              className="font-medium line-clamp-2 mb-1"
-            >
-              {video.title}
-            </h3>
-            
-            <div
-              id={`video-${video.id}-meta`}
-              className="flex items-center gap-4 text-sm text-muted-foreground mb-2"
-              aria-label={`Video metrics: ${formatNumber(latest_snapshot?.views_count)} views, ${formatNumber(latest_snapshot?.likes_count)} likes, ${formatNumber(latest_snapshot?.comments_count)} comments, published ${formatDate(video.published_at)}`}
-            >
-              <span aria-label="View count">{formatNumber(latest_snapshot?.views_count)} views {renderDiff(viewsDiff)}</span>
-              <span aria-label="Like count">{formatNumber(latest_snapshot?.likes_count)} likes {renderDiff(likesDiff)}</span>
-              <span aria-label="Comment count">{formatNumber(latest_snapshot?.comments_count)} comments {renderDiff(commentsDiff)}</span>
-              <span aria-label={`Published ${formatDate(video.published_at)}`}>{formatDate(video.published_at)}</span>
-            </div>
-            
-            <div className="flex items-center gap-2" id={`video-${video.id}-status`}>
-              {getStatusBadge()}
-              {/* {video.video_type && (
-                <Badge variant="outline" className="capitalize" aria-label={`Video type: ${video.video_type}`}>
-                  {video.video_type}
-                </Badge>
-              )} */}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label={`Actions for ${video.title}`}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyLink}
-              className="flex items-center gap-1"
-              aria-label={`Copy link for ${video.title}`}
-              disabled={!video.video_url}
-            >
-              <Copy className="h-4 w-4" aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onThumbnailClick(video)}
-              className="flex items-center gap-1"
-              aria-label={`Open ${video.title} in new tab`}
-            >
-              <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            </Button>
-            {getActionButton()}
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
