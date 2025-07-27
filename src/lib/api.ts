@@ -778,6 +778,31 @@ export const analysisApi = {
    */
   updateTask: (taskId: string, data: MonitoringTaskUpdate): Promise<ApiResponse<MonitoringTask>> =>
     apiClient.put(`/api/analysis/tasks/${taskId}`, data),
+  
+  /**
+   * 删除监控任务（软删除）。正在执行中的任务不允许删除。
+   */
+  deleteTask: (taskId: string): Promise<ApiResponse<MonitoringTask>> =>
+    apiClient.delete(`/api/analysis/tasks/${taskId}`),
+  
+  /**
+   * 批量删除监控任务（软删除）。自动跳过不存在、已删除或正在执行的任务。
+   */
+  batchDeleteTasks: (taskIds: string[]): Promise<ApiResponse<{
+    requested: number
+    deleted: string[]
+    skipped: string[]
+    not_found: string[]
+    processing: string[]
+    summary: {
+      total_requested: number
+      total_deleted: number
+      total_skipped: number
+      total_not_found: number
+      total_processing: number
+    }
+  }>> =>
+    apiClient.post('/api/analysis/tasks/batch-delete', { task_ids: taskIds }),
 }
 
 // 向后兼容的默认导出

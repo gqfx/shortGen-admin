@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { MoreHorizontal, Edit, RefreshCw, X } from 'lucide-react'
+import { MoreHorizontal, Edit, RefreshCw, X, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   Table,
   TableBody,
@@ -24,8 +26,22 @@ import { useMonitoringTasks } from '../context/monitoring-tasks-context'
 import { MonitoringTask } from '@/lib/api'
 
 export function TaskTable() {
-  const { tasks, loading, error, updateTask } = useMonitoringTasks()
+  const { 
+    tasks, 
+    loading, 
+    error, 
+    updateTask, 
+    deleteTask,
+    batchDeleteTasks,
+    selectedTasks,
+    toggleTaskSelection,
+    selectAllTasks,
+    clearSelection
+  } = useMonitoringTasks()
   const [updatingTask, setUpdatingTask] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false)
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -80,6 +96,34 @@ export function TaskTable() {
     await handleUpdateTaskStatus(taskId, 'pending')
   }
 
+  const handleDeleteClick = (taskId: string) => {
+    setTaskToDelete(taskId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (taskToDelete) {
+      await deleteTask(taskToDelete)
+      setTaskToDelete(null)
+    }
+    setDeleteConfirmOpen(false)
+  }
+
+  const handleBatchDelete = () => {
+    if (selectedTasks.size > 0) {
+      setBatchDeleteConfirmOpen(true)
+    }
+  }
+
+  const handleConfirmBatchDelete = async () => {
+    const taskIds = Array.from(selectedTasks)
+    await batchDeleteTasks(taskIds)
+    setBatchDeleteConfirmOpen(false)
+  }
+
+  const isAllSelected = tasks.length > 0 && selectedTasks.size === tasks.length
+  const isPartiallySelected = selectedTasks.size > 0 && selectedTasks.size < tasks.length
+
   if (error) {
     return (
       <Card>
@@ -98,10 +142,29 @@ export function TaskTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Monitoring Tasks ({tasks.length})</CardTitle>
-        <CardDescription>
-          Track and manage all monitoring and crawl tasks
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Monitoring Tasks ({tasks.length})</CardTitle>
+            <CardDescription>
+              Track and manage all monitoring and crawl tasks
+            </CardDescription>
+          </div>
+          {selectedTasks.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedTasks.size} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBatchDelete}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Selected
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -120,6 +183,19 @@ export function TaskTable() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        selectAllTasks()
+                      } else {
+                        clearSelection()
+                      }
+                    }}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Task</TableHead>
                 <TableHead>Account ID</TableHead>
                 <TableHead>Video ID</TableHead>
@@ -133,6 +209,13 @@ export function TaskTable() {
             <TableBody>
               {tasks.map((task) => (
                 <TableRow key={task.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedTasks.has(task.id)}
+                      onCheckedChange={() => toggleTaskSelection(task.id)}
+                      aria-label={`Select task ${task.id}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{getTaskTypeIcon(task.task_type)}</span>
@@ -215,6 +298,19 @@ export function TaskTable() {
                           <Edit className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
+                        
+                        {task.status !== 'processing' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteClick(task.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Task
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -230,6 +326,22 @@ export function TaskTable() {
           </div>
         )}
       </CardContent>
+      
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="确认删除"
+        desc="您确定要删除此监控任务吗？此操作无法撤销。"
+        handleConfirm={handleConfirmDelete}
+      />
+      
+      <ConfirmDialog
+        open={batchDeleteConfirmOpen}
+        onOpenChange={setBatchDeleteConfirmOpen}
+        title="确认批量删除"
+        desc={`您确定要删除选中的 ${selectedTasks.size} 个监控任务吗？正在执行中的任务将被跳过。`}
+        handleConfirm={handleConfirmBatchDelete}
+      />
     </Card>
   )
 }
