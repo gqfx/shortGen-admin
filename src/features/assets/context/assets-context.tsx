@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Asset, assetsApi, PaginatedResponse } from '@/lib/api'
+import { toast } from '@/hooks/use-toast'
 
 interface PaginationState {
   page: number
@@ -23,7 +24,7 @@ interface AssetsContextType {
   setIsDeleteDialogOpen: (open: boolean) => void
   setSelectedAsset: (asset: Asset | null) => void
   refreshAssets: () => void
-  deleteAsset: (id: string) => void
+  deleteAsset: (id: string) => Promise<void>
 }
 
 const AssetsContext = createContext<AssetsContextType | undefined>(undefined)
@@ -70,8 +71,36 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
     refetch()
   }
 
-  const deleteAsset = (id: string) => {
-    setAssets(prevAssets => prevAssets.filter(asset => asset.id !== id))
+  const deleteAsset = async (id: string) => {
+    try {
+      const response = await assetsApi.delete(id)
+      
+      if (response.data?.message) {
+        toast({
+          title: "资源已删除",
+          description: response.data.message,
+        })
+      }
+      
+      // Remove from local state
+      setAssets(prevAssets => prevAssets.filter(asset => asset.id !== id))
+      
+      // Close delete dialog if open
+      setIsDeleteDialogOpen(false)
+      
+      // Clear selected asset
+      setSelectedAsset(null)
+      
+      // Refresh the assets list to ensure consistency
+      refreshAssets()
+    } catch (error) {
+      console.error('Failed to delete asset:', error)
+      toast({
+        title: "删除失败",
+        description: "无法删除该资源，请稍后重试",
+        variant: "destructive",
+      })
+    }
   }
 
   return (

@@ -40,8 +40,8 @@ export function DataTableRowActions<TData>({
     setIsConfirmOpen(true)
   }
 
-  const handleConfirmDelete = () => {
-    deleteAsset(asset.id)
+  const handleConfirmDelete = async () => {
+    await deleteAsset(asset.id)
     setIsConfirmOpen(false)
   }
 
