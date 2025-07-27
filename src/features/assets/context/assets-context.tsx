@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Asset, assetsApi, PaginatedResponse } from '@/lib/api'
-import { toast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface PaginationState {
   page: number
@@ -76,8 +76,7 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
       const response = await assetsApi.delete(id)
       
       if (response.data?.message) {
-        toast({
-          title: "资源已删除",
+        toast.success("资源已删除", {
           description: response.data.message,
         })
       }
@@ -95,10 +94,8 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
       refreshAssets()
     } catch (error) {
       console.error('Failed to delete asset:', error)
-      toast({
-        title: "删除失败",
+      toast.error("删除失败", {
         description: "无法删除该资源，请稍后重试",
-        variant: "destructive",
       })
     }
   }
