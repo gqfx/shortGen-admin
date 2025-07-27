@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Asset, assetsApi, PaginatedResponse, ApiResponse } from '@/lib/api'
+import { Asset, assetsApi, PaginatedResponse } from '@/lib/api'
 
 interface PaginationState {
   page: number
@@ -53,18 +53,18 @@ export default function AssetsProvider({ children }: AssetsProviderProps) {
     pages: 1,
   })
 
-  const { data: queryResult, isLoading, refetch } = useQuery<ApiResponse<PaginatedResponse<Asset>>, Error>({
+  const { data: queryResult, isLoading, refetch } = useQuery<PaginatedResponse<Asset>, Error>({
     queryKey: ['assets', pagination.page, pagination.size],
-    queryFn: () => assetsApi.getAll(pagination.page, pagination.size),
+    queryFn: () => assetsApi.getAll(pagination.page, pagination.size).then(res => res.data),
   })
 
   useEffect(() => {
-    if (queryResult?.data) {
-      const { total, page, size, pages } = queryResult.data
+    if (queryResult) {
+      const { total, page, size, pages } = queryResult
       setPagination(prev => ({ ...prev, total, page, size, pages }))
-      setAssets(queryResult.data.items)
+      setAssets(queryResult.items)
     }
-  }, [queryResult?.data])
+  }, [queryResult])
 
   const refreshAssets = () => {
     refetch()

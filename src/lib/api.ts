@@ -302,7 +302,7 @@ export const tasksApi = {
     let { page = 1 } = params
     const { size = 10, ...rest } = params
     if (page < 1) page = 1
-    return apiClient.get('/api/tasks', { params: { ...rest, page, size } })
+    return apiClient.get('/api/tasks', { ...rest, page, size })
   },
 
   enqueue: (taskId: string): Promise<ApiResponse<unknown>> =>

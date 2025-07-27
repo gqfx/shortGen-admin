@@ -29,25 +29,13 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-// 响应拦截器 - 自动解包 ApiResponse
+// 响应拦截器
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse<any>>) => {
-    // console.log('✅ API Response:', {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data,
-    // })
-    
-    // 返回解包后的数据，这样组件中就不需要 .data.data 了
-    return response.data as ApiResponse<any>
+  (response: AxiosResponse<ApiResponse<unknown>>) => {
+    // 直接返回响应，让调用方处理
+    return response
   },
   (error) => {
-    // console.error('❌ Response Error:', {
-    //   status: error.response?.status,
-    //   url: error.config?.url,
-    //   message: error.message,
-    //   data: error.response?.data,
-    // })
     return Promise.reject(error)
   }
 )
@@ -55,27 +43,27 @@ axiosInstance.interceptors.response.use(
 // 统一的 API 客户端
 export const apiClient = {
   // GET 请求
-  get: <T>(url: string, params?: Record<string, any>): Promise<T> => {
+  get: <T>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> => {
     return axiosInstance.get(url, { params }).then(response => response.data)
   },
 
   // POST 请求
-  post: <T>(url: string, data?: any): Promise<T> => {
+  post: <T>(url: string, data?: unknown): Promise<ApiResponse<T>> => {
     return axiosInstance.post(url, data).then(response => response.data)
   },
 
   // PUT 请求
-  put: <T>(url: string, data?: any): Promise<T> => {
+  put: <T>(url: string, data?: unknown): Promise<ApiResponse<T>> => {
     return axiosInstance.put(url, data).then(response => response.data)
   },
 
   // PATCH 请求
-  patch: <T>(url: string, data?: any): Promise<T> => {
+  patch: <T>(url: string, data?: unknown): Promise<ApiResponse<T>> => {
     return axiosInstance.patch(url, data).then(response => response.data)
   },
 
   // DELETE 请求
-  delete: <T>(url: string, data?: any): Promise<T> => {
+  delete: <T>(url: string, data?: unknown): Promise<ApiResponse<T>> => {
     return axiosInstance.delete(url, { data }).then(response => response.data)
   },
 }

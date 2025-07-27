@@ -83,11 +83,11 @@ export default function PlatformAccountsProvider({ children }: PlatformAccountsP
     refetch,
   } = useQuery({
     queryKey: ['platformAccounts', pagination.page, pagination.size],
-    queryFn: () => platformAccountsApi.getAll(pagination.page, pagination.size),
+    queryFn: () => platformAccountsApi.getAll(pagination.page, pagination.size).then(res => res.data),
     select: (data) => {
       return {
-        platformAccounts: data?.data?.items ?? [],
-        total: data?.data?.total ?? 0,
+        platformAccounts: data.items,
+        total: data.total,
       }
     },
   })

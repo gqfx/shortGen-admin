@@ -25,31 +25,36 @@ export function createAppError(
 }
 
 // 解析 API 错误响应
+export function parseApiError(error: unknown): AppError {
   // Axios 错误
   if (error instanceof AxiosError) {
     const statusCode = error.response?.status
     const responseData = error.response?.data
-    
+
     // 如果是标准的 API 错误响应
-    if (responseData && typeof responseData === 'object' && 'msg' in responseData) {
+    if (
+      responseData &&
+      typeof responseData === 'object' &&
+      'msg' in responseData
+    ) {
       return createAppError(
         responseData.msg as string,
-        responseData.code as string || 'API_ERROR',
+        (responseData.code as string) || 'API_ERROR',
         statusCode,
-        { originalError: error, responseData }
+        { originalError: error, responseData },
       )
     }
-    
+
     // 网络错误
     if (error.code === 'NETWORK_ERROR' || !error.response) {
       return createAppError(
         '网络连接失败，请检查网络设置',
         'NETWORK_ERROR',
         0,
-        { originalError: error }
+        { originalError: error },
       )
     }
-    
+
     // HTTP 状态码错误
     const statusMessages: Record<number, string> = {
       400: '请求参数错误',
@@ -64,39 +69,32 @@ export function createAppError(
       503: '服务暂时不可用',
       504: '网关超时',
     }
-    
-    const message = statusMessages[statusCode || 0] || error.message || '未知错误'
-    return createAppError(
-      message,
-      `HTTP_${statusCode}`,
-      statusCode,
-      { originalError: error }
-    )
+
+    const message =
+      statusMessages[statusCode || 0] || error.message || '未知错误'
+    return createAppError(message, `HTTP_${statusCode}`, statusCode, {
+      originalError: error,
+    })
   }
-  
+
   // 标准 Error 对象
   if (error instanceof Error) {
-    return createAppError(
-      error.message,
-      'UNKNOWN_ERROR',
-      undefined,
-      { originalError: error }
-    )
+    return createAppError(error.message, 'UNKNOWN_ERROR', undefined, {
+      originalError: error,
+    })
   }
-  
+
   // 其他类型的错误
-  return createAppError(
-    String(error),
-    'UNKNOWN_ERROR',
-    undefined,
-    { originalError: error }
-  )
+  return createAppError(String(error), 'UNKNOWN_ERROR', undefined, {
+    originalError: error,
+  })
 }
 
 // 显示错误消息
 export function showErrorMessage(error: unknown, title?: string) {
+  const appError = parseApiError(error)
   const message = appError.userMessage || appError.message
-  
+
   if (title) {
     toast.error(title, {
       description: message,
@@ -104,7 +102,7 @@ export function showErrorMessage(error: unknown, title?: string) {
   } else {
     toast.error(message)
   }
-  
+
   // 在开发环境下打印完整错误信息
   if (import.meta.env.DEV) {
     console.error('Error details:', appError)
@@ -199,9 +197,10 @@ export async function withBatchErrorHandling<T, R>(
       result.successful.push(item)
       result.successCount++
     } catch (error) {
+      const appError = parseApiError(error)
       result.failed.push({ item, error: appError })
       result.failureCount++
-      
+
       if (!options?.continueOnError) {
         break
       }

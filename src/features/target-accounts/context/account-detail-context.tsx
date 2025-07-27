@@ -4,7 +4,6 @@ import {
   useTargetAccount, 
   useAccountVideos, 
   useTriggerVideoDownload,
-  TargetAccountFilters,
   VideoFilters 
 } from '../hooks/use-target-accounts-query'
 import { usePaginatedFilters } from '@/hooks/use-api-query'
@@ -66,9 +65,13 @@ export function AccountDetailProvider({ children }: AccountDetailProviderProps) 
     setPagination,
     setFilters: setVideoFilters,
     queryParams: videoQueryParams,
-  } = usePaginatedFilters<VideoFilters>({
-    sortBy: 'views_desc',
-  }, 1, 10)
+  } = usePaginatedFilters<VideoFilters>(
+    {
+      sortBy: 'views_desc',
+    },
+    1,
+    10,
+  )
 
   // 获取账号信息
   const {

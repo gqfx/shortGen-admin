@@ -58,7 +58,8 @@ export default function ProjectsProvider({ children }: ProjectsProviderProps) {
     queryKey: ['projects'],
     queryFn: async () => {
       try {
-        return await projectsApi.getAll(0, 100)
+        const response = await projectsApi.getAll(0, 100)
+        return response.data.items
       } catch (err) {
         const error = err as Error & { response?: { data?: { msg?: string } } };
         toast.error('Failed to fetch projects: ' + (error.response?.data?.msg || error.message))
@@ -67,7 +68,7 @@ export default function ProjectsProvider({ children }: ProjectsProviderProps) {
     },
   })
 
-  const projects = apiResponse?.data || []
+  const projects = apiResponse || []
 
   // Create project mutation
   const createMutation = useMutation({

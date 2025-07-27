@@ -2,13 +2,14 @@ import { z } from 'zod'
 import { TaskDataSchema } from '@/lib/types/common'
 
 // 任务状态枚举
-const TaskStatusSchema = z.enum(['pending', 'queued', 'running', 'completed', 'failed', 'cancelled', 'timeout'])
+const TaskStatusSchema = z.enum(['pending', 'queued', 'running', 'completed', 'failed', 'cancelled', 'timeout', 'processing'])
 
 // 任务类型枚举
 const TaskTypeSchema = z.enum([
-  'video_download', 'video_analysis', 'image_generation', 'text_generation', 
-  'data_processing', 'model_training', 'batch_processing', 'crawl_account', 
-  'crawl_videos', 'content_analysis'
+  'video_download', 'video_analysis', 'image_generation', 'text_generation',
+  'data_processing', 'model_training', 'batch_processing', 'crawl_account',
+  'crawl_videos', 'content_analysis', 'DREAMINA_IMAGE_GENERATION', 'DREAMINA_VIDEO_GENERATION',
+  'DREAMINA_ACCOUNT_REGISTER', 'DREAMINA_LIP_SYNC', 'DREAMINA_IMAGE_HQ', 'DREAMINA_COLLECT_DATA'
 ])
 
 // Platform Account credentials schema
@@ -37,7 +38,7 @@ export const taskSchema = z.object({
   id: z.string(),
   task_type: TaskTypeSchema,
   status: TaskStatusSchema,
-  dependencies: z.array(z.string()).default([]),
+  dependencies: z.array(z.string()).nullable().default([]),
   task_output: TaskDataSchema.nullable().optional(),
   task_input: TaskDataSchema.nullable().optional(),
   project_id: z.string().nullable().optional(),

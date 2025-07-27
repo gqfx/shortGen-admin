@@ -63,24 +63,24 @@ export default function TasksProvider({ children }: Props) {
   // Fetch tasks
   const { data: apiResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['tasks', pagination.page, pagination.size],
-    queryFn: () => tasksApi.listTasks({ page: pagination.page, size: pagination.size }),
+    queryFn: () => tasksApi.listTasks({ page: pagination.page, size: pagination.size }).then(res => res.data),
     retry: false,
     refetchOnWindowFocus: false,
   })
 
   React.useEffect(() => {
-    if (apiResponse?.data) {
+    if (apiResponse) {
       setPagination(prev => ({
         ...prev,
-        total: apiResponse.data.total,
-        pages: apiResponse.data.pages,
-        page: apiResponse.data.page,
-        size: apiResponse.data.size,
+        total: apiResponse.total,
+        pages: apiResponse.pages,
+        page: apiResponse.page,
+        size: apiResponse.size,
       }))
     }
   }, [apiResponse])
 
-  const tasks = apiResponse?.data?.items || []
+  const tasks = apiResponse?.items || []
 
   // Create task mutation
   const createMutation = useMutation({
