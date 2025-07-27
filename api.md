@@ -577,6 +577,30 @@ This document provides a detailed overview of all available API endpoints.
 - **Request Body:** `MonitoringTaskUpdate`
 - **Response:** `Response[MonitoringTask]`
 
+### Delete Task
+
+- **Method:** `DELETE`
+- **Path:** `/api/analysis/tasks/{task_id}`
+- **Description:** 删除监控任务（软删除）。正在执行中的任务不允许删除。 (Delete monitoring task (soft delete). Tasks that are currently being processed cannot be deleted.)
+- **Path Parameters:**
+  - `task_id` (string, required): The ID of the task to delete.
+- **Response:** `Response[MonitoringTask]`
+
+### Batch Delete Tasks
+
+- **Method:** `POST`
+- **Path:** `/api/analysis/tasks/batch-delete`
+- **Description:** 批量删除监控任务（软删除）。自动跳过不存在、已删除或正在执行的任务。 (Batch delete monitoring tasks (soft delete). Automatically skips non-existent, already deleted, or currently processing tasks.)
+- **Request Body:** `BatchDeleteTasksRequest`
+  - `task_ids` (array of strings, required): List of task IDs to delete (minimum 1 ID).
+- **Response:** `Response` with deletion statistics:
+  - `requested`: Total number of task IDs provided
+  - `deleted`: Array of successfully deleted task IDs
+  - `skipped`: Array of already deleted task IDs
+  - `not_found`: Array of non-existent task IDs
+  - `processing`: Array of task IDs that are currently processing
+  - `summary`: Summary statistics with counts
+
 ---
 
 ## Tasks
