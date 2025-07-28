@@ -83,6 +83,16 @@ export const columns: ColumnDef<PlatformAccount>[] = [
     },
   },
   {
+    accessorKey: 'credit',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Credit' />
+    ),
+    cell: ({ row }) => {
+      const credit = row.getValue('credit') as number
+      return <div>{credit}</div>
+    },
+  },
+  {
     accessorKey: 'is_available',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Available' />
