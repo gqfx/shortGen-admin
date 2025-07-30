@@ -1,11 +1,10 @@
 import axios, { AxiosResponse } from 'axios'
 import { ApiResponse } from './types'
 
-const API_BASE_URL = import.meta.env.DEV ? '' : 'http://localhost:8000'
 
 // 创建 axios 实例
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
