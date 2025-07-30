@@ -34,6 +34,9 @@ import { useTargetAccounts } from '../context/target-accounts-context'
 
 const createTargetAccountSchema = z.object({
   channel_url: z.string().url('Please enter a valid channel URL'),
+  is_scheduled: z.boolean().optional(),
+  schedule_interval: z.coerce.number().positive().int().optional(),
+  cron_string: z.string().optional(),
 })
 
 const updateTargetAccountSchema = z.object({
@@ -83,6 +86,9 @@ export function TargetAccountDialogs({
     resolver: zodResolver(createTargetAccountSchema),
     defaultValues: {
       channel_url: '',
+      is_scheduled: false,
+      schedule_interval: undefined,
+      cron_string: '',
     },
   })
 
@@ -114,6 +120,9 @@ export function TargetAccountDialogs({
   const handleCreateSubmit = async (data: CreateFormData) => {
     const payload: QuickAddAccountRequest = {
       channel_url: data.channel_url,
+      is_scheduled: data.is_scheduled,
+      schedule_interval: data.schedule_interval,
+      cron_string: data.cron_string,
     }
 
     const result = await createTargetAccount(payload)
@@ -185,6 +194,59 @@ export function TargetAccountDialogs({
                   </FormItem>
                 )}
               />
+
+
+              <FormField
+                control={createForm.control}
+                name="is_scheduled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Enable Scheduled Crawling</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Enable or disable scheduled crawling for this account.
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {createForm.watch('is_scheduled') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={createForm.control}
+                    name="schedule_interval"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Schedule Interval (s)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="e.g., 60" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={createForm.control}
+                    name="cron_string"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CRON String</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 0 0 * * *" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
 
               <DialogFooter>

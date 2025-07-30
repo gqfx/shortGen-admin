@@ -156,8 +156,8 @@ export function VideoList({ className }: VideoListProps) {
   }, [handleBatchDownload])
 
   const handleThumbnailClick = useCallback((video: Video) => {
-    if (video.video_url) {
-      window.open(video.video_url, '_blank', 'noopener,noreferrer')
+    if (video.video_id) {
+      window.open(`https://www.youtube.com/shorts/${video.video_id}`, '_blank', 'noopener,noreferrer')
     }
   }, [])
 

@@ -76,17 +76,17 @@ export function VideoItem({
   }
 
   const handleCopyLink = useCallback(async () => {
-    if (!video.video_url) {
+    if (!video.video_id) {
       showErrorMessage('No video link available to copy.')
       return
     }
     try {
-      await navigator.clipboard.writeText(video.video_url)
+      await navigator.clipboard.writeText(`https://www.youtube.com/shorts/${video.video_id}`)
       showSuccessMessage('Video link copied to clipboard!')
     } catch {
       showErrorMessage('Failed to copy video link.')
     }
-  }, [video.video_url])
+  }, [video.video_id])
 
   const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return 'Unknown'

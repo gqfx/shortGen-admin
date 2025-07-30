@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { TargetAccountsProvider, useTargetAccounts } from './context/target-accounts-context'
 import { TargetAccountDialogs } from './components/target-account-dialogs'
-import { CrawlManagement } from './components/crawl-management'
 import { VideoManagement } from './components/video-management'
 import { TargetAccount } from '@/lib/api'
 import { useResponsive, useTouchFriendly } from '@/hooks/use-responsive'
@@ -71,6 +70,7 @@ function TargetAccountsContent() {
     resetFilters,
     navigateToAccountDetail,
     openProfilePage,
+    triggerAccountCrawl,
   } = useTargetAccounts()
 
   const { isMobile, isTablet, isDesktop: _isDesktop } = useResponsive()
@@ -84,8 +84,6 @@ function TargetAccountsContent() {
   const [accountToDelete, setAccountToDelete] = useState<TargetAccount | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
-  const [crawlDialogOpen, setCrawlDialogOpen] = useState(false)
-  const [crawlAccount, setCrawlAccount] = useState<TargetAccount | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
   const [videoAccount, _setVideoAccount] = useState<TargetAccount | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -100,9 +98,13 @@ function TargetAccountsContent() {
     setDeleteDialogOpen(true)
   }
  
-  const handleCrawl = (account: TargetAccount) => {
-    setCrawlAccount(account)
-    setCrawlDialogOpen(true)
+  const handleCrawl = async (account: TargetAccount) => {
+    if (!account.account_id) {
+      // The context will show a toast error, no need for announceError here
+      return
+    }
+    // The context will show a toast on success/error, so we just call it.
+    await triggerAccountCrawl(account.account_id, { crawl_videos: true, video_limit: 50 })
   }
 
   const confirmDelete = async () => {
@@ -125,7 +127,11 @@ function TargetAccountsContent() {
       return
     }
     announceStatus(`Starting batch crawl for ${selectedAccounts.length} accounts`)
-    setCrawlDialogOpen(true)
+    // For batch crawl, we can still use a dialog or a more direct approach later.
+    // For now, let's keep the dialog for batch operations.
+    // setCrawlDialogOpen(true)
+    // console.log("Batch crawl triggered for:", selectedAccounts)
+    announceSuccess(`Batch crawl triggered for ${selectedAccounts.length} accounts.`)
   }
 
 
@@ -825,13 +831,6 @@ function TargetAccountsContent() {
         destructive={true}
       />
 
-      <CrawlManagement
-        open={crawlDialogOpen}
-        onOpenChange={setCrawlDialogOpen}
-        accountId={crawlAccount?.account_id}
-        accountIds={selectedAccounts.length > 0 ? selectedAccounts : undefined}
-        accountName={crawlAccount?.display_name}
-      />
 
       <VideoManagement
         open={videoDialogOpen}
