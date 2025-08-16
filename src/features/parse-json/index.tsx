@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ParsedJson {
   title: string;
+  title_zh: string;
   img_promt: string;
   video_prompt: string;
 }
@@ -34,11 +35,23 @@ export default function ParseJsonPage() {
 
   const handleCopy = async (text: string, itemIndex: number, field: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-secure contexts
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       setCopiedStatus({ itemIndex, field });
       setTimeout(() => setCopiedStatus(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy: ', err);
+    } catch (_err) {
       toast.error('复制失败，请重试');
     }
   };
@@ -76,7 +89,7 @@ export default function ParseJsonPage() {
           {parsedData.map((item, index) => (
             <Card key={index}>
               <CardHeader>
-                <CardTitle>第 {index + 1} 项</CardTitle>
+                <CardTitle>{item.title_zh || `第 ${index + 1} 项`}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>

@@ -81,7 +81,20 @@ export function VideoItem({
       return
     }
     try {
-      await navigator.clipboard.writeText(`https://www.youtube.com/shorts/${video.video_id}`)
+      const textToCopy = `https://www.youtube.com/shorts/${video.video_id}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       showSuccessMessage('Video link copied to clipboard!')
     } catch {
       showErrorMessage('Failed to copy video link.')

@@ -110,8 +110,27 @@ export const columns: ColumnDef<Task>[] = [
 
       const copyToClipboard = (text: string | undefined) => {
         if (text) {
-          navigator.clipboard.writeText(text)
-          toast.success('Copied to clipboard!')
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+              .then(() => toast.success('Copied to clipboard!'))
+              .catch(() => toast.error('Failed to copy.'))
+          } else {
+            // Fallback for non-secure contexts
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed'; // Prevent scrolling to bottom of page in MS Edge.
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+              document.execCommand('copy');
+              toast.success('Copied to clipboard!');
+            } catch (_err) {
+              toast.error('Failed to copy.');
+            }
+            document.body.removeChild(textArea);
+          }
         } else {
           toast.error('No content to copy.')
         }
@@ -225,7 +244,7 @@ const TaskActionsCell = ({ row }: { row: Row<Task> }) => {
       >
         Edit
       </Button>
-      {task.status === 'waiting' && (
+      {task.status === 'pending' && (
         <Button
           variant='outline'
           size='sm'

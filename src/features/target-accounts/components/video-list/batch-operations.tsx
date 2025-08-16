@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { Download, Copy, CheckSquare, Square, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Video } from '@/lib/api'
@@ -105,10 +105,23 @@ export function BatchOperations({
     }
 
     try {
-      await navigator.clipboard.writeText(videoUrls.join('\n'))
+      const textToCopy = videoUrls.join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       showSuccessMessage(`已成功复制 ${videoUrls.length} 个视频链接`)
       announceSuccess(`Copied ${videoUrls.length} video URLs`)
-    } catch (error) {
+    } catch (_error) {
       showErrorMessage('复制链接失败')
       announceError('Failed to copy URLs to clipboard')
     }
