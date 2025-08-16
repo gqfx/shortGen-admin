@@ -17,6 +17,7 @@ import { Route as TargetAccountsIndexRouteImport } from './routes/target-account
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectTypesIndexRouteImport } from './routes/project-types/index'
 import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-accounts/index'
+import { Route as ParseJsonIndexRouteImport } from './routes/parse-json/index'
 import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
@@ -62,6 +63,11 @@ const PlatformAccountsIndexRoute = PlatformAccountsIndexRouteImport.update({
   path: '/platform-accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ParseJsonIndexRoute = ParseJsonIndexRouteImport.update({
+  id: '/parse-json/',
+  path: '/parse-json/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoringTasksIndexRoute = MonitoringTasksIndexRouteImport.update({
   id: '/monitoring-tasks/',
   path: '/monitoring-tasks/',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
+  '/parse-json': typeof ParseJsonIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AssetsIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
+  '/parse-json': typeof ParseJsonIndexRoute
   '/platform-accounts': typeof PlatformAccountsIndexRoute
   '/project-types': typeof ProjectTypesIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/assets/': typeof AssetsIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
+  '/parse-json/': typeof ParseJsonIndexRoute
   '/platform-accounts/': typeof PlatformAccountsIndexRoute
   '/project-types/': typeof ProjectTypesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
+    | '/parse-json'
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/inspirations'
     | '/monitoring-tasks'
+    | '/parse-json'
     | '/platform-accounts'
     | '/project-types'
     | '/projects'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/assets/'
     | '/inspirations/'
     | '/monitoring-tasks/'
+    | '/parse-json/'
     | '/platform-accounts/'
     | '/project-types/'
     | '/projects/'
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   AssetsIndexRoute: typeof AssetsIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
+  ParseJsonIndexRoute: typeof ParseJsonIndexRoute
   PlatformAccountsIndexRoute: typeof PlatformAccountsIndexRoute
   ProjectTypesIndexRoute: typeof ProjectTypesIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/parse-json/': {
+      id: '/parse-json/'
+      path: '/parse-json'
+      fullPath: '/parse-json'
+      preLoaderRoute: typeof ParseJsonIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoring-tasks/': {
       id: '/monitoring-tasks/'
       path: '/monitoring-tasks'
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssetsIndexRoute: AssetsIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,
+  ParseJsonIndexRoute: ParseJsonIndexRoute,
   PlatformAccountsIndexRoute: PlatformAccountsIndexRoute,
   ProjectTypesIndexRoute: ProjectTypesIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
