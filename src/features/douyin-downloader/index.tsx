@@ -3,7 +3,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Copy } from 'lucide-react';
 
 export default function DouyinDownloaderPage() {
   const [textInput, setTextInput] = useState('');
@@ -93,9 +93,45 @@ export default function DouyinDownloaderPage() {
       return;
     }
     
-    // 直接在新窗口打开视频链接
-    window.open(downloadUrl, '_blank');
-    toast.success('已在新窗口打开视频链接');
+    // 创建一个隐藏的 a 标签来模拟用户点击
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer'; // 安全性考虑
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    toast.success('已尝试打开视频链接');
+  };
+
+  const handleCopyLink = async () => {
+    if (!downloadUrl) {
+      toast.error('没有可用的下载链接');
+      return;
+    }
+    
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(downloadUrl);
+      } else {
+        // 备用方案：选择文本
+        const textArea = document.createElement('textarea');
+        textArea.value = downloadUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      toast.success('链接已复制！请手动粘贴到新窗口打开');
+    } catch (error) {
+      toast.error('复制失败，请手动选择链接复制');
+    }
   };
 
   const handleReset = () => {
@@ -155,23 +191,6 @@ export default function DouyinDownloaderPage() {
         </Card>
       )}
 
-      {apiResponse && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>API 返回数据（调试）</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="p-3 bg-muted rounded-md">
-              {typeof apiResponse === 'string' ? (
-                <code className="text-sm break-all">{apiResponse}</code>
-              ) : (
-                <pre className="text-xs overflow-auto max-h-40">{JSON.stringify(apiResponse, null, 2)}</pre>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {downloadUrl && (
         <Card className="mt-4">
           <CardHeader>
@@ -188,12 +207,24 @@ export default function DouyinDownloaderPage() {
               <div className="flex gap-2">
                 <Button 
                   onClick={handleDownload}
+                  variant="default"
                   className="flex-1"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  在新窗口打开视频
+                  尝试打开视频
+                </Button>
+                <Button 
+                  onClick={handleCopyLink}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  复制链接
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                💡 提示：如果直接打开失败，请使用"复制链接"手动粘贴到新窗口打开
+              </p>
             </div>
           </CardContent>
         </Card>
