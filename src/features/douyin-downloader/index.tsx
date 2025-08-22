@@ -148,13 +148,16 @@ export default function DouyinDownloaderPage() {
       {downloadUrl && (
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>下载视频</CardTitle>
+            <CardTitle>视频下载链接</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-3">
-                视频下载链接已准备就绪，点击下载按钮保存到本地。
+                获取到的视频下载链接：
               </p>
+              <div className="p-3 bg-muted rounded-md mb-4">
+                <code className="text-sm break-all">{downloadUrl}</code>
+              </div>
               <div className="flex gap-2">
                 <Button 
                   onClick={handleDownload}
@@ -163,7 +166,7 @@ export default function DouyinDownloaderPage() {
                 >
                   {isDownloading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {!isDownloading && <Download className="mr-2 h-4 w-4" />}
-                  下载视频
+                  下载视频到本地
                 </Button>
                 <Button 
                   variant="outline"
