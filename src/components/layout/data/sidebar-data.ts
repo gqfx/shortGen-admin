@@ -9,6 +9,7 @@ import {
   IconGitBranch,
   IconUsers,
   IconCode,
+  IconDownload,
 } from '@tabler/icons-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from '../types'
@@ -49,6 +50,11 @@ export const sidebarData: SidebarData = {
           title: 'JSON 解析器',
           url: '/parse-json',
           icon: IconCode,
+        },
+        {
+          title: '抖音下载器',
+          url: '/douyin-downloader',
+          icon: IconDownload,
         },
       ],
     },
