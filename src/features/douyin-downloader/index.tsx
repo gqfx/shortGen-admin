@@ -11,7 +11,6 @@ export default function DouyinDownloaderPage() {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const extractDouyinUrl = (text: string): string | null => {
     const urlRegex = /https:\/\/v\.douyin\.com\/[A-Za-z0-9]+/;
@@ -87,36 +86,15 @@ export default function DouyinDownloaderPage() {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!downloadUrl) {
       toast.error('没有可用的下载链接');
       return;
     }
-
-    setIsDownloading(true);
     
-    try {
-      const response = await fetch(downloadUrl);
-      const blob = await response.blob();
-      
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `douyin_video_${Date.now()}.mp4`;
-      
-      document.body.appendChild(a);
-      a.click();
-      
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success('视频下载已开始！');
-    } catch (error) {
-      toast.error('视频下载失败，请稍后重试');
-    } finally {
-      setIsDownloading(false);
-    }
+    // 直接在新窗口打开视频链接
+    window.open(downloadUrl, '_blank');
+    toast.success('已在新窗口打开视频链接');
   };
 
   const handleReset = () => {
@@ -209,18 +187,10 @@ export default function DouyinDownloaderPage() {
               <div className="flex gap-2">
                 <Button 
                   onClick={handleDownload}
-                  disabled={isDownloading}
                   className="flex-1"
                 >
-                  {isDownloading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {!isDownloading && <Download className="mr-2 h-4 w-4" />}
-                  下载视频到本地
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => window.open(downloadUrl, '_blank')}
-                >
-                  在新窗口打开
+                  <Download className="mr-2 h-4 w-4" />
+                  在新窗口打开视频
                 </Button>
               </div>
             </div>
