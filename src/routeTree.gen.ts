@@ -20,6 +20,7 @@ import { Route as PlatformAccountsIndexRouteImport } from './routes/platform-acc
 import { Route as ParseJsonIndexRouteImport } from './routes/parse-json/index'
 import { Route as MonitoringTasksIndexRouteImport } from './routes/monitoring-tasks/index'
 import { Route as InspirationsIndexRouteImport } from './routes/inspirations/index'
+import { Route as DouyinDownloaderIndexRouteImport } from './routes/douyin-downloader/index'
 import { Route as AssetsIndexRouteImport } from './routes/assets/index'
 import { Route as TargetAccountsAccountIdRouteImport } from './routes/target-accounts/$accountId'
 
@@ -78,6 +79,11 @@ const InspirationsIndexRoute = InspirationsIndexRouteImport.update({
   path: '/inspirations/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DouyinDownloaderIndexRoute = DouyinDownloaderIndexRouteImport.update({
+  id: '/douyin-downloader/',
+  path: '/douyin-downloader/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssetsIndexRoute = AssetsIndexRouteImport.update({
   id: '/assets/',
   path: '/assets/',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets': typeof AssetsIndexRoute
+  '/douyin-downloader': typeof DouyinDownloaderIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
   '/parse-json': typeof ParseJsonIndexRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets': typeof AssetsIndexRoute
+  '/douyin-downloader': typeof DouyinDownloaderIndexRoute
   '/inspirations': typeof InspirationsIndexRoute
   '/monitoring-tasks': typeof MonitoringTasksIndexRoute
   '/parse-json': typeof ParseJsonIndexRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/target-accounts/$accountId': typeof TargetAccountsAccountIdRoute
   '/assets/': typeof AssetsIndexRoute
+  '/douyin-downloader/': typeof DouyinDownloaderIndexRoute
   '/inspirations/': typeof InspirationsIndexRoute
   '/monitoring-tasks/': typeof MonitoringTasksIndexRoute
   '/parse-json/': typeof ParseJsonIndexRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/target-accounts/$accountId'
     | '/assets'
+    | '/douyin-downloader'
     | '/inspirations'
     | '/monitoring-tasks'
     | '/parse-json'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/'
     | '/target-accounts/$accountId'
     | '/assets'
+    | '/douyin-downloader'
     | '/inspirations'
     | '/monitoring-tasks'
     | '/parse-json'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/'
     | '/target-accounts/$accountId'
     | '/assets/'
+    | '/douyin-downloader/'
     | '/inspirations/'
     | '/monitoring-tasks/'
     | '/parse-json/'
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TargetAccountsAccountIdRoute: typeof TargetAccountsAccountIdRoute
   AssetsIndexRoute: typeof AssetsIndexRoute
+  DouyinDownloaderIndexRoute: typeof DouyinDownloaderIndexRoute
   InspirationsIndexRoute: typeof InspirationsIndexRoute
   MonitoringTasksIndexRoute: typeof MonitoringTasksIndexRoute
   ParseJsonIndexRoute: typeof ParseJsonIndexRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InspirationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/douyin-downloader/': {
+      id: '/douyin-downloader/'
+      path: '/douyin-downloader'
+      fullPath: '/douyin-downloader'
+      preLoaderRoute: typeof DouyinDownloaderIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assets/': {
       id: '/assets/'
       path: '/assets'
@@ -299,6 +319,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TargetAccountsAccountIdRoute: TargetAccountsAccountIdRoute,
   AssetsIndexRoute: AssetsIndexRoute,
+  DouyinDownloaderIndexRoute: DouyinDownloaderIndexRoute,
   InspirationsIndexRoute: InspirationsIndexRoute,
   MonitoringTasksIndexRoute: MonitoringTasksIndexRoute,
   ParseJsonIndexRoute: ParseJsonIndexRoute,

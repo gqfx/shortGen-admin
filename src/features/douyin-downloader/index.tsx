@@ -13,7 +13,8 @@ export default function DouyinDownloaderPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const extractDouyinUrl = (text: string): string | null => {
-    const urlRegex = /https:\/\/v\.douyin\.com\/[A-Za-z0-9]+/;
+    // 匹配抖音短链接格式，支持字母、数字、连字符、下划线
+    const urlRegex = /https:\/\/v\.douyin\.com\/[A-Za-z0-9\-_]+\/?/g;
     const match = text.match(urlRegex);
     return match ? match[0] : null;
   };
@@ -34,7 +35,7 @@ export default function DouyinDownloaderPage() {
     setIsLoading(true);
 
     try {
-      const apiUrl = `https://dydl.didnhdj.workers.dev?url=${encodeURIComponent(url)}`;
+      const apiUrl = `https://dydl.didnhdj.workers.dev?url=${url}`;
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
