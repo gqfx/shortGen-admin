@@ -9,6 +9,7 @@ export default function DouyinDownloaderPage() {
   const [textInput, setTextInput] = useState('');
   const [extractedUrl, setExtractedUrl] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [apiResponse, setApiResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -41,14 +42,43 @@ export default function DouyinDownloaderPage() {
         throw new Error('API 请求失败');
       }
       
-      const data = await response.json();
+      // 检查content-type
+      const contentType = response.headers.get('content-type');
       
-      if (data.video_url || data.url) {
-        const videoUrl = data.video_url || data.url;
-        setDownloadUrl(videoUrl);
-        toast.success('获取下载链接成功！');
+      if (contentType && contentType.includes('text/plain')) {
+        // 如果返回的是纯文本，直接获取文本内容
+        const videoUrl = await response.text();
+        
+        // 保存API响应用于调试
+        setApiResponse({ url: videoUrl, contentType });
+        
+        console.log('API返回链接:', videoUrl);
+        
+        if (videoUrl && videoUrl.trim()) {
+          setDownloadUrl(videoUrl.trim());
+          toast.success('获取下载链接成功！');
+        } else {
+          toast.error('返回的下载链接为空');
+        }
       } else {
-        toast.error('未能获取到视频下载链接');
+        // 如果是JSON格式，按原来的方式处理
+        const data = await response.json();
+        
+        // 保存API响应用于调试
+        setApiResponse(data);
+        
+        console.log('API返回数据:', data);
+        
+        // 尝试多种可能的字段名
+        const videoUrl = data.video_url || data.url || data.download_url || data.videoUrl || data.downloadUrl;
+        
+        if (videoUrl) {
+          setDownloadUrl(videoUrl);
+          toast.success('获取下载链接成功！');
+        } else {
+          console.log('未找到视频链接，完整返回数据:', JSON.stringify(data, null, 2));
+          toast.error('未能获取到视频下载链接');
+        }
       }
     } catch (error) {
       toast.error('获取下载链接失败，请稍后重试');
@@ -93,6 +123,7 @@ export default function DouyinDownloaderPage() {
     setTextInput('');
     setExtractedUrl('');
     setDownloadUrl('');
+    setApiResponse(null);
   };
 
   return (
@@ -140,6 +171,23 @@ export default function DouyinDownloaderPage() {
           <CardContent>
             <div className="p-3 bg-muted rounded-md">
               <code className="text-sm">{extractedUrl}</code>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {apiResponse && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>API 返回数据（调试）</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-3 bg-muted rounded-md">
+              {typeof apiResponse === 'string' ? (
+                <code className="text-sm break-all">{apiResponse}</code>
+              ) : (
+                <pre className="text-xs overflow-auto max-h-40">{JSON.stringify(apiResponse, null, 2)}</pre>
+              )}
             </div>
           </CardContent>
         </Card>
